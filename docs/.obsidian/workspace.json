@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "thoughts/js函数队列性质.md",
+                "file": "blogs/「 百米 」观后感.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "js函数队列性质"
+              "title": "「 百米 」观后感"
             }
           },
           {
@@ -41,16 +41,16 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "thoughts/图像批量裁剪的性能优化.md",
+                "file": "blogs/「 百米 」观后感.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "图像批量裁剪的性能优化"
+              "title": "「 百米 」观后感"
             }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -226,15 +226,25 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "eec6dec82e3d978d",
+  "active": "1c36bfe2868da588",
   "lastOpenFiles": [
+    "未命名.md",
+    "blogs/「 百米 」观后感.md",
+    "blogs/失恋-花-电锯.md",
     "thoughts/chatbox阅读记录.md",
-    "thoughts/图像批量裁剪的性能优化.md",
-    "thoughts/如何设计良好的react代码.md",
+    "blogs/assets/「 百米 」观后感/assets/mX7SGjfO5WuVxo1gza7KHxZEm8rFZ4Wr19QXLM9I9Yg=.png",
+    "blogs/assets/「 百米 」观后感/assets/hsuqI-iNFgrpQ9nKrLsrW8gJQ4kQ5qYgUlzX1NnSPUA=.png",
+    "blogs/assets/「 百米 」观后感/assets/hGCZMqMjgv3PkvTKhnWpcVA2i6qUyMpwYzm4YgU8CUg=.png",
+    "blogs/assets/「 百米 」观后感/assets/X-QP3lGm1abdnnsgpjOdjlfwul9cIfLArS9RLNTJZU0=.png",
+    "blogs/assets/「 百米 」观后感/assets/O0TL73lK1IBRSct0humQoqT_ZiB7CPYSIyNL950oqKk=.png",
+    "blogs/assets/「 百米 」观后感/assets/Hl3G05GO0PubLsx11cwu7btYGRYuXq8o3ocxLEUsIJw=.png",
+    "blogs/assets/「 百米 」观后感/assets",
+    "blogs/assets/「 百米 」观后感",
     "thoughts/状态管理库与组件解耦.md",
     "thoughts/js函数队列性质.md",
+    "thoughts/图像批量裁剪的性能优化.md",
+    "thoughts/如何设计良好的react代码.md",
     "blogs/健康话题的思考.md",
-    "blogs/失恋-花-电锯.md",
     "notes/react设计策略与哲学.md",
     "notes/assets/react设计策略与哲学/file-20251217161846398.png",
     "notes/assets/react设计策略与哲学",
@@ -247,23 +257,15 @@
     "thoughts/assets/图像批量裁剪的性能优化/file-20251215152604562.png",
     "thoughts/assets/图像批量裁剪的性能优化",
     "notes/八股/simplified-setstate.md",
-    "notes/八股/assets/simplified-setstate/file-20251214231645279.png",
     "notes/八股/assets/simplified-setstate",
     "notes/八股/simplified.md",
     "thoughts/RSC & Nextjs.md",
-    "thoughts/assets/js函数队列性质/file-20251214231227843.png",
     "thoughts/assets/js函数队列性质",
     "docs/notes/八股/Promise的拆解.md",
     "notes/八股/apply，bind，new，prototype chain，object，Scope....md",
     "docs/notes/八股",
-    "docs/notes",
-    "docs",
     "notes/八股/对象的深度遍历.md",
     "notes/八股/计算机网络（层级，协议，DNS，CDN，CORS）.md",
-    "thoughts/assets/RSC & Nextjs/file-20251208161755691 1.png",
-    "thoughts/assets/RSC & Nextjs/file-20251208161755691.png",
-    "thoughts/assets/RSC & Nextjs/file-20251208161755689 1.png",
-    "thoughts/assets/RSC & Nextjs/file-20251208161755689.png",
     "notes/八股/浏览器渲染过程.md",
     "notes/HTML渲染策略.md",
     "thoughts/intro.md",
@@ -272,7 +274,6 @@
     "notes/八股/js GC.md",
     "notes/style system.md",
     "notes/前端工程化全史 1995-2025.md",
-    "blogs/LastHoliday.md",
     "未命名.canvas"
   ]
 }
