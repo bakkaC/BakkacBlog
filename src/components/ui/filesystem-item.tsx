@@ -23,8 +23,6 @@ interface FilesystemItemProps {
   animated?: boolean;
   showIcons?: boolean;
   showToggles?: boolean;
-  iconSrc?: string;
-  iconAlt?: string;
   itemClassName?: string;
   linkClassName?: string;
 }
@@ -34,8 +32,6 @@ export function FilesystemItem({
   animated = false,
   showIcons = true,
   showToggles = true,
-  iconSrc,
-  iconAlt = 'Kumiko icon',
   itemClassName,
   linkClassName,
 }: FilesystemItemProps) {
@@ -152,17 +148,7 @@ export function FilesystemItem({
         ) : null}
 
         {showIcons ? (
-          iconSrc ? (
-            <img
-              src={iconSrc}
-              alt={iconAlt}
-              className={cn(
-                'size-6 rounded-sm object-cover',
-                node.nodes ? (!hasChildren && 'ml-6') : 'ml-6'
-              )}
-              loading="lazy"
-            />
-          ) : node.nodes ? (
+          node.nodes ? (
             <Folder
               className={cn(
                 'size-6 text-sky-500 fill-sky-500',

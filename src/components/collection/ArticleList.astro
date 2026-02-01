@@ -152,9 +152,7 @@ const treeNodes: FilesystemNode[] = toFilesystemNodes(rawTree);
             <ul class="divide-y divide-stone-200">
               {treeNodes.map((node) => (
                 <FilesystemItem
-                  showIcons
-                  iconSrc="/kumiko.jpg"
-                  iconAlt="Kumiko icon"
+                  showIcons={false}
                   showToggles
                   node={node}
                   itemClassName="py-3"

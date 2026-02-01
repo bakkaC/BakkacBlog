@@ -1,60 +1,30 @@
-# .github/workflows/deploy.yml (或者你的部署文件名)
-
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-    # Review gh actions docs if you want to further define triggers, paths, etc
-    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#on
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
-    name: Build Docusaurus
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      # --- 修改开始 ---
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10 # 你可以指定 pnpm 版本
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm' # 将缓存目标改为 pnpm
-      # --- 修改结束 ---
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile # 使用 pnpm install
-
-      - name: Build website
-        run: pnpm run build # 使用 pnpm run
-
-      - name: Upload Build Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
+      - name: Checkout your repository using git
+        uses: actions/checkout@v6
+      - name: Install, build, and upload your site output
+        uses: withastro/action@v5
 
   deploy:
-    name: Deploy to GitHub Pages
     needs: build
-
-    permissions:
-      pages: write
-      id-token: write
-
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
