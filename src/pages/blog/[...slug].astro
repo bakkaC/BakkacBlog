@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/Layout.astro';
-import { getCollection, getEntryBySlug } from 'astro:content';
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const entries = await getCollection('life');
@@ -10,7 +10,8 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const entry = await getEntryBySlug('life', slug!);
+const entries = await getCollection('life');
+const entry = entries.find((item) => item.slug === slug);
 if (!entry) {
   throw new Error(`Life post not found: ${slug}`);
 }
