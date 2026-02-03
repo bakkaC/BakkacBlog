@@ -13,7 +13,10 @@
 
 @layer components {
   .markdown {
-    @apply prose prose-lg max-w-none;
+    @apply prose prose-lg max-w-none break-words;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
   }
 }
 
