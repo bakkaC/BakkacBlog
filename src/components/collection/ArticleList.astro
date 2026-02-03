@@ -157,14 +157,14 @@ const treeNodes: FilesystemNode[] = toFilesystemNodes(rawTree);
           {treeNodes.length ? (
             <ul class="divide-y divide-stone-200">
               {treeNodes.map((node) => (
-                <FilesystemItem
-                  showIcons={false}
-                  showToggles
-                  node={node}
-                  itemClassName="py-3"
-                  linkClassName="group flex-col gap-2 transition hover:translate-x-1"
-                  client:load
-                />
+                  <FilesystemItem
+                    showIcons={false}
+                    showToggles
+                    node={node}
+                    itemClassName="py-3"
+                    linkClassName="group flex-col gap-2 transition hover:translate-x-1"
+                    client:idle
+                  />
               ))}
             </ul>
           ) : (

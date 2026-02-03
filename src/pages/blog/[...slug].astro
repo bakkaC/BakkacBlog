@@ -2,22 +2,52 @@
 import BaseLayout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
 
+const entries = await getCollection('blogs');
+const sortedEntries = [...entries].sort((a, b) => {
+  const aDate = a.data.date ? new Date(a.data.date).getTime() : 0;
+  const bDate = b.data.date ? new Date(b.data.date).getTime() : 0;
+  if (aDate !== bDate) return bDate - aDate;
+  return a.slug.localeCompare(b.slug, 'zh-Hans');
+});
+const slugOrder = sortedEntries.map((entry) => entry.slug);
+
 export async function getStaticPaths() {
-  const entries = await getCollection('blogs');
-  return entries.map((entry) => ({
-    params: { slug: entry.slug },
+  return slugOrder.map((slug) => ({
+    params: { slug },
   }));
 }
 
 const { slug } = Astro.params;
-const entries = await getCollection('blogs');
-const entry = entries.find((item) => item.slug === slug);
+const entryIndex = slugOrder.indexOf(slug);
+const entry = sortedEntries[entryIndex];
 if (!entry) {
   throw new Error(`Blog post not found: ${slug}`);
 }
 
 const { Content } = await entry.render();
+
+const normalizeBase = (value: string) => (value.endsWith('/') ? value : `${value}/`);
+const baseUrl = import.meta.env.BASE_URL;
+const withBase = (path: string) => {
+  const normalizedBaseUrl = normalizeBase(baseUrl);
+  if (path === '/') return normalizedBaseUrl === '/' ? '/' : normalizedBaseUrl.slice(0, -1);
+  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${normalizedBaseUrl}${normalizedPath}`;
+};
+
+const prefetchTargets: string[] = [];
+if (entryIndex > 0) {
+  prefetchTargets.push(withBase(`/blog/${slugOrder[entryIndex - 1]}`));
+}
+if (entryIndex < slugOrder.length - 1) {
+  prefetchTargets.push(withBase(`/blog/${slugOrder[entryIndex + 1]}`));
+}
 ---
+<astro:head>
+  {prefetchTargets.map((href) => (
+    <link rel="prefetch" href={href} />
+  ))}
+</astro:head>
 
 <BaseLayout title={entry.data.title ?? entry.slug} description={entry.data.description}>
   <article class="mx-auto w-full max-w-4xl px-6 py-12">

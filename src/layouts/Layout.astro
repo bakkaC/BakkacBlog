@@ -18,34 +18,64 @@ const withBase = (path: string) => {
   return `${normalizedBase}${normalizedPath}`;
 };
 const homeHref = import.meta.env.DEV ? '/CandyCoreBlog' : withBase('/');
+
+const navCandidates = [
+  { label: 'Notes', path: '/notes' },
+  { label: 'Thoughts', path: '/thoughts' },
+  { label: 'Blogs', path: '/blog' },
+];
+const currentPath = Astro.url.pathname ?? '/';
+const navLinks = navCandidates.map((link) => {
+  const href = withBase(link.path);
+  const normalizedCurrent = currentPath.endsWith('/') && currentPath.length > 1
+    ? currentPath.slice(0, -1)
+    : currentPath;
+  const normalizedHref = href.endsWith('/') && href.length > 1
+    ? href.slice(0, -1)
+    : href;
+  const isActive =
+    normalizedCurrent === normalizedHref ||
+    normalizedCurrent.startsWith(`${normalizedHref}/`);
+  return { ...link, href, isActive };
+});
 ---
 
 <!doctype html>
 <html lang="zh-Hans" class="bg-background text-foreground">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{pageTitle}</title>
-    <meta name="description" content={pageDescription} />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"
-    />
-    <link rel="icon" type="image/jpeg" href={withBase('/kumiko.jpg')} />
-  </head>
-  <body class="min-h-screen bg-background text-foreground">
-    <header class="sticky top-0 z-50 bg-background/80 backdrop-blur">
-      <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
-        <a href={homeHref} class="text-base font-semibold sm:text-lg">CdCore's Blog</a>
-        <nav class="flex items-center gap-6 text-xs md:text-sm">
-          <a class="hover:text-primary" href={withBase('/notes')}>Notes</a>
-          <a class="hover:text-primary" href={withBase('/thoughts')}>Thoughts</a>
-          <a class="hover:text-primary" href={withBase('/blog')}>Blogs</a>
-        </nav>
-      </div>
-    </header>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDescription} />
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"
+      />
+      <link rel="icon" type="image/jpeg" href={withBase('/kumiko.jpg')} />
+      {navLinks.map((link) => (
+        <link rel="prefetch" href={link.href} />
+      ))}
+    </head>
+    <body class="min-h-screen bg-background text-foreground">
+      <header class="sticky top-0 z-50 bg-background/80 backdrop-blur">
+        <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
+          <a href={homeHref} class="text-base font-semibold sm:text-lg">CdCore's Blog</a>
+          <nav class="flex items-center gap-6 text-xs md:text-sm">
+            {navLinks.map((link) => (
+              <a
+                class="hover:text-primary"
+                href={link.href}
+                rel="prefetch"
+                aria-current={link.isActive ? 'page' : undefined}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
     <main class="min-h-[calc(100vh-80px)]">
       <slot />
     </main>
