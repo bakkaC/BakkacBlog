@@ -125,7 +125,7 @@ export default function HomePage({ baseUrl }: HomePageProps): ReactNode {
                 </div>
               </div>
               
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-88 w-full max-w-xs md:max-w-xl z-10 h-56 transform md:left-8 md:translate-x-0 lg:left-16 md:bottom-12">
+              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-88 w-full max-w-xs md:max-w-xl z-10 h-56 transform md:left-8 md:translate-x-0 lg:left-16 md:bottom-12 md:pointer-events-auto">
                 <FallingText
                   text="React TailwindCSS TanstackStart NestJS Codex PostgreSQL AfterEffects Figma "
                   highlightClass="highlighted"
