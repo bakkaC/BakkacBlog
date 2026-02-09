@@ -83,12 +83,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "thoughts/RSC & Nextjs.md",
+                "file": "notes/计算机网络（层级，协议，DNS，CDN，CORS）.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "RSC & Nextjs"
+              "title": "计算机网络（层级，协议，DNS，CDN，CORS）"
             }
           }
         ],
@@ -269,6 +269,21 @@
   },
   "active": "9604d0601b8451f6",
   "lastOpenFiles": [
+    "notes/assets/计算机网络（层级，协议，DNS，CDN，CORS）/file-20260209175038439.png",
+    "notes/assets/计算机网络（层级，协议，DNS，CDN，CORS）/file-20260209175013470.png",
+    "notes/assets/计算机网络（层级，协议，DNS，CDN，CORS）",
+    "thoughts/assets/rsc-nextjs/file-20251208161755689-1.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755691-1.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755692-1.png",
+    "thoughts/RSC & Nextjs.md",
+    "thoughts/assets/rsc-nextjs/file-20251208161755689.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755692.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755691 1.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755692 1.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755691.png",
+    "thoughts/assets/rsc-nextjs/file-20251208161755689 1.png",
+    "thoughts/assets/rsc-nextjs",
+    "thoughts/rsc--nextjs.md",
     "我为何因《超时空辉夜姬》流泪.md",
     "notes/八股/apply，bind，new，prototype chain，object，Scope....md",
     "notes/八股/js GC.md",
@@ -285,9 +300,7 @@
     "notes/assets/浏览器渲染过程",
     "blogs/「 百米 」观后感.md",
     "thoughts/react设计策略与哲学.md",
-    "thoughts/assets/react设计策略与哲学/file-20260201222847516.png",
     "thoughts/状态管理库与组件解耦.md",
-    "thoughts/RSC & Nextjs.md",
     "thoughts/React并发模式原理与应用.md",
     "thoughts/chatbox阅读记录.md",
     "thoughts/AI coding Best Practice.md",
@@ -295,26 +308,13 @@
     "blogs/健康话题的思考.md",
     "thoughts/文档bug相关记录.md",
     "thoughts/assets/react设计策略与哲学",
-    "blogs/assets/「 百米 」观后感/assets/mX7SGjfO5WuVxo1gza7KHxZEm8rFZ4Wr19QXLM9I9Yg=.png",
-    "blogs/assets/「 百米 」观后感/assets/hsuqI-iNFgrpQ9nKrLsrW8gJQ4kQ5qYgUlzX1NnSPUA=.png",
-    "blogs/assets/「 百米 」观后感/assets/hGCZMqMjgv3PkvTKhnWpcVA2i6qUyMpwYzm4YgU8CUg=.png",
-    "blogs/assets/「 百米 」观后感/assets/X-QP3lGm1abdnnsgpjOdjlfwul9cIfLArS9RLNTJZU0=.png",
-    "blogs/assets/「 百米 」观后感/assets/Hl3G05GO0PubLsx11cwu7btYGRYuXq8o3ocxLEUsIJw=.png",
-    "blogs/assets/「 百米 」观后感/assets/O0TL73lK1IBRSct0humQoqT_ZiB7CPYSIyNL950oqKk=.png",
-    "blogs/assets/失恋-花-电锯/file-20251211085748156.jpg",
-    "blogs/assets/失恋-花-电锯/file-20251211085734631.jpg",
-    "blogs/assets/失恋-花-电锯/file-20251211085722041.jpg",
     "blogs/assets/「 百米 」观后感/assets",
     "blogs/assets/「 百米 」观后感",
     "blogs/assets/失恋-花-电锯",
     "blogs/assets",
     "blogs",
     "blog/assets/「 百米 」观后感/assets",
-    "blog/assets/失恋-花-电锯",
-    "blog/assets/「 百米 」观后感",
     "blog/失恋-花-电锯.md",
-    "blog/健康话题的思考.md",
-    "blog/「 百米 」观后感.md",
     "未命名.canvas"
   ]
 }

@@ -21,7 +21,7 @@ toc_max_heading_level: 4
 
 https://github.com/developerway/react-server-components
 
-![](assets/RSC%20&%20Nextjs/file-20251208161755692%201.png)
+![](assets/rsc-nextjs/file-20251208161755692-1.png)
 
 ***
 
@@ -37,7 +37,7 @@ CSR渲染过程:
 
 在这之后，UI 才会变得可见，LCP 指标才会被记录，并且 fetch 请求等副作用才会被触发。
 
-![](assets/RSC%20&%20Nextjs/file-20251208161755692.png)
+![](assets/rsc-nextjs/file-20251208161755692.png)
 
 初始加载（无 JavaScript 缓存）的数值如下：
 
@@ -112,7 +112,7 @@ export const serveStatic = async (c) => {
 
 如果我这样修改我的客户端渲染项目，它就会变成服务器端渲染项目。性能指标会略有变化。LCP 指标会向左移动，在 HTML 和 CSS 下载之后立即出现，因为整个 HTML 都在初始服务器响应中发送，并且所有内容都能立即显示。
 
-![](assets/RSC%20&%20Nextjs/file-20251208161755691%201.png)
+![](assets/rsc-nextjs/file-20251208161755691-1.png)
 
 首先，如您所见，LCP 数值（当页面显示"Skeleton"时）应该会有显著提升（我们稍后会进行测量）。
 
@@ -262,7 +262,7 @@ const messagesData =typeof window === 'undefined'
 
 实际上，这确实有效！性能结构将再次改变：
 
-![](assets/RSC%20&%20Nextjs/file-20251208161755691.png)
+![](assets/rsc-nextjs/file-20251208161755691.png)
 
 
 
@@ -419,7 +419,7 @@ Next.js 会把 JavaScript 分割成 **更多的小块（chunks）**。
 
 其次是无法解决，快速的首屏伴随很长的无交互时间的问题，以及fetch Data的长耗时带来的阻塞问题
 
-![](assets/RSC%20&%20Nextjs/file-20251208161755689%201.png)
+![](assets/rsc-nextjs/file-20251208161755689-1.png)
 
 相互阻塞，这是因为服务器渲染目前是一个同步过程。我们先等待所有数据，然后将这些数据传递给 `renderToString` ，最后将结果发送给客户端。
 
@@ -663,7 +663,7 @@ async function MyComponent() {
   &#x20;→ 整体响应速度反而下降。
 
 
-![](assets/RSC%20&%20Nextjs/file-20251208161755689.png)
+![](assets/rsc-nextjs/file-20251208161755689.png)
 
 主要原因在于CSS加载的方式不同，这事实上不重要
 
