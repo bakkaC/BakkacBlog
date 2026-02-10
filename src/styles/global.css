@@ -12,6 +12,13 @@
 }
 
 @layer components {
+  .mono-latin-songti-cjk {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC",
+      "Source Han Sans SC", monospace, sans-serif;
+  }
+
   .markdown {
     @apply prose prose-lg max-w-none break-words;
     word-break: break-word;

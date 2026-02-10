@@ -83,12 +83,24 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "notes/计算机网络（层级，协议，DNS，CDN，CORS）.md",
+                "file": "未命名.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "计算机网络（层级，协议，DNS，CDN，CORS）"
+              "title": "未命名"
+            }
+          },
+          {
+            "id": "8cbc189e4c79ee3e",
+            "type": "leaf",
+            "state": {
+              "type": "image",
+              "state": {
+                "file": "notes/八股/assets/apply，bind，new，prototype chain，object，Scope/file-20260210115331922.png"
+              },
+              "icon": "lucide-image",
+              "title": "file-20260210115331922"
             }
           }
         ],
@@ -269,6 +281,14 @@
   },
   "active": "9604d0601b8451f6",
   "lastOpenFiles": [
+    "notes/八股/apply，bind，new，prototype chain，object，Scope....md",
+    "notes/八股/assets/apply，bind，new，prototype chain，object，Scope/file-20260210115244657.png",
+    "notes/八股/assets/apply，bind，new，prototype chain，object，Scope/file-20260210115331922.png",
+    "notes/计算机网络（层级，协议，DNS，CDN，CORS）.md",
+    "notes/八股/assets/apply，bind，new，prototype chain，object，Scope/file-20260210115229853.png",
+    "notes/八股/assets/apply，bind，new，prototype chain，object，Scope/file-20260210115224580.png",
+    "notes/八股/assets/apply，bind，new，prototype chain，object，Scope",
+    "未命名.md",
     "notes/assets/计算机网络（层级，协议，DNS，CDN，CORS）/file-20260209175038439.png",
     "notes/assets/计算机网络（层级，协议，DNS，CDN，CORS）/file-20260209175013470.png",
     "notes/assets/计算机网络（层级，协议，DNS，CDN，CORS）",
@@ -277,15 +297,9 @@
     "thoughts/assets/rsc-nextjs/file-20251208161755692-1.png",
     "thoughts/RSC & Nextjs.md",
     "thoughts/assets/rsc-nextjs/file-20251208161755689.png",
-    "thoughts/assets/rsc-nextjs/file-20251208161755692.png",
-    "thoughts/assets/rsc-nextjs/file-20251208161755691 1.png",
-    "thoughts/assets/rsc-nextjs/file-20251208161755692 1.png",
-    "thoughts/assets/rsc-nextjs/file-20251208161755691.png",
-    "thoughts/assets/rsc-nextjs/file-20251208161755689 1.png",
     "thoughts/assets/rsc-nextjs",
     "thoughts/rsc--nextjs.md",
     "我为何因《超时空辉夜姬》流泪.md",
-    "notes/八股/apply，bind，new，prototype chain，object，Scope....md",
     "notes/八股/js GC.md",
     "notes/八股/simplified-setstate.md",
     "notes/八股/发布订阅模式.md",
@@ -295,7 +309,6 @@
     "notes/react Rendering strategy.md",
     "notes/style system.md",
     "notes/前端工程化全史 1995-2025.md",
-    "notes/计算机网络（层级，协议，DNS，CDN，CORS）.md",
     "notes/浏览器渲染过程.md",
     "notes/assets/浏览器渲染过程",
     "blogs/「 百米 」观后感.md",
@@ -313,8 +326,6 @@
     "blogs/assets/失恋-花-电锯",
     "blogs/assets",
     "blogs",
-    "blog/assets/「 百米 」观后感/assets",
-    "blog/失恋-花-电锯.md",
     "未命名.canvas"
   ]
 }

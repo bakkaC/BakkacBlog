@@ -54,7 +54,7 @@ JavaScript如何不通过类来解决数据的共享和私有？
 | **实例 → 原型对象**     | 通过 `new` 自动建立 | `obj.__proto__ = Constructor.prototype` |
 | **原型对象 → 父类原型对象** | 通过显式代码建立      | 需要开发者自己写                                |
 
-![图片说明](https://internal-api-drive-stream.feishu.cn/space/api/box/stream/download/v2/cover/DXFSbputBoo48KxY1CFcdk0GnAg/?fallback_source=1&height=1280&mount_node_token=EVO2dkRDpoqEJBxDhw7cFlJFnrd&mount_point=docx_image&policy=allow_down&width=1280)
+![](assets/apply，bind，new，prototype%20chain，object，Scope/file-20260210115331922.png)
 
 ---
 ## new
