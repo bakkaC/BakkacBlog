@@ -83,12 +83,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "notes/react Rendering strategy.md",
+                "file": "thoughts/立绘预览的时序问题.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "react Rendering strategy"
+              "title": "立绘预览的时序问题"
             }
           }
         ],
@@ -268,8 +268,9 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "adce2d0c460692ca",
+  "active": "628bf2f3e04dbad9",
   "lastOpenFiles": [
+    "notes/react Rendering strategy.md",
     "notes/八股/计算机网络（层级，协议，DNS，CDN，CORS）.md",
     "notes/八股/发布订阅模式.md",
     "notes/八股/对象的深度遍历.md",
@@ -294,7 +295,6 @@
     "notes/assets/simplified-setstate",
     "notes/八股/assets/浏览器渲染过程",
     "notes/style system.md",
-    "notes/react Rendering strategy.md",
     "notes/八股/assets/计算机网络（层级，协议，DNS，CDN，CORS）",
     "notes/Promise的拆解.md",
     "notes/八股/assets/closure 闭包",
