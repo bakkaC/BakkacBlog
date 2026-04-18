@@ -81,7 +81,7 @@ export default function HomePage({ baseUrl }: HomePageProps): ReactNode {
       /> */}
 
       <section className="w-full h-full relative z-10">
-        <div className="w-full border-y-0 sm:border-y-2 sm:border-slate-300 py-0 mb-0 sm:py-10 sm:mb-6">
+        <div className="w-full py-0 mb-0 sm:py-10 sm:mb-6">
           <div className="mx-auto max-w-7xl w-full">
             <div className="relative bg-white p-12 md:p-8 flex w-full flex-col items-center gap-20 sm:p-12 sm:gap-8 md:flex-row md:flex-nowrap md:items-start md:justify-start md:gap-40 lg:p-16 lg:gap-80">
               <span className="pointer-events-none absolute left-6 top-6 h-6 w-6 border-l-2 border-t-2 border-slate-900" />

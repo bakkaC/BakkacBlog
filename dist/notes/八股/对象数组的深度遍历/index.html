@@ -1,0 +1,169 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>八股/对象数组的深度遍历 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/%E5%AF%B9%E8%B1%A1%E6%95%B0%E7%BB%84%E7%9A%84%E6%B7%B1%E5%BA%A6%E9%81%8D%E5%8E%86"><meta property="og:title" content="八股/对象数组的深度遍历 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/%E5%AF%B9%E8%B1%A1%E6%95%B0%E7%BB%84%E7%9A%84%E6%B7%B1%E5%BA%A6%E9%81%8D%E5%8E%86"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="八股/对象数组的深度遍历 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2025-12-09T17:06:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"八股/对象数组的深度遍历","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/%E5%AF%B9%E8%B1%A1%E6%95%B0%E7%BB%84%E7%9A%84%E6%B7%B1%E5%BA%A6%E9%81%8D%E5%8E%86","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/%E5%AF%B9%E8%B1%A1%E6%95%B0%E7%BB%84%E7%9A%84%E6%B7%B1%E5%BA%A6%E9%81%8D%E5%8E%86"},"inLanguage":"zh-Hans","datePublished":"2025-12-09T17:06:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 八股/对象数组的深度遍历 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2025/12/9 </p> </div> <div class="markdown"> <p>下面给你 <strong>深拷贝（deepClone）</strong> 和 <strong>对象扁平化（flattenObject）</strong> 的实现示例。<br>
+两者都包含核心复杂点：</p>
+<ul>
+<li>✔ 循环引用处理</li>
+<li>✔ 特殊对象（Date、RegExp）的基础处理</li>
+<li>✔ 对象 / 数组区分</li>
+</ul>
+<hr>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> isObject</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">val</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> val </span><span style="color:#F97583">!==</span><span style="color:#79B8FF"> null</span><span style="color:#F97583"> &#x26;&#x26;</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> val </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'object'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> isSpecial</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">val</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> val </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> Date</span><span style="color:#F97583"> ||</span><span style="color:#E1E4E8"> val </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> RegExp</span><span style="color:#F97583"> ||</span><span style="color:#E1E4E8"> val </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> Array</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> cloneSpecial</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">val</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (val </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Date</span><span style="color:#E1E4E8">(val.</span><span style="color:#B392F0">getTime</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (val </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> RegExp</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> RegExp</span><span style="color:#E1E4E8">(val);</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (val </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> Array</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Array</span><span style="color:#E1E4E8">(val);</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<hr>
+<p>深拷贝结束条件：</p>
+<ul>
+<li>基本类型</li>
+<li>函数</li>
+<li>循环引用</li>
+</ul>
+<p>特殊处理：instanceof</p>
+<ul>
+<li>Date/RegExp/Array，直接 new 一个新的</li>
+<li>Map/Set</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> deepClone</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">obj</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">seen</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WeakMap</span><span style="color:#E1E4E8">()) {</span></span>
+<span class="line"><span style="color:#6A737D">  // 1. 基本类型直接返回</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#B392F0">isObject</span><span style="color:#E1E4E8">(obj)) </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> obj;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 2. 循环引用检查</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (seen.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(obj)) </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> seen.</span><span style="color:#B392F0">get</span><span style="color:#E1E4E8">(obj);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 3. 特殊对象（Date / RegExp）</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (</span><span style="color:#B392F0">isSpecial</span><span style="color:#E1E4E8">(obj)) </span><span style="color:#F97583">return</span><span style="color:#B392F0"> cloneSpecial</span><span style="color:#E1E4E8">(obj);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 4. 初始化容器 {} 或 []</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> result</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(obj) </span><span style="color:#F97583">?</span><span style="color:#E1E4E8"> [] </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> {};</span></span>
+<span class="line"><span style="color:#E1E4E8">  seen.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(obj, result);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 5. 遍历子节点</span></span>
+<span class="line"><span style="color:#F97583">  for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> key</span><span style="color:#F97583"> in</span><span style="color:#E1E4E8"> obj) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (obj.</span><span style="color:#B392F0">has0wnProperty</span><span style="color:#E1E4E8">(key)) {</span></span>
+<span class="line"><span style="color:#E1E4E8">        result[key] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> deepClone</span><span style="color:#E1E4E8">(obj[key], seen);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> result;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<hr>
+<p>对象扁平化：
+→ <code>{ a: { b: 1 } }</code> → <code>{ 'a.b': 1 }</code><br>
+→ 嵌套对象转成扁平键值对</p>
+<p>Q2: 怎么拼接 key？<br>
+→ 递归时传递 prevKey<br>
+→ 新 key = <code>${prevKey}.${currentKey}</code></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> flatten</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">obj</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">depth</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> Infinity</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> res</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> {}</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> seen</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WeakMap</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> dfs</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">cur</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">prekey</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">d</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 1. 基本类型，或者到达目标深度</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#B392F0">isObject</span><span style="color:#E1E4E8">(cur) </span><span style="color:#F97583">||</span><span style="color:#E1E4E8"> d </span><span style="color:#F97583">&#x3C;=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      res[prekey] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> cur</span></span>
+<span class="line"><span style="color:#F97583">      return</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#6A737D">	// 2. 循环引用检查</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (seen.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(cur)) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      res[prekey] </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> '[Circular]'</span></span>
+<span class="line"><span style="color:#F97583">      return</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">    seen.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(cur, </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#6A737D">	// 3. 特殊对象（Date, RegExp），在这个算法中和普通对象的处理一样，直接简化掉了</span></span>
+<span class="line"><span style="color:#E1E4E8">	</span></span>
+<span class="line"><span style="color:#6A737D">	// 4. 对象或数组：继续深入</span></span>
+<span class="line"><span style="color:#F97583">    for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> key</span><span style="color:#F97583"> in</span><span style="color:#E1E4E8"> obj) {</span></span>
+<span class="line"><span style="color:#F97583">	  if</span><span style="color:#E1E4E8"> (obj.</span><span style="color:#B392F0">hasOwnProperty</span><span style="color:#E1E4E8">(key)) {</span></span>
+<span class="line"><span style="color:#F97583">	    const</span><span style="color:#79B8FF"> newPath</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> prekey </span><span style="color:#F97583">?</span><span style="color:#9ECBFF"> `${</span><span style="color:#E1E4E8">prekey</span><span style="color:#9ECBFF">}.${</span><span style="color:#E1E4E8">key</span><span style="color:#9ECBFF">}`</span><span style="color:#F97583"> :</span><span style="color:#E1E4E8"> key</span></span>
+<span class="line"><span style="color:#B392F0">	    dfs</span><span style="color:#E1E4E8">(obj[key], newPath, d </span><span style="color:#F97583">-</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">	  }</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  </span></span>
+<span class="line"><span style="color:#B392F0">  dfs</span><span style="color:#E1E4E8">(obj, </span><span style="color:#9ECBFF">''</span><span style="color:#E1E4E8">, depth)</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> res</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<hr>
+<p>为什么深拷贝需要重新创建特殊对象，因为他的目的是创建新对象而不是修改原对象
+如果当作普通对象，直接赋值，会造成两个对象共享同一个空间的问题</p>
+<p>而对象扁平化是直接修改或者覆盖原对象，不用考虑原对象和新对象值共享的问题</p>
+<hr>
+<p>数组扁平化：常规的递归考察</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> flatten</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> res</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> item</span><span style="color:#F97583"> of</span><span style="color:#E1E4E8"> arr) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(item)) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      res.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">...</span><span style="color:#B392F0">flatten</span><span style="color:#E1E4E8">(item));</span></span>
+<span class="line"><span style="color:#E1E4E8">    } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">      res.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(item);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> res;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// reduce 写法</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> flatten</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> arr.</span><span style="color:#B392F0">reduce</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">acc</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">cur</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> acc.</span><span style="color:#B392F0">concat</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">      Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(cur) </span><span style="color:#F97583">?</span><span style="color:#B392F0"> flatten</span><span style="color:#E1E4E8">(cur) </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> cur</span></span>
+<span class="line"><span style="color:#E1E4E8">    );</span></span>
+<span class="line"><span style="color:#E1E4E8">  }, []);</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 按深度展开</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> flatten</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">depth</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (depth </span><span style="color:#F97583">&#x3C;=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> [</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">arr]</span></span>
+<span class="line"><span style="color:#E1E4E8">  </span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> res</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> []</span></span>
+<span class="line"><span style="color:#F97583">  for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> item</span><span style="color:#F97583"> of</span><span style="color:#E1E4E8"> arr) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(item)) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      res.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">...</span><span style="color:#B392F0">flatten</span><span style="color:#E1E4E8">(item, depth </span><span style="color:#F97583">-</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">))</span></span>
+<span class="line"><span style="color:#E1E4E8">    } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">      res.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(item)</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> res</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> flattenReduce</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">depth</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> depth </span><span style="color:#F97583">></span><span style="color:#79B8FF"> 0</span></span>
+<span class="line"><span style="color:#F97583">    ?</span><span style="color:#E1E4E8"> arr.</span><span style="color:#B392F0">reduce</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">acc</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">item</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> </span></span>
+<span class="line"><span style="color:#E1E4E8">	acc.</span><span style="color:#B392F0">concat</span><span style="color:#E1E4E8">(Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(item) </span><span style="color:#F97583">?</span><span style="color:#B392F0"> flattenReduce</span><span style="color:#E1E4E8">(item, depth </span><span style="color:#F97583">-</span><span style="color:#79B8FF"> 1</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> item), [])</span></span>
+<span class="line"><span style="color:#F97583">    :</span><span style="color:#E1E4E8"> [</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">arr]</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>数组去重：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#6A737D">// 最简写法</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> unique</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> [</span><span style="color:#F97583">...new</span><span style="color:#B392F0"> Set</span><span style="color:#E1E4E8">(arr)]</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 对象数组按 key 去重</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> uniqueByKey</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">key</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> set</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Set</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> arr.</span><span style="color:#B392F0">filter</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">item</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (set.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(item[key])) </span><span style="color:#F97583">return</span><span style="color:#79B8FF"> false</span></span>
+<span class="line"><span style="color:#E1E4E8">    set.</span><span style="color:#B392F0">add</span><span style="color:#E1E4E8">(item[key])</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">  })</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 对象数组按内容去重（JSON）</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> uniqueByJSON</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">arr</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> set</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Set</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> arr.</span><span style="color:#B392F0">filter</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">item</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> key</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">stringify</span><span style="color:#E1E4E8">(item)</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (set.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(key)) </span><span style="color:#F97583">return</span><span style="color:#79B8FF"> false</span></span>
+<span class="line"><span style="color:#E1E4E8">    set.</span><span style="color:#B392F0">add</span><span style="color:#E1E4E8">(key)</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#E1E4E8">  })</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre> </div> </article>  </main> </body></html>

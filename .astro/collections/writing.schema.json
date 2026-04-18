@@ -11,20 +11,7 @@
           "type": "string"
         },
         "date": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "string",
-              "format": "date"
-            },
-            {
-              "type": "integer",
-              "format": "unix-time"
-            }
-          ]
+          "type": "string"
         },
         "tags": {
           "type": "array",

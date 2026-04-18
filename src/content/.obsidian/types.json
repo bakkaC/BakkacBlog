@@ -9,6 +9,7 @@
     "last_update": "datetime",
     "toc_max_heading_level": "number",
     "image": "text",
-    "alases": "date"
+    "alases": "date",
+    "saved_at": "datetime"
   }
 }

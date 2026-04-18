@@ -1,0 +1,141 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ESM 和 CJS | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/esm-%E5%92%8C-cjs"><meta property="og:title" content="ESM 和 CJS | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/esm-%E5%92%8C-cjs"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="ESM 和 CJS | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-02-25"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"ESM 和 CJS","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/esm-%E5%92%8C-cjs","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/esm-%E5%92%8C-cjs"},"inLanguage":"zh-Hans","datePublished":"2026-02-25","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> ESM 和 CJS </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/2/25 </p> </div> <div class="markdown"> <h2 id="cjs">CJS</h2>
+<p>以前写 JS 是这样引入文件的：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>&#x3C;scriptsrc="./index.js">&#x3C;/script></span></span>
+<span class="line"><span>&#x3C;scriptsrc="./home.js">&#x3C;/script></span></span>
+<span class="line"><span>&#x3C;scriptsrc="./list.js">&#x3C;/script></span></span></code></pre>
+<p>这些 JS 文件有一个特点：<strong>所有变量都在同一个全局作用域里。</strong><br>
+显然会带来一些全局变量名污染的问题。</p>
+<p>可以用一个 <strong>自执行匿名函数</strong> 来创建一个独立作用域：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">var</span><span style="color:#E1E4E8"> moduleA </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">function</span><span style="color:#E1E4E8">(){</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    name:</span><span style="color:#9ECBFF">'xxx'</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">})()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">moduleA.name</span></span></code></pre>
+<p>这样：</p>
+<ul>
+<li><code>name</code> 只在这个函数内部存在</li>
+<li>不会污染全局变量</li>
+</ul>
+<p>但是，这导致了需要记录模块的名字，都要手动写匿名函数、定义对象，然后记忆对象名。</p>
+<p>为了解决这些问题，社区提出了 <strong>模块化规范</strong>：CommonJS。</p>
+<p>早期 JavaScript 没有模块化，多个 JS 文件共享全局变量，容易造成变量污染和依赖混乱。虽然可以用自执行函数解决作用域问题，但代码维护困难，因此后来出现了 CommonJS 规范来统一 JavaScript 的模块化开发。</p>
+<p>它规定：模块如何导出、引入、管理依赖，并且把函数包装的行为在运行时实现，使得每个文件都是独立的作用域，而跨作用域就需要使用 CommonJS 的写法。</p>
+<p><strong>Node</strong> 是 <code>CommonJS</code> 在服务器端一个具有代表性的实现，CommonJS 的行为并不是 JS 原行为，而是在不同地方有不同的实现形式。</p>
+<p>符合该典型写法的就是 CommonJS：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// 导出</span></span>
+<span class="line"><span style="color:#79B8FF">module</span><span style="color:#E1E4E8">.</span><span style="color:#79B8FF">exports</span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  name:</span><span style="color:#9ECBFF">'hello'</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 导入</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> moduleA</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> require</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./moduleA'</span><span style="color:#E1E4E8">)</span></span></code></pre>
+<p>这样：</p>
+<ul>
+<li>每个文件是 <strong>独立模块</strong></li>
+<li>不会污染全局</li>
+<li>依赖关系清晰</li>
+</ul>
+<h2 id="esm">ESM</h2>
+<p><code>Nodejs</code> 借鉴了 <code>Commonjs</code> 实现了模块化。从 <code>ES6</code> 开始，<code>JavaScript</code> 才真正意义上有自己的模块化规范。</p>
+<p>在 <code>Es Module</code> 中用 <code>export</code> 用来导出模块，<code>import</code> 用来导入模块。</p>
+<ul>
+<li>借助 <code>Es Module</code> 的静态导入导出的优势，实现了 <code>tree shaking</code></li>
+<li><code>Es Module</code> 还可以 <code>import()</code> 懒加载方式实现代码分割</li>
+</ul>
+<p><strong>ES Module 在 JavaScript 规范里定义了一种新的作用域：Module Scope（模块作用域）</strong></p>
+<p>JS 现在有几种作用域：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>全局作用域 (Global Scope)</span></span>
+<span class="line"><span>函数作用域 (Function Scope)</span></span>
+<span class="line"><span>块级作用域 (Block Scope)</span></span>
+<span class="line"><span>模块作用域 (Module Scope)  ← ES Module 新增</span></span></code></pre>
+<p>每个模块都有自己的：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>Module Environment</span></span></code></pre>
+<p>所以变量默认只属于当前模块。<br>
+JavaScript 语言本身为每个模块创建了独立的 Module Scope，并且只能通过 <code>export / import</code> 共享变量。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#79B8FF">CJS</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> runtime </span><span style="color:#F97583">module</span><span style="color:#B392F0"> system</span></span>
+<span class="line"><span style="color:#B392F0">ESM</span><span style="color:#E1E4E8"> = </span><span style="color:#B392F0">compile</span><span style="color:#E1E4E8">-</span><span style="color:#B392F0">time</span><span style="color:#B392F0"> module</span><span style="color:#B392F0"> system</span></span></code></pre>
+<p>和 CJS 的关键差异：</p>
+<ol>
+<li>ESM 在语言层面扩展了作用域的类型，编译器可以直接理解，CJS 是依赖函数作用域</li>
+<li>ESM 是 <strong>live binding</strong>，关键点：**import 的变量会随着源模块变化而变化。**不是值拷贝</li>
+<li>ESM 是 <strong>静态结构</strong>，在 <strong>编译阶段就知道依赖关系，可以 tree shaking</strong></li>
+<li>ESM 有 <strong>循环依赖初始化顺序</strong></li>
+</ol>
+<p>Tree Shaking 是基于 AST 实现的，AST = 把代码变成“结构化的语法树”，解析代码 → AST，标记哪些 export 被使用，删除未使用代码（dead code elimination），有点像垃圾回收。</p>
+<h2 id="webpack-vs-vite">webpack vs vite</h2>
+<p>webpack 是基于 cjs 的，vite 是基于 esm的，这带来了两者一些显著的差异</p>
+<ul>
+<li>CJS 是运行时加载的，他的 require 位置不固定，所以必须执行代码才能知道文件在哪，也就是说， CJS 的模块解析能力（也就是通过 import 或者 require 找到文件的能力）必须通过提前解析好依赖</li>
+<li>ESM 规定import 必须写在顶部，所以这是静态结构，所以支持编译时确定路径，这意味着：<strong>不用执行代码，就能分析依赖关系</strong>
+<ul>
+<li>这给了 esm 是浏览器原生理解支持的能力，当浏览器看到 import 代码时</li>
+<li><code>import { sum } from './math.js'</code></li>
+<li>会自动做一件事：发起 HTTP 请求去加载 <code>math.js</code></li>
+</ul>
+</li>
+</ul>
+<p>也就是说：<strong>模块加载从“构建时” → 变成了“运行时”</strong></p>
+<ol>
+<li><strong>开发阶段是否需要全量打包</strong></li>
+</ol>
+<p>因为 Webpack 要处理 CJS，所以为了浏览器有依赖关系，必须提前执行所有代码，必须构建 bundle，只能选择：<strong>全部打包进去，运行时再决定用哪个，</strong></p>
+<p>而 Vite 由于采用ESM，浏览器可以直接按需加载，所以<strong>不需要开发阶段打包</strong></p>
+<ol start="2">
+<li><strong>启动速度</strong></li>
+</ol>
+<ul>
+<li><strong>Webpack:</strong> <code>解析全部依赖 → 打包 → 启动</code> 慢（O(项目规模)）</li>
+<li><strong>Vite</strong>：启动 server → 等浏览器请求 快（接近 O(1)）</li>
+</ul>
+<ol start="3">
+<li><strong>HMR 更新方式</strong></li>
+</ol>
+<ul>
+<li><strong>Webpack</strong>：基于 bundle，需要重新编译模块</li>
+<li><strong>Vite</strong>：基于 ESM，直接重新请求模块</li>
+</ul>
+<ol start="4">
+<li><strong>Tree Shaking 能力：</strong></li>
+</ol>
+<ul>
+<li>Webpack：tree-shaking 较复杂</li>
+<li>Vite（ESM）：可以静态分析，天然支持更好</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>方案</th><th>模块解析发生在</th></tr></thead><tbody><tr><td>Webpack</td><td>构建时（build time）</td></tr><tr><td>Vite</td><td>运行时（runtime）</td></tr></tbody></table>
+<ol start="5">
+<li><strong>vite怎么处理 cjs 的第三方依赖？</strong></li>
+</ol>
+<p>会进行依赖预构建，像 react、vue、lodash 这种第三方依赖，Vite 会提前做一次 pre-bundling，把 CommonJS 转成 ESM，并把一些零碎依赖合并，减少浏览器请求数。这个预构建一般用的是高性能工具链，所以速度很快。</p>
+<p>除了 ESM 的优势，Vite 的开发阶段押注速度，生产阶段押注优化产物。</p>
+<ol start="6">
+<li><strong>vite把“慢操作”从主链路里拿掉了</strong></li>
+</ol>
+<p>比如 TypeScript 类型检查、ESLint 这类静态分析，本质上往往要看整个模块图，不适合塞进“按需编译”的开发主流程。Vite 的思路是：先保证文件尽快可运行，类型检查单独做，所以开发体验更流畅。</p>
+<ol start="7">
+<li><strong>不同的打包逻辑</strong></li>
+</ol>
+<p><strong>Webpack：</strong> 开发和生产都是同一套打包逻辑</p>
+<p><strong>Vite：</strong></p>
+<ul>
+<li>开发：ESM + 不打包（快）</li>
+<li>生产：走构建流程（生成优化后的 bundle）</li>
+</ul> </div> </article>  </main> </body></html>

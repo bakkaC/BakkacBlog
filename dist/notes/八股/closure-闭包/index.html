@@ -1,0 +1,66 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>八股/closure-闭包 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/closure-%E9%97%AD%E5%8C%85"><meta property="og:title" content="八股/closure-闭包 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/closure-%E9%97%AD%E5%8C%85"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="八股/closure-闭包 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"八股/closure-闭包","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/closure-%E9%97%AD%E5%8C%85","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/closure-%E9%97%AD%E5%8C%85"},"inLanguage":"zh-Hans","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 八股/closure-闭包 </h1>  </div> <div class="markdown"> <h2 id="定义">定义</h2>
+<p>闭包（closure）本质是：<strong>函数 + 它创建时所“记住”的外部作用域环境</strong>。</p>
+<p>函数的嵌套定义时：</p>
+<p>嵌套定义时，允许用到父级的作用域中的变量，因为它包含了指向父级对象的指针</p>
+<ul>
+<li>函数和数据包在了一起，称为闭包</li>
+</ul>
+<p>创建函数时，frame stack会指向的对象，将函数对象和parentFrame的指针包在了一起</p>
+<p>调用某个函数时，会创建一个栈帧，而栈帧中自然会带有对象里包装的指针，而有了这个指向父栈帧的指针，自然就能访问父帧栈的变量，就可以自然的实现一层层向上寻找变量的效果</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1739" height="731" src="/CandyCoreBlog/_astro/file-20260222225252343.60zcw1Rf_Zk7OMt.webp" ></p>
+<p>函数的定义所在的词法环境，决定了它的parent帧指向
+函数调用时，会新开一个栈帧，将函数定义时创建的包入栈，</p>
+<p>一个定义在全局环境的函数，被嵌套调用，它也不能指向其直接的父环境，而是跟随指针直接在Global中找变量</p>
+<p>随定义链走，而不是随着调用链走</p>
+<p>parent的决定方式，是通过判断函数在哪个帧定义</p>
+<h2 id="闭包的作用">闭包的作用</h2>
+<p>在 MDN Web Docs 的语境里，**closure（闭包）**不是“功能点”，而是一种由词法作用域带来的能力。它常见的实际用途主要有这些（从语言机制 → 编程效果的因果关系）：</p>
+<p><strong>1）数据封装 / 私有变量</strong><br>
+函数可以“记住”其创建时的作用域，从而让外部无法直接访问内部变量，只能通过暴露的函数间接操作。<br>
+→ 在没有类私有字段的早期 JS 中，这是实现私有状态的核心手段。</p>
+<p><strong>2）函数工厂（生成带配置的函数）</strong><br>
+外层函数接收参数，内层函数在之后执行时仍能访问这些参数。<br>
+→ 本质是把“配置”绑定进函数环境。</p>
+<p><strong>3）保持状态（stateful function）</strong><br>
+闭包能在多次调用之间保留变量值，而不需要全局变量。<br>
+→ 常用于计数器、缓存、节流/防抖内部状态等。</p>
+<p><strong>4）回调中的上下文保持</strong><br>
+异步或事件回调执行时，原作用域通常已经结束；闭包让回调仍能访问当时的变量。<br>
+→ 这是 JS 异步编程模型能自然工作的基础之一。</p>
+<p><strong>5）模块模式（Module Pattern）</strong><br>
+通过 IIFE + 闭包创建一个只暴露部分 API 的模块。<br>
+→ 在 ES Module 普及前非常常见，本质仍是“封装 + 受控暴露”。</p>
+<p><strong>6）函数式编程中的偏应用 / 柯里化基础</strong><br>
+把部分参数固定在闭包里，返回等待剩余参数的函数。<br>
+→ 你刚写的 <code>sum(x)(y)</code> 就是典型例子。</p>
+<h2 id="柯里化">柯里化</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> sum</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">x</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  let</span><span style="color:#E1E4E8"> total </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> x;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  function</span><span style="color:#B392F0"> adder</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">y</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    total </span><span style="color:#F97583">+=</span><span style="color:#E1E4E8"> y;</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> adder;   </span><span style="color:#6A737D">// ← 这里决定了还能继续调用</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  adder.</span><span style="color:#B392F0">valueOf</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> total;</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> adder;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ol>
+<li>为了能持续调用，要返回函数对象</li>
+<li>要实现“多次调用共享一个 total”，就必须把变量放在外层作用域里
+<ol>
+<li>闭包的表现为创建了一个 total</li>
+<li>调用结束了之后留下了 adder 对象</li>
+<li>而 adder 对象用到了 total，对 sum 里创建的这个 total 还有被引用，所以 total 还没销毁</li>
+<li>这使得链式调用 adder 的指针一层一层始终指向 total 对象帧</li>
+</ol>
+</li>
+<li>那么返回的函数如何当做数字用呢，加上一句 valueof 行为的属性即可</li>
+</ol>
+<p>你存储的其实是一个对象：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#E1E4E8">adder </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#B392F0">  可调用行为</span><span style="color:#E1E4E8">: </span><span style="color:#F97583">function</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">y</span><span style="color:#E1E4E8">) { total </span><span style="color:#F97583">+=</span><span style="color:#E1E4E8"> y },  </span></span>
+<span class="line"><span style="color:#E1E4E8">  内部状态: total,  </span></span>
+<span class="line"><span style="color:#E1E4E8">  数值表示: </span><span style="color:#B392F0">valueOf</span><span style="color:#E1E4E8">() → total  </span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>变量只是指向这个对象的引用，adder 对象遇到一些只有 number 类型能做的运算符，js 的运行时就会隐式的调用 valueof，返回 total</p> </div> </article>  </main> </body></html>

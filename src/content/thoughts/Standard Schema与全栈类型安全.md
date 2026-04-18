@@ -1,5 +1,6 @@
-# Standard Schema与全栈类型安全
-
+---
+date: 2026-03-31T14:20:00
+---
 ## 关于校验
 
 **1. 为什么要校验？（Runtime vs Compile-time）**

@@ -1,0 +1,450 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CRDT/Yjs 概念思路 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/crdt-yjs-%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><meta property="og:title" content="CRDT/Yjs 概念思路 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/crdt-yjs-%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="CRDT/Yjs 概念思路 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-03-20"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"CRDT/Yjs 概念思路","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/crdt-yjs-%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/crdt-yjs-%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"},"inLanguage":"zh-Hans","datePublished":"2026-03-20","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> CRDT/Yjs 概念思路 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/3/20 </p> </div> <div class="markdown"> <h2 id="crdt">CRDT</h2>
+<p>Conflict-free Replicated Data Types<br>
+构建类似 Google Docs 或 Figma 的实时协作应用程序众所周知非常困难。CRDTs（无冲突复制数据类型）和 Yjs 使这一目标得以实现，而无需复杂的操作转换算法。本指南涵盖了您需要了解的所有内容。</p>
+<p>当多个用户同时编辑时，会出现冲突：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>graph LR</span></span>
+<span class="line"><span>    UserA[User A: "Hello"] -->|edit| Doc1[(Document)]</span></span>
+<span class="line"><span>    UserB[User B: "World"] -->|edit| Doc1</span></span>
+<span class="line"><span>    Doc1 -->|conflict| Issue[❌ Conflict!]</span></span></code></pre>
+<p>CRDTs 是一种可以自动合并的数据结构，即使并发编辑时也是如此：<br>
+CRDTs are data structures that can be merged automatically, even when edited concurrently:</p>
+<table header-row="true">
+<tbody><tr>
+<td>**Approach**</td>
+<td>**Description**</td>
+<td>**Complexity**</td>
+</tr>
+<tr>
+<td>**Locking**</td>
+<td>One user at a time</td>
+<td>Simple, blocking</td>
+</tr>
+<tr>
+<td>**OT (Operational Transform)**</td>
+<td>Transform operations</td>
+<td>Complex</td>
+</tr>
+<tr>
+<td>**CRDT**</td>
+<td>Mathematically mergeable</td>
+<td>Moderate</td>
+</tr>
+</tbody></table>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>graph LR</span></span>
+<span class="line"><span>    UserA[User A: "Hello"] --> Doc[(Yjs Doc)]</span></span>
+<span class="line"><span>    UserB[User B: "World"] --> Doc</span></span>
+<span class="line"><span>    Doc -->|auto-merge| Result[✅ "Hello World"]Copy</span></span></code></pre>
+<h3 id="types-of-crdts"><strong>Types of CRDTs</strong></h3>
+<table header-row="true">
+<tbody><tr>
+<td>类型</td>
+<td>数据结构</td>
+<td>能做什么</td>
+<td>典型场景</td>
+</tr>
+<tr>
+<td>G-Counter</td>
+<td>数字</td>
+<td>只增不减</td>
+<td>点赞、计数</td>
+</tr>
+<tr>
+<td>LWW-Register</td>
+<td>单值</td>
+<td>覆盖更新</td>
+<td>用户信息</td>
+</tr>
+<tr>
+<td>OR-Set</td>
+<td>集合</td>
+<td>加 + 删除</td>
+<td>标签、共享数据</td>
+</tr>
+<tr>
+<td>RGA</td>
+<td>序列</td>
+<td>有序插入</td>
+<td>文档编辑</td>
+</tr>
+</tbody></table>
+<p>多个用户同时点赞，如果用普通计数器会冲突；G-Counter 可以无冲突地合并所有“+1”。</p>
+<p>LWW-Register（Last-Write-Wins Register），用途：单值存储（最后写入优先）</p>
+<p>OR-Set（Observed-Remove Set）<br>
+普通 set 在并发 add/remove 时会冲突，比如：</p>
+<ul>
+<li>A 添加 x</li>
+<li>B 删除 x（但没看到 A 的添加）</li>
+</ul>
+<p>OR-Set 的处理方式：</p>
+<ul>
+<li>删除只作用于已知的版本</li>
+<li>不会误删并发新增的数据</li>
+</ul>
+<p>RGA（Replicated Growable Array）</p>
+<ul>
+<li>每个元素有唯一 ID</li>
+<li>插入是“在某个元素之后插入”</li>
+<li>删除通常是标记删除（tombstone）</li>
+</ul>
+<p>两个人同时编辑文本：</p>
+<ul>
+<li>A 在 “H” 后插入 “i”</li>
+<li>B 在 “H” 后插入 “e”</li>
+</ul>
+<p>RGA 能保证：最终顺序一致（例如 He i 或 Hi e，取决于规则，但所有人一样）</p>
+<h2 id="yjs">Y.js</h2>
+<p>Yjs 是一个高性能的 CRDT 实现：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Simple Yjs usage</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#79B8FF"> *</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> Y </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'yjs'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ydoc</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Doc</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Get or create a shared type</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ytext</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'message'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Observe changes</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.</span><span style="color:#B392F0">observe</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">event</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Text changed:'</span><span style="color:#E1E4E8">, ytext.</span><span style="color:#B392F0">toString</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Make changes</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'Hello'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">5</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">' World'</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<p>Shared Types</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Text - for editors</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ytext</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'document'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Array - for lists</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> yarray</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getArray</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'items'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Map - for key-value</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ymap</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getMap</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'settings'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Object - nested data</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> yobj</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getObject</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'user'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// XML Fragment - rich text</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> yxml</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getXmlFragment</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'content'</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<p>Basic Operations</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Text operations</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ytext</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'doc'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Insert</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'Hello World'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.</span><span style="color:#B392F0">delete</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">5</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// Delete 5 chars from position 0</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Get content</span></span>
+<span class="line"><span style="color:#E1E4E8">console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(ytext.</span><span style="color:#B392F0">toString</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Get length</span></span>
+<span class="line"><span style="color:#E1E4E8">console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(ytext.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<p>Array Operations</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> yarray</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getArray</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'items'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Push to end</span></span>
+<span class="line"><span style="color:#E1E4E8">yarray.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'item1'</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'item2'</span><span style="color:#E1E4E8">]);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Insert at position</span></span>
+<span class="line"><span style="color:#E1E4E8">yarray.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, [</span><span style="color:#9ECBFF">'newItem'</span><span style="color:#E1E4E8">]);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Delete</span></span>
+<span class="line"><span style="color:#E1E4E8">yarray.</span><span style="color:#B392F0">delete</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// Delete 1 item at index 0</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Observe</span></span>
+<span class="line"><span style="color:#E1E4E8">yarray.</span><span style="color:#B392F0">observe</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">event</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  event.changes.delta.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">change</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (change.insert) console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Inserted:'</span><span style="color:#E1E4E8">, change.insert);</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (change.delete) console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Deleted:'</span><span style="color:#E1E4E8">, change.delete);</span></span>
+<span class="line"><span style="color:#E1E4E8">  });</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>Map Operations</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ymap</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getMap</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'settings'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Set values</span></span>
+<span class="line"><span style="color:#E1E4E8">ymap.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'theme'</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'dark'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">ymap.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'notifications'</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Get value</span></span>
+<span class="line"><span style="color:#E1E4E8">console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(ymap.</span><span style="color:#B392F0">get</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'theme'</span><span style="color:#E1E4E8">));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Delete</span></span>
+<span class="line"><span style="color:#E1E4E8">ymap.</span><span style="color:#B392F0">delete</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'notifications'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Observe</span></span>
+<span class="line"><span style="color:#E1E4E8">ymap.</span><span style="color:#B392F0">observe</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">event</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  event.keys.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">key</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">`${</span><span style="color:#E1E4E8">key</span><span style="color:#9ECBFF">}: ${</span><span style="color:#E1E4E8">ymap</span><span style="color:#9ECBFF">.</span><span style="color:#B392F0">get</span><span style="color:#9ECBFF">(</span><span style="color:#E1E4E8">key</span><span style="color:#9ECBFF">)</span><span style="color:#9ECBFF">}`</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  });</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<h3 id="实时协作">实时协作</h3>
+<p>Yjs（CRDT） + WebSocket + Awareness</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// server</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { WebSocketServer } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'ws'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { setupWSConnection } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'y-websocket/bin/utils'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> wss</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebSocketServer</span><span style="color:#E1E4E8">({ port: </span><span style="color:#79B8FF">1234</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">wss.</span><span style="color:#B392F0">on</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'connection'</span><span style="color:#E1E4E8">, (</span><span style="color:#FFAB70">ws</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">req</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">  setupWSConnection</span><span style="color:#E1E4E8">(ws, req);</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>本质：<strong>启动一个 Yjs 协作服务器</strong></p>
+<ul>
+<li>开一个 WebSocket 服务（端口 1234）</li>
+<li>每个客户端连接进来时：
+<ul>
+<li><code>setupWSConnection</code> 会自动处理：
+<ul>
+<li>文档同步</li>
+<li>CRDT update 广播</li>
+<li>awareness（在线状态）同步</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>你<strong>不用自己写同步逻辑</strong>，Yjs 已经帮你封装好了。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Client</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#79B8FF"> *</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> Y </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'yjs'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { WebsocketProvider } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'y-websocket'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ydoc</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Doc</span><span style="color:#E1E4E8">(); </span><span style="color:#6A737D">// Y.Doc = 整个共享数据</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ytext</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'document'</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// ytext = 文档中的一个“文本类型”</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Connect to WebSocket server</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> provider</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebsocketProvider</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#9ECBFF">  'ws://localhost:1234'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">  'my-room'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  ydoc </span><span style="color:#6A737D">// 把 ydoc 绑定到这个房间</span></span>
+<span class="line"><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 监听连接状态</span></span>
+<span class="line"><span style="color:#E1E4E8">provider.</span><span style="color:#B392F0">on</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'status'</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">event</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Connection:'</span><span style="color:#E1E4E8">, event.status);</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// The document syncs automatically!</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'Hello from client!'</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<p><code>ytext.insert(0, 'Hello from client!');</code> 发生了什么：</p>
+<ul>
+<li>修改本地 CRDT</li>
+<li>生成 update</li>
+<li>自动发给服务器</li>
+<li>服务器广播给其他人</li>
+<li>所有人自动同步</li>
+</ul>
+<p>Awareness（在线状态 / Presence）</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Share cursor position and user info</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> awareness</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> provider.awareness;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 设置自己的状态, 用户名，光标位置</span></span>
+<span class="line"><span style="color:#E1E4E8">awareness.</span><span style="color:#B392F0">setLocalState</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">  user: {</span></span>
+<span class="line"><span style="color:#E1E4E8">    name: </span><span style="color:#9ECBFF">'John'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    color: </span><span style="color:#9ECBFF">'#ff9900'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">  cursor: {</span></span>
+<span class="line"><span style="color:#E1E4E8">    index: </span><span style="color:#79B8FF">10</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    length: </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Observe others</span></span>
+<span class="line"><span style="color:#E1E4E8">awareness.</span><span style="color:#B392F0">on</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'change'</span><span style="color:#E1E4E8">, () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> states</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> awareness.</span><span style="color:#B392F0">getStates</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  states.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">state</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">clientId</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (clientId </span><span style="color:#F97583">!==</span><span style="color:#E1E4E8"> awareness.clientID) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'User:'</span><span style="color:#E1E4E8">, state.user);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  });</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<ul>
+<li><strong>数据层：</strong>
+<ul>
+<li><strong>Yjs：让数据可以无冲突同步</strong></li>
+<li>数据结构，CRDT 合并</li>
+</ul>
+</li>
+<li><strong>同步层：</strong>
+<ul>
+<li><strong>WebSocketProvider：让数据在客户端之间传播</strong></li>
+<li><code>Client A ←→ Server ←→ Client B</code></li>
+</ul>
+</li>
+<li><strong>Awareness：</strong>
+<ul>
+<li>不参与 CRDT 合并</li>
+<li>是 provider 自带的模块，通过同一条连接广播和 Yjs 数据“并行存在”</li>
+</ul>
+</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#B392F0">Yjs</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">CRDT</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↑</span></span>
+<span class="line"><span style="color:#B392F0">provider</span><span style="color:#E1E4E8"> (WebSocket</span><span style="color:#F97583">/</span><span style="color:#E1E4E8">WebRTC)</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↑</span></span>
+<span class="line"><span style="color:#E1E4E8">Awareness（挂在 provider 上）</span></span></code></pre>
+<h3 id="react-集成">React 集成</h3>
+<ol>
+<li>YjsProvider（创建共享文档 + 连接）</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { useState, useEffect, createContext, useContext } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'react'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#79B8FF"> *</span><span style="color:#F97583"> as</span><span style="color:#E1E4E8"> Y </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'yjs'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { WebsocketProvider } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'y-websocket'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 创建一个 React Context，用来在组件树中共享 doc 和 provider</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> YjsContext</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createContext</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">null</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> YjsProvider</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">children</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">room</span><span style="color:#E1E4E8"> }) {</span></span>
+<span class="line"><span style="color:#6A737D">  // 创建一个 Y.Doc（CRDT 文档）</span></span>
+<span class="line"><span style="color:#6A737D">  // useState + lazy init 确保只创建一次（不会每次 render 重建）</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">doc</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Doc</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // provider 负责网络同步（WebSocket）</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">provider</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setProvider</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">null</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  useEffect</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 创建 WebSocket provider，连接到服务器</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> wsProvider</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebsocketProvider</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#9ECBFF">      'ws://localhost:1234'</span><span style="color:#E1E4E8">, </span><span style="color:#6A737D">// 协作服务器地址</span></span>
+<span class="line"><span style="color:#E1E4E8">      room,                  </span><span style="color:#6A737D">// 房间名（同一个 room 的人会同步）</span></span>
+<span class="line"><span style="color:#E1E4E8">      doc                    </span><span style="color:#6A737D">// 绑定的 CRDT 文档</span></span>
+<span class="line"><span style="color:#E1E4E8">    );</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 保存 provider 到 state（方便其他地方用，比如 awareness）</span></span>
+<span class="line"><span style="color:#B392F0">    setProvider</span><span style="color:#E1E4E8">(wsProvider);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 清理函数：组件卸载或 room 变化时断开连接</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> wsProvider.</span><span style="color:#B392F0">destroy</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">  }, [room, doc]); </span><span style="color:#6A737D">// room 变化会重新连接</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 把 doc 和 provider 通过 Context 提供给子组件</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#79B8FF">YjsContext.Provider</span><span style="color:#B392F0"> value</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ doc, provider }}></span></span>
+<span class="line"><span style="color:#E1E4E8">      {children}</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#79B8FF">YjsContext.Provider</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ol start="2">
+<li>Editor 组件（绑定 UI 和 CRDT）</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> Editor</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#6A737D">  // 从 Context 拿到共享的 Y.Doc</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> { </span><span style="color:#79B8FF">doc</span><span style="color:#E1E4E8"> } </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useContext</span><span style="color:#E1E4E8">(YjsContext);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 本地 React state（用于驱动 textarea UI）</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">text</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setText</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">''</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  useEffect</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 从 Y.Doc 中获取一个共享文本对象（类似 CRDT string）</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> ytext</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> doc.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'content'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 定义一个观察函数：当 ytext 变化时触发</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#B392F0"> observer</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">      // 把 CRDT 数据同步到 React state</span></span>
+<span class="line"><span style="color:#B392F0">      setText</span><span style="color:#E1E4E8">(ytext.</span><span style="color:#B392F0">toString</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 注册监听（CRDT → UI）</span></span>
+<span class="line"><span style="color:#E1E4E8">    ytext.</span><span style="color:#B392F0">observe</span><span style="color:#E1E4E8">(observer);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 初始化一次（避免初始为空）</span></span>
+<span class="line"><span style="color:#B392F0">    setText</span><span style="color:#E1E4E8">(ytext.</span><span style="color:#B392F0">toString</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 清理监听（组件卸载时）</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> ytext.</span><span style="color:#B392F0">unobserve</span><span style="color:#E1E4E8">(observer);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }, [doc]);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#85E89D">textarea</span></span>
+<span class="line"><span style="color:#B392F0">      value</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{text} </span><span style="color:#6A737D">// UI 显示的是 React state</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">      onChange</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{</span><span style="color:#FFAB70">e</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">        const</span><span style="color:#79B8FF"> ytext</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> doc.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'content'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">        // 这里是一个“全量替换”的写法（简单但低效）</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">        // 删除原内容</span></span>
+<span class="line"><span style="color:#E1E4E8">        ytext.</span><span style="color:#B392F0">delete</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, ytext.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#6A737D">        // 插入新内容</span></span>
+<span class="line"><span style="color:#E1E4E8">        ytext.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, e.target.value);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }}</span></span>
+<span class="line"><span style="color:#E1E4E8">    /></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>CRDT←→UI：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#E1E4E8">其他用户输入</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">Yjs 收到 update</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext 变化</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">observe 触发</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#B392F0">setText</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">textarea 更新</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#E1E4E8">用户输入 textarea</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">onChange</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">ytext.delete </span><span style="color:#F97583">+</span><span style="color:#E1E4E8"> insert</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">Yjs 生成 update</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">WebSocket 发出去</span></span>
+<span class="line"><span style="color:#E1E4E8">   ↓</span></span>
+<span class="line"><span style="color:#E1E4E8">其他人同步</span></span></code></pre>
+<ul>
+<li>React 负责显示，Yjs 负责同步，WebSocket 负责传播</li>
+<li>这里 observe 监听 CRDT 数据，然后执行回调函数执行 UI 更新</li>
+</ul>
+<h3 id="冲突合并">冲突合并</h3>
+<p>在真实协作场景里，两个用户通常各自操作自己的本地副本，然后再同步。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Automatic merge example</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ydoc1</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Doc</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ydoc2</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">Doc</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// User 1 edits</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> text1</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc1.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'doc'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">text1.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'Hello'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// User 2 edits simultaneously</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> text2</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> ydoc2.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'doc'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">text2.</span><span style="color:#B392F0">insert</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">'Hi '</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Merge - both get both changes!</span></span>
+<span class="line"><span style="color:#79B8FF">Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">applyUpdate</span><span style="color:#E1E4E8">(ydoc1, </span><span style="color:#79B8FF">Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">encodeStateAsUpdate</span><span style="color:#E1E4E8">(ydoc2));</span></span>
+<span class="line"><span style="color:#79B8FF">Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">applyUpdate</span><span style="color:#E1E4E8">(ydoc2, </span><span style="color:#79B8FF">Y</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">encodeStateAsUpdate</span><span style="color:#E1E4E8">(ydoc1));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(ydoc1.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'doc'</span><span style="color:#E1E4E8">).</span><span style="color:#B392F0">toString</span><span style="color:#E1E4E8">()); </span><span style="color:#6A737D">// "Hi Hello"</span></span>
+<span class="line"><span style="color:#E1E4E8">console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(ydoc2.</span><span style="color:#B392F0">getText</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'doc'</span><span style="color:#E1E4E8">).</span><span style="color:#B392F0">toString</span><span style="color:#E1E4E8">()); </span><span style="color:#6A737D">// "Hi Hello"</span></span></code></pre>
+<p><code>Y.encodeStateAsUpdate(ydoc2)</code> 意思是：</p>
+<ul>
+<li>把 <code>ydoc2</code> 当前的状态编码成一个 update</li>
+<li>这个 update 可以发送给别人</li>
+</ul>
+<p>相当于把“我这边做过哪些修改”打包出来。</p>
+<p><code>Y.applyUpdate(ydoc1, ...)</code> 意思是：把来自另一端的 update 应用到 <code>ydoc1</code></p>
+<ul>
+<li>所以第一行表示：把 <code>ydoc2</code> 的修改同步到 <code>ydoc1</code></li>
+<li>第二行表示：把 <code>ydoc1</code> 的修改同步到 <code>ydoc2</code></li>
+</ul>
+<p>自定义合并<br>
+有时候你用的是 <code>Y.Map</code>，里面存的是业务对象，这时你可能想自己定义“冲突解决规则”。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// Sometimes you need custom logic</span></span>
+<span class="line"><span style="color:#E1E4E8">ymap.</span><span style="color:#B392F0">observe</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">event</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  event.changes.keys.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">change</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">key</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (change.action </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'update'</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">      // Custom conflict resolution</span></span>
+<span class="line"><span style="color:#F97583">      const</span><span style="color:#79B8FF"> local</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> change.value;</span></span>
+<span class="line"><span style="color:#F97583">      const</span><span style="color:#79B8FF"> remote</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> fetchRemoteValue</span><span style="color:#E1E4E8">(key);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">      // Use "last write wins" or merge</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (remote.timestamp </span><span style="color:#F97583">></span><span style="color:#E1E4E8"> local.timestamp) {</span></span>
+<span class="line"><span style="color:#E1E4E8">        ymap.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(key, remote.value);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  });</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>这里表示，监听到变化时执行回调：对于更新事件，远程和本地冲突时，使用最新值。</p> </div> </article>  </main> </body></html>

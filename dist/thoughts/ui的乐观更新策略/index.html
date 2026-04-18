@@ -1,0 +1,284 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ui的乐观更新策略 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/thoughts/ui%E7%9A%84%E4%B9%90%E8%A7%82%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5"><meta property="og:title" content="ui的乐观更新策略 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/thoughts/ui%E7%9A%84%E4%B9%90%E8%A7%82%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="ui的乐观更新策略 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-02-25T14:12:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"ui的乐观更新策略","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/thoughts/ui%E7%9A%84%E4%B9%90%E8%A7%82%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/thoughts/ui%E7%9A%84%E4%B9%90%E8%A7%82%E6%9B%B4%E6%96%B0%E7%AD%96%E7%95%A5"},"inLanguage":"zh-Hans","datePublished":"2026-02-25T14:12:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch" aria-current="page"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> ui的乐观更新策略 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/2/25 </p> </div> <div class="markdown"> <h3 id="乐观更新">乐观更新</h3>
+<p>乐观更新的本质是预测了服务端的行为，然后在客户端实现，从而规避网络请求带来阻塞的技术</p>
+<p>Tanstack Query 中，将乐观更新的策略分为两种</p>
+<ol>
+<li>通过 UI</li>
+<li>修改 cache</li>
+</ol>
+<p>使用哪种方法取决于屏幕上是否同时渲染了多个依赖这个状态的组件
+由于 UI 方式没改数据源，回导致只有触发更新的组件提前更新，进行渲染不一致的问题</p>
+<h3 id="ui-方式">UI 方式</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>mutation → 临时渲染 → 等服务器 → 重新 fetch</span></span></code></pre>
+<p>没有改数据源，只是临时画出来。</p>
+<p>这个方法 <em>不操作缓存</em>，而是通过 <code>useMutation</code> 返回的数据状态来控制 UI。</p>
+<p>流程：</p>
+<ol>
+<li>用户触发 <code>mutate(text)</code></li>
+<li>通过 <code>mutation.variables</code> 拿到当前 mutation 的参数（比如新 todo 文本）</li>
+<li>UI 在 mutation 处于 “pending（进行中）” 时暂时渲染这条数据</li>
+<li>mutation 成功后触发重新获取数据（invalidateQueries），真正刷新列表</li>
+<li>若失败，可以通过 <code>isError</code> 显示错误项、重试按钮等</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> { </span><span style="color:#79B8FF">isPending</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">variables</span><span style="color:#E1E4E8"> } </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useMutation</span><span style="color:#E1E4E8">({</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">})  </span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">&#x3C;</span><span style="color:#85E89D">ul</span><span style="color:#E1E4E8">>  </span></span>
+<span class="line"><span style="color:#E1E4E8">  {todos.</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">todo</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> &#x3C;</span><span style="color:#85E89D">li</span><span style="color:#E1E4E8">>{todo.text}&#x3C;/</span><span style="color:#85E89D">li</span><span style="color:#E1E4E8">>)}  </span></span>
+<span class="line"><span style="color:#E1E4E8">  {isPending </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#E1E4E8"> &#x3C;</span><span style="color:#85E89D">li</span><span style="color:#B392F0"> style</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{{ opacity: </span><span style="color:#79B8FF">0.5</span><span style="color:#E1E4E8"> }}>{variables}&#x3C;/</span><span style="color:#85E89D">li</span><span style="color:#E1E4E8">>}  </span></span>
+<span class="line"><span style="color:#E1E4E8">&#x3C;/</span><span style="color:#85E89D">ul</span><span style="color:#E1E4E8">></span></span></code></pre>
+<p>优点：</p>
+<ul>
+<li>代码简单、逻辑直观</li>
+<li>不需要手动维护缓存或回滚策略</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>只能在本组件显示这个临时数据</li>
+<li>如果多个地方需要显示这个变更（跨组件），这个方法不够通用</li>
+</ul>
+<hr>
+<h3 id="缓存方式">缓存方式</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>mutation → 直接改 query cache → 所有订阅者更新</span></span></code></pre>
+<p>改的是“单一事实来源”。</p>
+<p>这个方案会在 mutation 开始前：</p>
+<ol>
+<li>先 <strong>暂停当前查询</strong></li>
+<li>用 <code>setQueryData</code> 手动把新数据合并到缓存来更新 UI</li>
+<li>在 <code>onMutate</code> 返回之前的快照（用于回退）</li>
+<li>如果 mutation 失败，在 <code>onError</code> 里把缓存恢复成旧值（回滚）</li>
+<li>不论成功或失败，最后通过 <code>invalidateQueries</code> 让后台重新拉真实数据</li>
+</ol>
+<p>核心代码结构：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#B392F0">useMutation</span><span style="color:#E1E4E8">({  </span></span>
+<span class="line"><span style="color:#B392F0">  onMutate</span><span style="color:#E1E4E8">: </span><span style="color:#F97583">async</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">newTodo</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#F97583">    await</span><span style="color:#E1E4E8"> queryClient.</span><span style="color:#B392F0">cancelQueries</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">])  </span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> previous</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> queryClient.</span><span style="color:#B392F0">getQueryData</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">])  </span></span>
+<span class="line"><span style="color:#E1E4E8">    queryClient.</span><span style="color:#B392F0">setQueryData</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">], </span><span style="color:#FFAB70">old</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> [</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">old, newTodo])  </span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> { previous }  </span></span>
+<span class="line"><span style="color:#E1E4E8">  },  </span></span>
+<span class="line"><span style="color:#B392F0">  onError</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">err</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">newTodo</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">context</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#E1E4E8">    queryClient.</span><span style="color:#B392F0">setQueryData</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">], context.previous)  </span></span>
+<span class="line"><span style="color:#E1E4E8">  },  </span></span>
+<span class="line"><span style="color:#B392F0">  onSettled</span><span style="color:#E1E4E8">: () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#E1E4E8">    queryClient.</span><span style="color:#B392F0">invalidateQueries</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">])  </span></span>
+<span class="line"><span style="color:#E1E4E8">  },  </span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<p>优点：</p>
+<ul>
+<li>适合多个组件共享同一列表时立即同步 UI</li>
+<li>改变的是缓存，全局状态能被所有使用该查询的组件感知</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>需要处理 “回滚逻辑”（失败恢复）</li>
+<li>代码比第一种方式稍复杂些</li>
+</ul>
+<h3 id="并发乐观更新">并发乐观更新</h3>
+<p>为什么会出现“并发乐观更新不一致”</p>
+<p>主要原因</p>
+<ul>
+<li>乐观更新本质是手动修改 cache</li>
+<li>但后台的 query 或其他 mutation 也会写入 cache</li>
+<li>如果这些操作没有正确序列化，会覆盖彼此的结果</li>
+</ul>
+<p>解决思路</p>
+<ol>
+<li>取消可能干扰的正在进行的 query（避免旧数据覆盖）</li>
+<li>控制 invalidate 的触发，使它不会覆盖仍在进行的 mutation 的乐观更改</li>
+</ol>
+<p>整体原则是：</p>
+<blockquote>
+<p><strong>减少无意义的异步覆盖，让乐观更新尽可能在真实状态确定之前保持一致。</strong></p>
+</blockquote>
+<p>当一个 mutation 正在 optimistically 更新缓存时，如果另外一个 mutation 也开始了，就可能在一些<strong>时间窗口内造成 UI 状态被覆盖</strong>：</p>
+<p>情况一：后台有请求在跑时发起 mutation</p>
+<p>例子流程：</p>
+<ol>
+<li>某个 query 正在后台自动刷新（比如 focus or refetch）</li>
+<li>你触发一个乐观更新</li>
+<li>未完成的后台 refresh 在 mutation 之后完成</li>
+<li>刷新结果把你的乐观修改覆盖掉（UI 回退到旧状态）</li>
+</ol>
+<p>这种“突兀闪回 UI”就叫 <strong>window of inconsistency（不一致窗口）</strong>。</p>
+<p>为避免“过时的请求”把乐观更新覆盖，最佳做法是在 <code>onMutate</code> 里做：
+<code>await queryClient.cancelQueries(...)</code>
+这样 mutation 开始后会 <strong>终止所有可能干扰该缓存的后台请求</strong> → 不会有旧响应回来破坏 UI。</p>
+<p>即便取消了 query，再有两个 mutation 合并的时候也可能出现问题：</p>
+<ul>
+<li>mutation A 开始并做乐观更新</li>
+<li>mutation B 很快开始</li>
+<li>mutation A 结束后触发 invalidate → refetch</li>
+<li>如果 invalidate 的结果比 B 的 mutation 还快，它可能把 B 的乐观更新覆盖掉</li>
+</ul>
+<p>这会导致 UI “回退后再更新”，表现为状态闪烁。</p>
+<p>解决这个问题的核心优化技巧：</p>
+<p>默认我们在 <code>onSettled</code> 调用：</p>
+<p><code>queryClient.invalidateQueries(...)</code></p>
+<p>每个 mutation 都会触发一次，这在 mutation 很密集时容易引发 UI 反复刷新，反而破坏乐观更新的连贯性。</p>
+<p>解决这个问题的核心优化技巧：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>if (queryClient.isMutating() === 1) {  </span></span>
+<span class="line"><span>  queryClient.invalidateQueries(...)  </span></span>
+<span class="line"><span>}</span></span></code></pre>
+<p>也就是说：<br>
+<strong>只有在没有其他 mutation 正在跑时才 invalidate。</strong><br>
+这样：</p>
+<ul>
+<li>mutation A 结束但 B 仍在跑 → 不触发 invalidate（避免覆盖 B 的修改）</li>
+<li>总体上减少了重复无意义的刷新</li>
+<li>UI 更稳定、不会闪烁</li>
+</ul>
+<p>这个逻辑可以根据 mutationKey 进一步缩小范围，只对相关的 mutation 计数，而不是所有 mutation。</p>
+<h3 id="类型安全">类型安全</h3>
+<p>在常见写法里：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#E1E4E8">queryClient.</span><span style="color:#B392F0">setQueryData</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">], (</span><span style="color:#FFAB70">old</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> [</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">old, newTodo])</span></span></code></pre>
+<p>问题：</p>
+<ul>
+<li><code>old</code> 的类型通常是 <code>unknown</code> 或宽泛类型</li>
+<li>你返回什么结构，TypeScript 不一定能检查出来</li>
+<li>一旦写错结构 → UI 运行时崩溃（例如组件期望字段不存在）</li>
+</ul>
+<p>也就是说：</p>
+<p><strong>Tanstack Query 不知道你的 query key 对应的数据结构</strong></p>
+<p>所以它没法自动保证类型。</p>
+<p>在 TanStack Query v5 里，官方强化了一个模式：<strong>把 queryKey 和数据类型绑定在一起</strong></p>
+<p>核心工具就是：<code>queryOptions()</code></p>
+<p>它的作用不是“新功能”，而是：</p>
+<blockquote>
+<p>给 queryKey 附带类型信息，让整个链路可推断。</p>
+</blockquote>
+<p>示例：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> todosQuery</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> queryOptions</span><span style="color:#E1E4E8">({  </span></span>
+<span class="line"><span style="color:#E1E4E8">  queryKey: [</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">],  </span></span>
+<span class="line"><span style="color:#E1E4E8">  queryFn: fetchTodos,  </span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<p>关键在于：</p>
+<blockquote>
+<p><code>queryOptions</code> 会把 <code>queryFn</code> 的返回类型记录到这个配置对象里。</p>
+</blockquote>
+<p>然后这个类型会一路传到 <code>useQuery</code>、<code>setQueryData</code> 等 API。</p>
+<p>之后：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#B392F0">useQuery</span><span style="color:#E1E4E8">(todosQuery)  </span></span>
+<span class="line"><span style="color:#E1E4E8">  </span></span>
+<span class="line"><span style="color:#E1E4E8">queryClient.</span><span style="color:#B392F0">setQueryData</span><span style="color:#E1E4E8">(todosQuery.queryKey, (</span><span style="color:#FFAB70">old</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#6A737D">  // old 的类型现在是 Todo[]  </span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<p>这里的关键变化：</p>
+<ul>
+<li><code>old</code> 自动推断为 `Todo[]</li>
+<li>返回值必须匹配 <code>Todo[]</code></li>
+<li>类型错误会直接在编译期报错</li>
+</ul>
+<p>所以：<strong>类型安全来自“共享的 query 配置对象”，不是 setQueryData 本身</strong></p>
+<p>在 v4 也能手动写泛型：</p>
+<p><code>queryClient.setQueryData&#x3C;Todo[]>(['todos'], ...)</code></p>
+<p>但问题是：</p>
+<ul>
+<li>泛型容易写错或忘写</li>
+<li>queryKey 和类型没有绑定关系</li>
+</ul>
+<p>v5 的设计目标就是：把“类型来源”集中在 query 定义处</p>
+<p>① 定义（只做一次）</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> todosQuery</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> queryOptions</span><span style="color:#E1E4E8">({  </span></span>
+<span class="line"><span style="color:#E1E4E8">  queryKey: [</span><span style="color:#9ECBFF">'todos'</span><span style="color:#E1E4E8">],  </span></span>
+<span class="line"><span style="color:#E1E4E8">  queryFn: fetchTodos,   </span><span style="color:#6A737D">// ← 类型从这里来  </span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<p>关键不是“调用了 queryOptions”，而是：</p>
+<ul>
+<li>以后所有地方都引用 <code>todosQuery</code></li>
+<li>不再手写 <code>['todos']</code></li>
+</ul>
+<p>② 读取数据:</p>
+<p><code>useQuery(todosQuery)</code>
+自动获得 data 类型。</p>
+<p>③ 乐观更新 / 手动改缓存</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#E1E4E8">queryClient.</span><span style="color:#B392F0">setQueryData</span><span style="color:#E1E4E8">(  </span></span>
+<span class="line"><span style="color:#E1E4E8">  todosQuery.queryKey,  </span></span>
+<span class="line"><span style="color:#E1E4E8">  (</span><span style="color:#FFAB70">old</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#6A737D">    // old 已经是正确类型  </span></span>
+<span class="line"><span style="color:#E1E4E8">  }  </span></span>
+<span class="line"><span style="color:#E1E4E8">)</span></span></code></pre>
+<p>类型安全就来自这里的“复用”。</p>
+<h3 id="朴素的乐观更新和双层结构">朴素的乐观更新和双层结构</h3>
+<p>没有任何数据管理库时，乐观更新其实就是：</p>
+<blockquote>
+<p><strong>先改本地状态 → 再发请求 → 失败就回滚</strong></p>
+</blockquote>
+<ol>
+<li>保存旧数据（用于回滚）</li>
+<li>立即更新本地状态</li>
+<li>发送请求</li>
+<li>失败 → 恢复旧数据</li>
+</ol>
+<p>在使用 Tanstack Query 的情况下，再使用本地状态复制数据，作为数据源，似乎既避开了并发乐观更新带来的冲突风险，也对类型安全有更好的保障</p>
+<p>首先关于类型安全，queryoption 是一个新特性，而 setQueryData 的泛型或者类型约束是一个没有形成共识的事情，但是为状态设置类型是一个符合直觉的事情，也是有共识的操作，所以会降低类型安全的风险</p>
+<p>其次关于并发更新的问题，前面的并发问题本质是：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>多个异步操作 → 竞争写入 query cache</span></span></code></pre>
+<p>而本地 state：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>组件私有 → 不参与 cache 写入竞争</span></span></code></pre>
+<p>所以自然不会被：</p>
+<ul>
+<li>refetch 覆盖</li>
+<li>invalidate 覆盖</li>
+<li>其他 mutation 覆盖</li>
+</ul>
+<p>从并发模型看，这是：<strong>通过作用域隔离避免共享资源竞争</strong></p>
+<p>方案 A：共享状态 + 冲突管理（TanStack 模型）</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>单一数据源</span></span>
+<span class="line"><span>+ 取消请求</span></span>
+<span class="line"><span>+ 控制 invalidate</span></span>
+<span class="line"><span>+ 合并更新</span></span></code></pre>
+<p>优点：全局一致<br>
+缺点：实现复杂</p>
+<p>方案 B：状态隔离 + 最终同步（本地 state 模型）</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>每个组件局部状态</span></span>
+<span class="line"><span>+ 最终提交服务器</span></span>
+<span class="line"><span>+ 定期同步</span></span></code></pre>
+<p>优点：不会冲突<br>
+缺点：一致性弱</p>
+<h3 id="双层结构的弊端">双层结构的弊端</h3>
+<p>但代价是：你绕开了数据源</p>
+<p>当你这样做：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>query cache = 真实数据</span></span>
+<span class="line"><span>local state = 乐观版本</span></span></code></pre>
+<p>系统变成：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>两个真相来源（dual source of truth）</span></span></code></pre>
+<p>问题不是“会不会冲突”，而是：你必须定义它们的关系规则</p>
+<p>例如谁覆盖谁？</p>
+<ul>
+<li>refetch 回来要不要覆盖 local？</li>
+<li>mutation 成功后怎么合并？</li>
+<li>失败后怎么回退？</li>
+</ul>
+<p>这些规则原本由 TanStack 负责，现在自己负责。</p>
+<p>什么时候这种策略是合理的？当你要表达“用户意图”而不是“数据事实”</p>
+<p>例如：</p>
+<p>① 高交互 UI（临时意图比真实数据重要）</p>
+<ul>
+<li>拖拽排序中间态</li>
+<li>输入联想</li>
+<li>批量编辑预览</li>
+<li>本地过滤 / 排序</li>
+</ul>
+<p>这些状态：</p>
+<ul>
+<li>本质是 UI 逻辑</li>
+<li>不需要立即同步</li>
+<li>服务器只是最终确认者</li>
+</ul>
+<p>这里用本地 state 隔离非常合理。</p>
+<p>② 高频 mutation 且允许最终一致</p>
+<p>比如点赞狂点场景：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="txt"><code><span class="line"><span>用户快速 toggle</span></span>
+<span class="line"><span>↓</span></span>
+<span class="line"><span>本地 state 表示当前意图</span></span>
+<span class="line"><span>↓</span></span>
+<span class="line"><span>后台慢慢同步</span></span></code></pre>
+<p>这里目标是：UI 平滑 > 强一致
+用本地 state 作为“缓冲层”是合理设计。</p>
+<p>当你想表达“共享事实”，如果这个变化代表：</p>
+<ul>
+<li>数据真的已经改变（预测成功）</li>
+<li>其他组件应该看到</li>
+<li>cache 是真实来源</li>
+</ul>
+<p>那用本地 state 只是“规避冲突”，不是解决问题。</p>
+<p>因为：真实问题是并发写入策略，而不是存储位置。</p> </div> </article>  </main> </body></html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>实时通信策略—websocket/sse | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%AE%9E%E6%97%B6%E9%80%9A%E4%BF%A1%E7%AD%96%E7%95%A5websocket-sse"><meta property="og:title" content="实时通信策略—websocket/sse | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%AE%9E%E6%97%B6%E9%80%9A%E4%BF%A1%E7%AD%96%E7%95%A5websocket-sse"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="实时通信策略—websocket/sse | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-03-19"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"实时通信策略—websocket/sse","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%AE%9E%E6%97%B6%E9%80%9A%E4%BF%A1%E7%AD%96%E7%95%A5websocket-sse","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%AE%9E%E6%97%B6%E9%80%9A%E4%BF%A1%E7%AD%96%E7%95%A5websocket-sse"},"inLanguage":"zh-Hans","datePublished":"2026-03-19","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 实时通信策略—websocket/sse </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/3/19 </p> </div> <div class="markdown"> <p>Server-Sent-Events (SSE)<br>
+SSE（<strong>Server-Sent Events</strong>）是一种基于 HTTP 的服务器向客户端<strong>单向推送实时数据</strong>的机制。</p>
+<p>SSE 的响应头通常是：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>Content-Type: text/event-stream</span></span></code></pre>
+<p>数据是<strong>持续不断发送的文本流</strong>，每条消息由若干行组成，格式如下：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>field: value</span></span>
+<span class="line"><span>field: value</span></span></code></pre>
+<p><strong>每条消息必须以一个空行结尾（\n\n），field 包括以下内容</strong></p>
+<ul>
+<li><strong><code>data:</code></strong> - The message payload</li>
+<li><strong><code>event:</code></strong> - Event type for named events</li>
+<li><strong><code>id:</code></strong> - Message ID for resumption</li>
+<li><strong><code>retry:</code></strong> - Reconnection time in milliseconds</li>
+<li><strong><code>:</code></strong> - Comments (often used for keepalive)</li>
+</ul>
+<p>连接生命周期：SSE 从建立连接 → 数据推送 → 断线 → 自动重连 → 续传</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#E1E4E8">Client                           Server</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |--------</span><span style="color:#79B8FF"> GET</span><span style="color:#F97583"> /</span><span style="color:#E1E4E8">events </span><span style="color:#F97583">---------></span><span style="color:#F97583"> |</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#E1E4E8"> (Includes Last</span><span style="color:#F97583">-</span><span style="color:#E1E4E8">Event</span><span style="color:#F97583">-</span><span style="color:#79B8FF">ID</span><span style="color:#E1E4E8"> if     </span><span style="color:#F97583">|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#E1E4E8">  reconnecting)                 </span><span style="color:#F97583">|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |&#x3C;--</span><span style="color:#79B8FF"> HTTP</span><span style="color:#79B8FF"> 200</span><span style="color:#E1E4E8"> text</span><span style="color:#F97583">/</span><span style="color:#E1E4E8">event</span><span style="color:#F97583">-</span><span style="color:#E1E4E8">stream </span><span style="color:#F97583">-|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |&#x3C;----</span><span style="color:#B392F0"> data</span><span style="color:#E1E4E8">: message </span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">\n\n </span><span style="color:#F97583">------|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |&#x3C;----</span><span style="color:#B392F0"> data</span><span style="color:#E1E4E8">: message </span><span style="color:#79B8FF">2</span><span style="color:#E1E4E8">\n\n </span><span style="color:#F97583">------|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |&#x3C;------</span><span style="color:#E1E4E8"> : keepalive\n\n </span><span style="color:#F97583">-------</span><span style="color:#F97583"> |</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#E1E4E8">\                              </span><span style="color:#F97583">/|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#E1E4E8"> \\  Connection drops          </span><span style="color:#F97583">/</span><span style="color:#F97583"> |</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#E1E4E8">  \\                          </span><span style="color:#F97583">/</span><span style="color:#F97583">  |</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |--</span><span style="color:#79B8FF"> GET</span><span style="color:#F97583"> /</span><span style="color:#B392F0">events</span><span style="color:#E1E4E8"> (Last</span><span style="color:#F97583">-</span><span style="color:#E1E4E8">Event</span><span style="color:#F97583">-</span><span style="color:#79B8FF">ID</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">>|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#E1E4E8"> (Automatic reconnection)       </span><span style="color:#F97583">|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span>
+<span class="line"><span style="color:#F97583">  |&#x3C;---</span><span style="color:#E1E4E8"> Resume from message </span><span style="color:#79B8FF">3</span><span style="color:#F97583"> -----|</span></span>
+<span class="line"><span style="color:#F97583">  |</span><span style="color:#F97583">                                |</span></span></code></pre>
+<p>SSE 本质还是无状态的 HTTP，但表现得像流，通过 <code>id + Last-Event-ID</code> 实现断线续传。<br>
+服务器根据：<code>Last-Event-ID: 42</code> 决定：从 <strong>message 3（或之后）继续发送</strong></p>
+<p>例如：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>id: 43</span></span>
+<span class="line"><span>data: message 3</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>id: 44</span></span>
+<span class="line"><span>data: message 4</span></span></code></pre>
+<p>客户端只是订阅者：不发消息，只接收。</p>
+<p>客户端如何使用 SSE：<br>
+<code>EventSource</code> 是浏览器提供的一个 <strong>用于接收服务器实时推送数据的 API</strong>，基于 <strong>Server-Sent Events（SSE）</strong> 技术。<br>
+简而言之，是在浏览器的一个 Web API，会在和服务器建立连接时监听相应事件。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> eventSource</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> EventSource</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'/events'</span><span style="color:#E1E4E8">); </span><span style="color:#6A737D">// 一个特殊对象</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 连接成功时打印</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">onopen</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Connection opened'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 接收消息</span></span>
+<span class="line"><span style="color:#6A737D">// 服务器发送格式类似：data: hello world</span></span>
+<span class="line"><span style="color:#6A737D">// 浏览器收到后触发 onmessage</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Received:'</span><span style="color:#E1E4E8">, event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 断线后 浏览器会自动重连</span></span>
+<span class="line"><span style="color:#6A737D">// 不需要你手动写重试逻辑</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">onerror</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (event.target.readyState </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> EventSource.</span><span style="color:#79B8FF">CLOSED</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Connection closed'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Connection error, will retry'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 监听自定义事件</span></span>
+<span class="line"><span style="color:#6A737D">// 服务器发送以下格式文本时，浏览器会触发该函数</span></span>
+<span class="line"><span style="color:#6A737D">// event: user-login</span></span>
+<span class="line"><span style="color:#6A737D">// data: {"name":"Alice"}</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">addEventListener</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'user-login'</span><span style="color:#E1E4E8">, (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'User logged in:'</span><span style="color:#E1E4E8">, event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<hr>
+<p>WebSocket 是一种<strong>浏览器和服务器之间的“长实时连接通信协议”</strong>。<br>
+而 SSE 是 HTTP 的一种通信方式。</p>
+<table header-row="true">
+<tbody><tr>
+<td>特性</td>
+<td>HTTP</td>
+<td>WebSocket</td>
+</tr>
+<tr>
+<td>连接方式</td>
+<td>请求-响应（一次性）</td>
+<td>持久连接</td>
+</tr>
+<tr>
+<td>通信方向</td>
+<td>客户端 → 服务器</td>
+<td>双向（随时互发）</td>
+</tr>
+</tbody></table>
+<p>WebSockets 通过 HTTP 升级握手创建了一个全双工通信通道。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ws</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebSocket</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'wss://example.com/socket'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onopen</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Connected'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Hello Server'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Received:'</span><span style="color:#E1E4E8">, event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onerror</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">error</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Error:'</span><span style="color:#E1E4E8">, error);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onclose</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Disconnected:'</span><span style="color:#E1E4E8">, event.code, event.reason);</span></span>
+<span class="line"><span style="color:#6A737D">  // Manual reconnection needed</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// Send various data types</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Text message'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">stringify</span><span style="color:#E1E4E8">({ type: </span><span style="color:#9ECBFF">'json'</span><span style="color:#E1E4E8"> }));</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> Blob</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'binary data'</span><span style="color:#E1E4E8">]));</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> ArrayBuffer</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">8</span><span style="color:#E1E4E8">));</span></span></code></pre>
+<p>WebSocket 一开始其实是通过 HTTP 发起的：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>GET /socket HTTP/1.1</span></span>
+<span class="line"><span>Upgrade: websocket</span></span>
+<span class="line"><span>Connection: Upgrade</span></span></code></pre>
+<p>服务器同意后返回：<code>HTTP/1.1 101 Switching Protocols</code><br>
+这一步叫 <strong>握手（Handshake）</strong>，之后就不再是 HTTP，而是 WebSocket 协议。</p>
+<p>握手成功后：</p>
+<ul>
+<li>连接不会断</li>
+<li>客户端和服务器可以随时发消息</li>
+<li>不需要每次重新请求</li>
+</ul>
+<p>WebSocket 不是用 HTTP body，而是用 <strong>帧（frame）</strong>：</p>
+<ul>
+<li><code>text</code>（文本）</li>
+<li><code>binary</code>（二进制）</li>
+<li><code>ping/pong</code>（心跳）</li>
+<li><code>close</code>（关闭）</li>
+</ul>
+<p>客户端：如何使用 WebSocket</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// 创建 WebSocket 连接</span></span>
+<span class="line"><span style="color:#6A737D">// 使用 wss:// 表示加密连接（类似 https）</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ws</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebSocket</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'wss://example.com/socket'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 连接成功时触发</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onopen</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Connected'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 向服务器发送消息（字符串）</span></span>
+<span class="line"><span style="color:#E1E4E8">  ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Hello Server'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 收到服务器消息时触发</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">  // event.data 就是服务器发来的内容</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Received:'</span><span style="color:#E1E4E8">, event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 发生错误时触发</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onerror</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">error</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Error:'</span><span style="color:#E1E4E8">, error);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 连接关闭时触发</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onclose</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">  // event.code：关闭码</span></span>
+<span class="line"><span style="color:#6A737D">  // event.reason：关闭原因</span></span>
+<span class="line"><span style="color:#E1E4E8">  console.</span><span style="color:#B392F0">log</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Disconnected:'</span><span style="color:#E1E4E8">, event.code, event.reason);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 注意：WebSocket 不会自动重连</span></span>
+<span class="line"><span style="color:#6A737D">  // 如果需要重连，需要手动写逻辑</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 发送文本</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'Text message'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 发送 JSON（需要先转成字符串）</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">stringify</span><span style="color:#E1E4E8">({ type: </span><span style="color:#9ECBFF">'json'</span><span style="color:#E1E4E8"> }));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 发送二进制数据（Blob）</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> Blob</span><span style="color:#E1E4E8">([</span><span style="color:#9ECBFF">'binary data'</span><span style="color:#E1E4E8">]));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 发送 ArrayBuffer（二进制）</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> ArrayBuffer</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">8</span><span style="color:#E1E4E8">));</span></span></code></pre>
+<hr>
+<p>核心区别</p>
+<ol>
+<li>Communication Direction<br>
+SSE：单向（服务器 → 客户端）</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// SSE：客户端只能接收数据</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">  updateUI</span><span style="color:#E1E4E8">(event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 如果要发送数据，需要使用单独的 HTTP 请求</span></span>
+<span class="line"><span style="color:#F97583">async</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> sendToServer</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">data</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  await</span><span style="color:#B392F0"> fetch</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'/api/action'</span><span style="color:#E1E4E8">, {</span></span>
+<span class="line"><span style="color:#E1E4E8">    method: </span><span style="color:#9ECBFF">'POST'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    body: </span><span style="color:#79B8FF">JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">stringify</span><span style="color:#E1E4E8">(data),</span></span>
+<span class="line"><span style="color:#E1E4E8">  });</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>WebSocket：双向通信</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// WebSocket：在同一个连接中既可以发送也可以接收</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">  updateUI</span><span style="color:#E1E4E8">(event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#79B8FF">  JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">stringify</span><span style="color:#E1E4E8">({</span></span>
+<span class="line"><span style="color:#E1E4E8">    action: </span><span style="color:#9ECBFF">'user-input'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    data: </span><span style="color:#9ECBFF">'Hello'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  })</span></span>
+<span class="line"><span style="color:#E1E4E8">);</span></span></code></pre>
+<ol start="2">
+<li>自动重连机制<br>
+SSE：内置自动重连和断点续传</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// 不需要额外代码！EventSource 会自动处理重连</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> eventSource</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> EventSource</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'/events'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 服务端可以设置重连间隔</span></span>
+<span class="line"><span style="color:#6A737D">// retry: 5000</span></span></code></pre>
+<p>WebSocket：需要手动实现重连</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> ReconnectingWebSocket</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">url</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.url </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> url;</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.reconnectDelay </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 1000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.shouldReconnect </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">connect</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  connect</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.ws </span><span style="color:#F97583">=</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebSocket</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.url);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.ws.</span><span style="color:#B392F0">onclose</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.shouldReconnect) {</span></span>
+<span class="line"><span style="color:#B392F0">        setTimeout</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#79B8FF">          this</span><span style="color:#E1E4E8">.reconnectDelay </span><span style="color:#F97583">*=</span><span style="color:#79B8FF"> 2</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// 指数退避</span></span>
+<span class="line"><span style="color:#79B8FF">          this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">connect</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">        }, </span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.reconnectDelay);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.ws.</span><span style="color:#B392F0">onopen</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#79B8FF">      this</span><span style="color:#E1E4E8">.reconnectDelay </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 1000</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// 重置延迟</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ol start="3">
+<li>数据类型<br>
+SSE：只支持文本（UTF-8）</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// SSE：必须把二进制数据序列化</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">  // event.data 永远是字符串</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> text</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> event.data;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 如果是二进制，需要用 base64 解码</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> binary</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> atob</span><span style="color:#E1E4E8">(event.data);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<p>WebSocket：支持文本和二进制</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// WebSocket：原生支持二进制</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.binaryType </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> 'arraybuffer'</span><span style="color:#E1E4E8">; </span><span style="color:#6A737D">// 或 'blob'</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (event.data </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> ArrayBuffer</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">    // 二进制数据</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> view</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> DataView</span><span style="color:#E1E4E8">(event.data);</span></span>
+<span class="line"><span style="color:#B392F0">    processBytes</span><span style="color:#E1E4E8">(view);</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 文本数据</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> text</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> event.data;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 可以直接发送二进制</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> buffer</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> ArrayBuffer</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">1024</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">send</span><span style="color:#E1E4E8">(buffer);</span></span></code></pre>
+<ol start="4">
+<li>消息边界与分帧<br>
+SSE：内置消息分隔</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// 每个 event 都是一个完整消息</span></span>
+<span class="line"><span style="color:#E1E4E8">eventSource.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">  // event.data 就是一条完整消息</span></span>
+<span class="line"><span style="color:#6A737D">  // 不需要处理粘包或拆包</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<p>WebSocket：保证消息完整，但不定义结构</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// WebSocket 只保证消息边界，不负责业务结构</span></span>
+<span class="line"><span style="color:#E1E4E8">ws.</span><span style="color:#B392F0">onmessage</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">event</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> message</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> JSON</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">parse</span><span style="color:#E1E4E8">(event.data);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">    // 根据消息类型处理</span></span>
+<span class="line"><span style="color:#F97583">    switch</span><span style="color:#E1E4E8"> (message.type) {</span></span>
+<span class="line"><span style="color:#F97583">      case</span><span style="color:#9ECBFF"> 'chat'</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#B392F0">        handleChat</span><span style="color:#E1E4E8">(message);</span></span>
+<span class="line"><span style="color:#F97583">        break</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">      case</span><span style="color:#9ECBFF"> 'status'</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#B392F0">        handleStatus</span><span style="color:#E1E4E8">(message);</span></span>
+<span class="line"><span style="color:#F97583">        break</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (e) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    console.</span><span style="color:#B392F0">error</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'消息格式不合法'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<ol start="5">
+<li>HTTP/2 优势<br>
+SSE：完全支持 HTTP/2 多路复用</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// SSE 在 HTTP/2 下：多个流复用一个连接</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events1</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> EventSource</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'/events/stream1'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events2</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> EventSource</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'/events/stream2'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> events3</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> EventSource</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'/events/stream3'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#6A737D">// 都共享同一个 HTTP/2 连接</span></span></code></pre>
+<p>WebSocket：无法利用 HTTP/2 多路复用</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="javascript"><code><span class="line"><span style="color:#6A737D">// 每个 WebSocket 都需要独立的 TCP 连接</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ws1</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebSocket</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'wss://example.com/socket1'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> ws2</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> WebSocket</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'wss://example.com/socket2'</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#6A737D">// 实际上是两个独立的 TCP 连接</span></span></code></pre>
+<hr>
+<p><strong>AI 和 LLM 流式处理：WebSocket 的优势</strong></p>
+<ol>
+<li>
+<p>双向性<br>
+当由 LLM 驱动的聊天机器人首次出现时，SSE 是服务器向客户端流式传输 token 的自然选择，它简单且擅长服务器推送。<br>
+然而，随着 AI 应用从基础聊天成熟到代理工作流程、人工参与式审批和多设备交互，团队越来越多地采用 WebSocket。核心问题是双向性：现代 AI 交互需要在会话期间让客户端向服务器发送信号（取消生成、批准工具调用、引导代理），而 SSE 无法在同一个连接上提供这种功能。<br>
+同时，一个名为 <a href="https://durablesessions.ai/">持久会话层（durable session）</a> 的新兴基础设施类别正在 WebSocket 之上构建持久、可恢复的会话层，以应对复杂 AI 工作流程的需求。</p>
+</li>
+<li>
+<p>有状态<br>
+每次发问和工具调用都会发送完整的历史，因为 LLM 本身没有上下文，它只能单问单答，所以每次问答后，需要发送完整的上下文，以保证下次对话是有记忆的，这不是一次 API 调用，而是一个整理上下文、调用 API 的循环。</p>
+</li>
+</ol>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1762" height="1564" src="/CandyCoreBlog/_astro/file-20260409163337605.D9MuLpPt_ZSgvfb.webp" ></p>
+<p>然后任何可用的 GPU 会接收所有上下文，然后为了响应而加载它们。<br>
+缓存是为了减少模型需要的计算量，使它更便宜，也能更快地响应，但这不改变发送的数据量，因为缓存的 key 是历史的哈希。<br>
+依然需要发送完整的历史，只不过 GPU side 的加载可以缓存加速，减少的是处理数据的时间。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1820" height="980" src="/CandyCoreBlog/_astro/file-20260409163352684.DcyNW483_Z2c6kQw.webp" ></p>
+<p><strong>问题：</strong> 虽然 GPU 不用重新计算了，但你（客户端）<strong>依然需要通过网络把那几万字的完整历史记录发给 API</strong>。</p>
+<ul>
+<li><strong>现状：</strong> OpenAI 有成千上万个 GPU（服务器）。</li>
+<li><strong>随机性：</strong> 你的第 1 次请求可能是 <strong>GPU-1</strong> 处理的，缓存存在 <strong>GPU-1</strong> 上。你的第 2 次请求如果被分配到了 <strong>GPU-5</strong>，而 <strong>GPU-5</strong> 上没有缓存，它得重新计算。</li>
+<li><strong>系统复杂性：</strong> 为了让缓存生效，OpenAI 的调度系统必须极其聪明，必须强行把你的请求每次都路由回同一台机器（GPU-1）。这对一个每秒处理亿级请求的全球系统来说，压力巨大且很难保证。</li>
+</ul>
+<p>WebSocket 解决了什么：</p>
+<ul>
+<li><strong>有状态连接（Stateful）：</strong> WebSockets 和一个服务器的 GPU 始终保持连接。</li>
+<li><strong>结果：</strong>
+<ol>
+<li>你不用再通过网络发送几万字的历史记录（解决了痛点 A）。</li>
+<li>因为连接一直连着同一台服务器，肯定能利用到那台机器上的记忆（解决了痛点 B）。</li>
+</ol>
+</li>
+</ul>
+<p>这使得每次仅仅发送增量消息可行了，Context 的信息一直就留在对应的 GPU 上，无状态的 HTTP 是不能做到这一点的。</p> </div> </article>  </main> </body></html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>立绘预览的时序问题 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/thoughts/%E7%AB%8B%E7%BB%98%E9%A2%84%E8%A7%88%E7%9A%84%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98"><meta property="og:title" content="立绘预览的时序问题 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/thoughts/%E7%AB%8B%E7%BB%98%E9%A2%84%E8%A7%88%E7%9A%84%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="立绘预览的时序问题 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-02-03T20:00:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"立绘预览的时序问题","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/thoughts/%E7%AB%8B%E7%BB%98%E9%A2%84%E8%A7%88%E7%9A%84%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/thoughts/%E7%AB%8B%E7%BB%98%E9%A2%84%E8%A7%88%E7%9A%84%E6%97%B6%E5%BA%8F%E9%97%AE%E9%A2%98"},"inLanguage":"zh-Hans","datePublished":"2026-02-03T20:00:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch" aria-current="page"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 立绘预览的时序问题 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/2/3 </p> </div> <div class="markdown"> <h2 id="业务介绍">业务介绍</h2>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="2390" height="1668" src="/CandyCoreBlog/_astro/file-20260217144506594.DEmLQ5bA_18v6RV.webp" ></p>
+<h2 id="代码架构">代码架构</h2>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="2563" height="227" src="/CandyCoreBlog/_astro/file-20260220123552305.diBjMVvD_1osyHH.webp" ></p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1126" height="2010" src="/CandyCoreBlog/_astro/file-20260220123552306.7TABULAa_Z1H3S6I.webp" ></p>
+<h2 id="立绘预览时序解决">立绘预览时序解决</h2>
+<ul>
+<li>裁剪预览业务流程：
+<ol>
+<li>选中角色，读取角色立绘，加载图像</li>
+<li>初始化裁剪框，确定裁剪参数（onCrop 等状态）</li>
+<li>绘制裁剪内部区域至预览画布</li>
+</ol>
+</li>
+</ul>
+<p>这个过程中的问题：</p>
+<ol>
+<li>切换问题：瞬间显示旧帧，previewCanvas 还没画新图时，RenderPreview 会先把上一张图露出来；还有旧图片的异步预览回调可能晚到，导致最终显示旧图；还有可选的 transition 应该在绘制前准备好，导致位移闪烁。</li>
+<li>模式切换/弹窗切换时，布局先变，canvas 后画；不挡住会出现明显“错位一帧”。</li>
+<li>批量操作可能基于未就绪画面，批量前现在会等待 isPreviewReady &#x26;&#x26; isCanvasReady；去掉后更容易拿到旧/空 canvas 做后续处理。</li>
+</ol>
+<p>其中 2/3 的问题相对较好解决</p>
+<ul>
+<li>解决 2 的方式是讲绘制逻辑放在 useLayoutEffect中，在布局稳定后再绘制预览 canvas</li>
+<li>解决 3 的方式是确保在解决 1 的问题的基础上，再加上 isCanvasReady，确保canvas 和 img 有尺寸</li>
+</ul>
+<p>其实主要问题就是围绕角色切换的</p>
+<p>角色切换意味着要切换立绘，切换 URL，重新走一遍加载图像，应用裁剪参数，绘制 canvas 的过程，而每个步骤都是需要时间的</p>
+<p>整体思路是使用一个 isPreviewReady 的状态，在必要的准备完成时才允许渲染内容</p>
+<p>避免快速切换异步时序问题：</p>
+<ul>
+<li>为绘制 hooks 传入结束的回调，检测旧的异步任务获取的闭包spriteSwitchKey和latestSwitchKeyRef始终代表最新状态的 key 比较即可</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#B392F0">    onPreviewUpdate</span><span style="color:#E1E4E8">: </span><span style="color:#B392F0">useCallback</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">      // 只接受“最新切换目标”的预览更新，避免快速切换导致旧回调把预览误标记为 ready</span></span>
+<span class="line"><span style="color:#6A737D">      // spriteSwitchKey：定义“当前应该显示的目标”（avatar/source 组合）</span></span>
+<span class="line"><span style="color:#6A737D">      // 读取 DOM 节点，判断是否出现异步错位，只有真实 key 和目标匹配时设置相等了</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (latestSwitchKeyRef.current </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> spriteSwitchKey) {</span></span>
+<span class="line"><span style="color:#B392F0">        setPreviewReadyKey</span><span style="color:#E1E4E8">(spriteSwitchKey);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    }, [spriteSwitchKey]),</span></span></code></pre>
+<p>避免旧帧出现：</p>
+<ul>
+<li>useLayoutEffect 发现 currentUrl 变了会 resetCropState() 清空 crop/completedCrop/canvas</li>
+</ul>
+<p>避免 transition 闪烁：</p>
+<ul>
+<li>新图片 onload 后再设置裁剪框参数，在绘制前应该提前加载 CSS transition 的参数    onImageLoad 里先 setCrop/setCompletedCrop，还会调用外部 onImageLoadExtend
+<ul>
+<li>在这个场景里它会 setDisplayTransform（SpriteCropper）。</li>
+<li>如果马上 drawInitialPreview，可能出现“新 canvas 画面 + 旧 transform/旧布局”的一帧错配，用户会看到闪一下。</li>
+<li>用 requestAnimationFrame(drawInitialPreview) 把首次绘制放到下一帧，给这些状态提交和CSS transition留出时间</li>
+</ul>
+</li>
+</ul>
+<p>这上方两个措施之间在首次挂载会存在竞态问题：</p>
+<p>切换时：</p>
+<ul>
+<li>先有旧图状态</li>
+<li>currentUrl 变化后 reset 清旧
+但是首次挂载时：</li>
+<li>currentUrl 由无到有也会变化</li>
+<li>导致 onload 设置裁剪参数和 reset 清空裁剪参数都会被触发</li>
+</ul>
+<p>就导致了设置的参数被 reset 了，原本这个 reset 是为了让出新的 URL 的，但是首次挂载触发显然是语义错误的</p>
+<p>所以解决方式是跳过首次挂载的 useLayoutEffect，利用一个持久存在的 ref值记录是否是首屏状态，利用这个变量在 useLayoutEffect 内部就能提前跳过</p>
+<p>现在首屏直接 return（只记录 lastResetSourceUrlRef），不 reset
+于是首屏只有 onLoad 在写初始化值，竞态消失。</p> </div> </article>  </main> </body></html>

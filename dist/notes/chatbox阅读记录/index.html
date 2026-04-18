@@ -1,0 +1,432 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>chatbox阅读记录 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/chatbox%E9%98%85%E8%AF%BB%E8%AE%B0%E5%BD%95"><meta property="og:title" content="chatbox阅读记录 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/chatbox%E9%98%85%E8%AF%BB%E8%AE%B0%E5%BD%95"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="chatbox阅读记录 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2025-12-07T15:32:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"chatbox阅读记录","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/chatbox%E9%98%85%E8%AF%BB%E8%AE%B0%E5%BD%95","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/chatbox%E9%98%85%E8%AF%BB%E8%AE%B0%E5%BD%95"},"inLanguage":"zh-Hans","datePublished":"2025-12-07T15:32:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> chatbox阅读记录 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2025/12/7 </p> </div> <div class="markdown"> <h2 id="分级存储模型">分级存储模型</h2>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="980" height="1280" src="/CandyCoreBlog/_astro/file-20260401152025782.DyARVROt_1EafhE.webp" >
+为了避免每次全量获取消息，在indexedDB中对消息做本地存储，这样可以避免每次都全量获取消息，在indexedDB中进行增量获取，减少网络请求频率，并可以结合tanstack query和自定义队列做更新调度</p>
+<ul>
+<li>
+<p>局部隔离与性能</p>
+</li>
+<li>
+<p>会话列表和每个 session 分别使用独立队列：避免全局锁竞争、降低单一队列的延时和冲突，同时让不同 session 的写入互不干扰。</p>
+</li>
+<li>
+<p>两类队列的职责分离</p>
+<ul>
+<li>sessionListUpdateQueue（全局一份）：只序列化会话列表（ChatSessionsList）的修改（updateSessionList），保证列表修改按顺序、原子地写入 storage。</li>
+<li>sessionUpdateQueues[sessionId]（每个 session 一份）：只序列化某个会话（含 messages）的修改（updateSessionWithMessages、insertMessage、updateMessage 等），保证该会话内的所有更新有序、不互相覆盖。</li>
+</ul>
+</li>
+<li>
+<p>为什么能提升性能/并发性</p>
+</li>
+<li>
+<p>局部隔离：不同 session 的写入互不阻塞。两个不同 session 同时写时不会争用同一个队列/持久化操作，降低延时与锁竞争。</p>
+</li>
+<li>
+<p>减少全局阻塞：会话列表的写入与单个 session 的写入分隔开（list 的队列与 session 队列独立），避免写列表时阻塞大量消息写入场景（或反之）。</p>
+</li>
+<li>
+<p>批量合并与限频持久化：UpdateQueue 在微任务周期内合并多次 set，只在 state 发生最终变化时调用 onChange（这里通常是 storage.setItemNow），因此减少磁盘/IndexedDB 写入频率。</p>
+</li>
+<li>
+<p>插入消息（insertMessage）会调用 updateSessionWithMessages，内部会：</p>
+<ol>
+<li>确保为该 sessionId 创建一个 <code>UpdateQueue（sessionUpdateQueues[sessionId]）</code>。</li>
+<li>调用 queue.set(updater)，入队并返回 awaitable 的 Promise。队列在微任务里 flush：串行执行所有入队 updater，合并得到最终 session，然后在 onChange 中调用 storage.setItemNow(StoreStorage.session(sessionId)) 持久化。</li>
+<li>flush 成功后，updateSessionWithMessages 会（若需要）调用 updateSessionList 更新会话 meta（这又走 sessionListUpdateQueue）。最后用 _setSessionCache 更新 queryClient 缓存。</li>
+</ol>
+<ul>
+<li>会话列表修改（createSession/deleteSession/updateSessionList）走 sessionListUpdateQueue，持久化到 StorageKey.ChatSessionsList，然后通过 queryClient.setQueryData 更新缓存。</li>
+</ul>
+</li>
+<li>
+<p>举例对比说明效果</p>
+<ul>
+<li>情况 A（并发写不同 session）：两个请求并发修改 sessionA 和 sessionB，分别走不同的 sessionUpdateQueues，能同时进行各自的持久化，不互相等待。</li>
+<li>情况 B（并发写同一 session）：两个并发修改同一个 session 会被串行化（按入队顺序执行），不会出现最后写入覆盖前一次的竞态。</li>
+<li>情况 C（频繁小更新）：短时间内多次对同一 session 调用 set，会被合并到一次 flush，从而只触发一次 storage.setItemNow，降低 I/O。</li>
+</ul>
+</li>
+</ul>
+<h2 id="更新队列">更新队列</h2>
+<p>这段代码实现了一个<strong>具有“批处理”、“原子性事务”和“持久化回滚”特性的状态管理队列</strong>。</p>
+<ol>
+<li>
+<p><strong>高频更新的性能问题</strong>：如果一瞬间调用 10 次 set，不需要写 10 次数据库（或触发 10 次副作用），而是合并成 1 次。</p>
+</li>
+<li>
+<p><strong>数据一致性（原子性）</strong>：内存中的状态更新必须和外部存储（onChange）保持一致。如果写入外部存储失败，内存状态必须回滚。</p>
+</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#F97583"> type</span><span style="color:#E1E4E8"> { UpdaterFn } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'src/shared/types'</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 原子性执行update操作，避免数据竞态</span></span>
+<span class="line"><span style="color:#F97583">type</span><span style="color:#B392F0"> QueueItem</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#F97583"> extends</span><span style="color:#79B8FF"> object</span><span style="color:#E1E4E8">> </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#FFAB70">  updater</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UpdaterFn</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#B392F0">  resolve</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">result</span><span style="color:#F97583">:</span><span style="color:#B392F0"> T</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#79B8FF"> void</span></span>
+<span class="line"><span style="color:#B392F0">  reject</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">error</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> unknown</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#79B8FF"> void</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> class</span><span style="color:#B392F0"> UpdateQueue</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#F97583"> extends</span><span style="color:#79B8FF"> object</span><span style="color:#E1E4E8">> {</span></span>
+<span class="line"><span style="color:#F97583">  private</span><span style="color:#FFAB70"> state</span><span style="color:#F97583">:</span><span style="color:#B392F0"> T</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> null</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> null</span></span>
+<span class="line"><span style="color:#F97583">  private</span><span style="color:#FFAB70"> q</span><span style="color:#F97583">:</span><span style="color:#B392F0"> QueueItem</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>[] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> []</span></span>
+<span class="line"><span style="color:#F97583">  private</span><span style="color:#FFAB70"> scheduled</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> false</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#F97583">    private</span><span style="color:#FFAB70"> initial</span><span style="color:#F97583">:</span><span style="color:#B392F0"> T</span><span style="color:#F97583"> |</span><span style="color:#E1E4E8"> (() </span><span style="color:#F97583">=></span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">>),</span></span>
+<span class="line"><span style="color:#F97583">    private</span><span style="color:#B392F0"> onChange</span><span style="color:#F97583">?:</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">s</span><span style="color:#F97583">:</span><span style="color:#B392F0"> T</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#79B8FF"> void</span><span style="color:#F97583"> |</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#79B8FF">void</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  ) {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  set</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">update</span><span style="color:#F97583">:</span><span style="color:#B392F0"> UpdaterFn</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>)</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">> {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#79B8FF">      this</span><span style="color:#E1E4E8">.q.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">({ updater: update, resolve, reject })</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.scheduled) {</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.scheduled </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#B392F0">        queueMicrotask</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">          void</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">flush</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#E1E4E8">        })</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    })</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  /** 可供测试时手动触发；正常情况下由微任务自动触发 */</span></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#B392F0"> flush</span><span style="color:#E1E4E8">()</span><span style="color:#F97583">:</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#79B8FF">void</span><span style="color:#E1E4E8">> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 后文会有</span></span>
+<span class="line"><span style="color:#E1E4E8">    </span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  private</span><span style="color:#B392F0"> settleQueue</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">resolved</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">u</span><span style="color:#F97583">:</span><span style="color:#B392F0"> QueueItem</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>; </span><span style="color:#FFAB70">s</span><span style="color:#F97583">:</span><span style="color:#B392F0"> T</span><span style="color:#E1E4E8"> }[], </span><span style="color:#FFAB70">rejected</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">u</span><span style="color:#F97583">:</span><span style="color:#B392F0"> QueueItem</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>; </span><span style="color:#FFAB70">e</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> unknown</span><span style="color:#E1E4E8"> }[])</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> void</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> r</span><span style="color:#F97583"> of</span><span style="color:#E1E4E8"> resolved) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      r.u.</span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(r.s)</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#F97583">    for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> r</span><span style="color:#F97583"> of</span><span style="color:#E1E4E8"> rejected) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      r.u.</span><span style="color:#B392F0">reject</span><span style="color:#E1E4E8">(r.e)</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span></code></pre>
+<p>使用：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>// 创建队列</span></span>
+<span class="line"><span>const queue = new UpdateQueue&#x3C;Session>(</span></span>
+<span class="line"><span>  () => getSession(id),           // 从 storage 读取</span></span>
+<span class="line"><span>  (session) => storage.save(session)  // 保存到 storage</span></span>
+<span class="line"><span>)</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>// 快速连续 3 次更新</span></span>
+<span class="line"><span>await Promise.all([</span></span>
+<span class="line"><span>  queue.set(s => ({ ...s, name: 'A' })),</span></span>
+<span class="line"><span>  queue.set(s => ({ ...s, starred: true })),</span></span>
+<span class="line"><span>  queue.set(s => ({ ...s, name: 'B' })),</span></span>
+<span class="line"><span>])</span></span>
+<span class="line"><span>// 实际执行: </span></span>
+<span class="line"><span>// 1. 读取一次 storage</span></span>
+<span class="line"><span>// 2. 依次应用 3 个更新</span></span>
+<span class="line"><span>// 3. 保存一次到 storage</span></span></code></pre>
+<ul>
+<li><strong>总体</strong>: <code>UpdateQueue&#x3C;T></code> 用来把对某个共享对象状态的更新串行化并原子性地应用，避免并发竞态。</li>
+<li><strong>入队</strong>: 调用 <code>set(updater)</code> 将一个更新函数入队并返回一个 <code>Promise</code>，该 promise 在该更新被实际应用后 resolve（或在失败时 reject）。</li>
+<li><strong>合并与调度</strong>: 多次 <code>set</code> 会在同一个微任务（<code>queueMicrotask</code>）周期内合并处理，减少重复持久化/通知。</li>
+<li><strong>执行顺序</strong>: <code>flush()</code> 按入队顺序依次用上一次成功的状态调用每个 <code>updater</code>，并把每次计算得到的新状态记录用于后续 updater（串行应用）。</li>
+<li><strong>持久化与回滚</strong>: 如果提供了 <code>onChange</code>（可异步），在所有更新计算完成后会调用；若 <code>onChange</code> 失败，会回滚到变更前的状态，并把本次批次的 promise 全部 reject。</li>
+<li><strong>错误处理</strong>: 单个 <code>updater</code> 抛错只会使该更新对应的 promise 被 reject，其他更新仍按序尝试（除非 <code>onChange</code> 最终失败触发回滚）。</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#B392F0">  set</span><span style="color:#E1E4E8">(update: UpdaterFn</span><span style="color:#F97583">&#x3C;</span><span style="color:#79B8FF">T</span><span style="color:#F97583">></span><span style="color:#E1E4E8">): </span><span style="color:#79B8FF">Promise</span><span style="color:#F97583">&#x3C;</span><span style="color:#79B8FF">T</span><span style="color:#F97583">></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    return new </span><span style="color:#B392F0">Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">      this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">q</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">({ </span><span style="color:#FFAB70">updater</span><span style="color:#F97583">:</span><span style="color:#B392F0"> update</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8"> })</span></span>
+<span class="line"><span style="color:#B392F0">      if</span><span style="color:#E1E4E8"> (!this.scheduled) {</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.scheduled </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span></span>
+<span class="line"><span style="color:#B392F0">        queueMicrotask</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">          void</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">flush</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#E1E4E8">        })</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    })</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span></code></pre>
+<p>队列内部的对象结构：
+<code>{ updater: update, resolve, reject }</code>，分别有执行的action，以及标志函数是否成功的resolve和reject方法</p>
+<p>schedule是一个并发锁，确保队列内的任务是串行执行</p>
+<p>调用flush：</p>
+<ol>
+<li>惰性初始化，不主动执行初始化，而是在set被第一次调用时，再进行初始化</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.state </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">typeof</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.initial </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.state </span><span style="color:#F97583">=</span><span style="color:#F97583"> await</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.initial </span><span style="color:#F97583">as</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">>)()</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.state </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.initial</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li><strong>逻辑</strong>：如果是第一次运行，this.state 还是空的，需要先加载初始状态。</li>
+</ul>
+<ol start="2">
+<li>预计算</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> s </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.state </span><span style="color:#6A737D">// 拿到当前状态的快照</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> resolved</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">u</span><span style="color:#F97583">:</span><span style="color:#B392F0"> QueueItem</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>; </span><span style="color:#FFAB70">s</span><span style="color:#F97583">:</span><span style="color:#B392F0"> T</span><span style="color:#E1E4E8"> }[] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [] </span><span style="color:#6A737D">// 暂存计算成功的任务</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> rejected</span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">u</span><span style="color:#F97583">:</span><span style="color:#B392F0"> QueueItem</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#B392F0">T</span><span style="color:#E1E4E8">>; </span><span style="color:#FFAB70">e</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> unknown</span><span style="color:#E1E4E8"> }[] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [] </span><span style="color:#6A737D">// 暂存计算出错的任务</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">const</span><span style="color:#79B8FF"> u</span><span style="color:#F97583"> of</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.q) {</span></span>
+<span class="line"><span style="color:#F97583">  try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    s </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> u.</span><span style="color:#B392F0">updater</span><span style="color:#E1E4E8">(s) </span><span style="color:#6A737D">// 核心：把上一次计算结果 s 传给下一个 updater</span></span>
+<span class="line"><span style="color:#6A737D">    // u.resolve(s)  &#x3C;-- 注意！这里被注释掉了！绝对不能现在 resolve！</span></span>
+<span class="line"><span style="color:#E1E4E8">    resolved.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">({ u, s }) </span><span style="color:#6A737D">// 只是把结果存起来</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (e) {</span></span>
+<span class="line"><span style="color:#6A737D">    // u.reject(e)   &#x3C;-- 同理，这里也不能直接 reject</span></span>
+<span class="line"><span style="color:#E1E4E8">    rejected.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">({ u, e }) </span><span style="color:#6A737D">// 只是把错误存起来</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.q.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 0</span><span style="color:#6A737D"> // 清空物理队列，因为我们已经把任务都取出到局部变量里了</span></span></code></pre>
+<ul>
+<li>
+<p><strong>逻辑</strong>：</p>
+<ol>
+<li>建立一个临时变量 s，它在循环中不断演变（Mutate）。</li>
+<li>如果某个 updater 报错（比如代码写错了 s.prop.undefined），我们<strong>捕获它</strong>，记录为“计算失败”，但<strong>不打断整个循环</strong>。后续的任务会基于<strong>上一个成功的 s</strong> 继续运行。</li>
+</ol>
+</li>
+<li>
+<p><strong>关键点</strong>：<strong>为什么不立刻 Resolve/Reject？</strong></p>
+<ul>
+<li>因为虽然内存里算出来了，但能不能<strong>保存成功</strong>（持久化）还不知道。如果现在告诉用户“成功了”，结果下一行代码写文件失败了，那就是数据欺诈。所以这里只是“预计算”。</li>
+</ul>
+</li>
+</ul>
+<ol start="3">
+<li>提交与持久化</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> prevState</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.state </span><span style="color:#6A737D">// 保存旧状态，为了“回滚”做准备</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (s </span><span style="color:#F97583">!==</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.state) { </span><span style="color:#6A737D">// 只有状态真的变了，才需要写库</span></span>
+<span class="line"><span style="color:#79B8FF">  this</span><span style="color:#E1E4E8">.state </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> s </span><span style="color:#6A737D">// 1. 先更新内存状态</span></span>
+<span class="line"><span style="color:#F97583">  try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">    // 2. 执行副作用（比如写入 localStorage、发送 API、写入文件）</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> onChangeResult</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">onChange</span><span style="color:#E1E4E8">?.(s)</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (onChangeResult </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> (onChangeResult </span><span style="color:#F97583">as</span><span style="color:#79B8FF"> any</span><span style="color:#E1E4E8">).then </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      await</span><span style="color:#E1E4E8"> onChangeResult </span><span style="color:#6A737D">// 等待持久化完成</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#6A737D">    // 3. 持久化成功：正式通知所有等待的 Promise</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">settleQueue</span><span style="color:#E1E4E8">(resolved, rejected)</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (e) {</span></span>
+<span class="line"><span style="color:#6A737D">    // ... 进入第四阶段的回滚逻辑</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">} </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">  // 状态没变（比如 s => s），不需要写库，直接通知完成</span></span>
+<span class="line"><span style="color:#79B8FF">  this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">settleQueue</span><span style="color:#E1E4E8">(resolved, rejected)</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ol start="4">
+<li>事务回滚</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#E1E4E8">} </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (e) {</span></span>
+<span class="line"><span style="color:#6A737D">  // 1. 回滚内存状态：把 state 变回之前的样子</span></span>
+<span class="line"><span style="color:#79B8FF">  this</span><span style="color:#E1E4E8">.state </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> prevState</span></span>
+<span class="line"><span style="color:#E1E4E8">  </span></span>
+<span class="line"><span style="color:#6A737D">  // 2. 构造全面失败：</span></span>
+<span class="line"><span style="color:#6A737D">  // 那些原本计算成功的 (resolved)，因为持久化失败，现在也得算作失败</span></span>
+<span class="line"><span style="color:#6A737D">  // 那些原本计算就失败的 (rejected)，依然是失败</span></span>
+<span class="line"><span style="color:#79B8FF">  this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">settleQueue</span><span style="color:#E1E4E8">([], [</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">resolved.</span><span style="color:#B392F0">map</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">r</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> ({ u: r.u, e })), </span><span style="color:#F97583">...</span><span style="color:#E1E4E8">rejected])</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li>
+<p><code>resolved.map((r) => ({ u: r.u, e }))</code> 是对 resolved 做映射，返回一个新数组。</p>
+<ul>
+<li><code>(r) => ...</code> 是箭头函数，r 是当前元素。</li>
+<li><code>({ u: r.u, e })</code> 用圆括号包裹对象字面量，表示把这个对象作为表达式返回（否则会被解析为函数体）。</li>
+<li>对象有两项：<code>u: r.u</code>（把原元素的 u 字段复制过来）和 e（简写属性，相当于 e: e）。</li>
+<li>这里的 e 来自外层 catch (e) 的异常变量，被闭包捕获并复用。</li>
+</ul>
+</li>
+<li>
+<p>最终结果是一个形如 <code>{ u: QueueItem&#x3C;T>, e: unknown }[]</code> 的数组，正好与 settleQueue 的 rejected 参数类型匹配。</p>
+</li>
+<li>
+<p>settleQueue负责简单的结束队列中promise的pending状态，调用他们的resolved和rejected方法</p>
+</li>
+</ul>
+<ol start="5">
+<li>递归调度</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.q.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ></span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#B392F0">  queueMicrotask</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    void</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">flush</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#E1E4E8">  })</span></span>
+<span class="line"><span style="color:#E1E4E8">} </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#79B8FF">  this</span><span style="color:#E1E4E8">.scheduled </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> false</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li>当本次 flush 醒来（await 结束）并处理完后，看看队列里是不是又有新任务了。</li>
+<li>如果有，<strong>再次调度</strong>自己。</li>
+<li>如果没有，把 scheduled 标记设为 false，表示机器停机，等待下一次唤醒。</li>
+</ul>
+<ol start="6">
+<li>总结</li>
+</ol>
+<ul>
+<li>批量窗口：set 会把更新入队并通过 queueMicrotask 安排一次微任务触发 flush；同一微任务周期内的多次 set 会被合并到同一个批次，从而避免每次都持久化。</li>
+<li>串行应用：flush 按队列顺序把每个 updater 串行应用到局部变量 s，得到最终的新状态（避免竞态）。</li>
+<li>单次持久化：只有当最终 s 与当前 state 不同时才调用 onChange（可能是异步持久化），因此一次批处理只做一次保存。</li>
+<li>等待并确认：若 onChange 返回 Promise，flush 会 await 它，只有在成功后才调用 resolve 回调，失败则回滚 state 并把本批次所有更新视为失败（reject）。</li>
+<li>连续批次：如果 flush 执行中或之后又有新 set，会再次通过 queueMicrotask 安排下一轮 flush。</li>
+</ul>
+<p>他通过一个队列承担了一下职责</p>
+<ul>
+<li>缓存待处理的更新项：保存每次 set 提交的 updater 以及对应的 resolve/reject 回调。</li>
+<li>保持顺序语义：按入队顺序在 flush 中串行应用 updater，避免竞态。</li>
+<li>批量窗口：把同一微任务周期内的多次更新合并为一个批次，减少重复持久化。</li>
+<li>解耦生产者与消费者：生产者只把项入队并返回 Promise，实际执行由 flush 在微任务中处理。</li>
+<li>支持错误处理与回滚：flush 可根据 onChange 结果决定将已计算的成功项当作失败（映射为 reject），并在失败时回滚内存状态。</li>
+</ul>
+<h2 id="流式渲染">流式渲染</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="typescript"><code><span class="line"><span style="color:#E1E4E8">InputBox（构造 Message）</span></span>
+<span class="line"><span style="color:#E1E4E8">→ sessionActions.submitNewUserMessage（插入 </span><span style="color:#F97583">+</span><span style="color:#E1E4E8"> 占位 </span><span style="color:#F97583">+</span><span style="color:#E1E4E8"> 调 generate）</span></span>
+<span class="line"><span style="color:#E1E4E8">→ generate（流式调用模型，反复调用 modifyMessage）</span></span>
+<span class="line"><span style="color:#E1E4E8">→ chatStore（更新缓存</span><span style="color:#F97583">/</span><span style="color:#E1E4E8">存储） → useSession</span><span style="color:#F97583">/</span><span style="color:#E1E4E8">MessageList</span><span style="color:#F97583">/</span><span style="color:#E1E4E8">Message（渲染并交互）</span></span></code></pre>
+<p>sessionAction.ts中message相关</p>
+<ol>
+<li>
+<p>insertMessage/insertMeassageAfter:插入消息，或者插入消息在某个指定消息之后，中间有统计token和字数</p>
+</li>
+<li>
+<p>modifyMessage：修改消息，重新算时间，token，字数，允许只更新Cache和进IndexeedDB两种方式</p>
+</li>
+<li>
+<p>removeMessage：删除消息</p>
+</li>
+</ol>
+<p><code>submitNewUserMessage</code>：</p>
+<ul>
+<li>首先读取会话和设置，若缺失则直接返回；然后把用户消息插入当前会话，同时让 <code>insertMessage</code> 额外计算并存储 <code>wordCount</code>/<code>tokenCount</code>。</li>
+<li>根据新消息是否带文件或网页链接，给即将出现的助手占位消息附加状态（<code>sending_file</code>/<code>loading_webpage</code>），如果需要立即生成，先插入一个 <code>generating=true</code> 的空助手消息。</li>
+<li>在 try 块里构建模型依赖并确认（仅在 Web 端）所选模型是否支持当前的 webBrowsing 模式，同时验证所有附件的 storageKey 是否存在（缺失会在控制台警告）。</li>
+<li>如果上述检查抛出错误，或出现网络/API 失败，catch 会构造带错误信息的助手消息，记录错误并更新/插入该消息，最后提前返回不再调用模型生成。</li>
+<li>如果一切正常且 <code>needGenerating</code> 为真，就调用 <code>generate(sessionId, newAssistantMsg, { operationType: 'send_message' })</code> 让模型开始生成回复。</li>
+</ul>
+<p><strong><code>generate 流程</code>：</strong></p>
+<ul>
+<li>
+<p>先拉最新的会话/设置/平台配置，埋点 <code>trackGenerateEvent</code>，然后把目标助手消息重置成初始状态（清错、置 <code>generating</code>，设置 <code>aiProvider</code>/model/<code>style</code>，标记流式模式、清空状态等）</p>
+</li>
+<li>
+<p>并通过 <code>modifyMessage</code> 将这条消息写入indexedDB，更新cache，反应至UI（generating属性为true，显示loading UI）</p>
+</li>
+<li>
+<p>找到目标消息在当前会话（或者历史线程）里的位置，拿出它之前的上下文（调用 <code>genMessageContext</code> 会按配置选出不会超量的历史消息，还会把文件/链接内容拼进 prompt）。</p>
+</li>
+<li>
+<p>根据会话类型分支：</p>
+<ul>
+<li>
+<p><strong>chat</strong>：构建 <code>streamText</code> 所需参数（包含知识库、web browsing 标记），流式接收模型输出，每次 chunk 都更新缓存、记录首次 token latency、定期落盘。生成完成后计算 <code>tokensUsed</code>、设置 <code>finishReason/usage</code> 等再一次 <code>modifyMessage</code>。</p>
+</li>
+<li>
+<p><strong>picture</strong>：寻找最近的用户输入作为 prompt，调用 <code>generateImage</code>，每收到 base64 就存到 indexedDB 并插入到 message contentParts，最后标记非生成状态。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>过程中的异常会统一捕获并 report（Sentry + 判断类），然后把目标消息设为失败状态（含 <code>errorCode/error/errorExtra</code>，显示 <code>aiProvider</code>/host/responseBody）。</p>
+</li>
+</ul>
+<h3 id="chat类型消息的流程">chat类型消息的流程</h3>
+<h4 id="1-变量初始化">1. 变量初始化</h4>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="typescript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> startTime</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Date.</span><span style="color:#B392F0">now</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> firstTokenLatency</span><span style="color:#F97583">:</span><span style="color:#79B8FF"> number</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> undefined</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> persistInterval</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 2000</span></span>
+<span class="line"><span style="color:#F97583">let</span><span style="color:#E1E4E8"> lastPersistTimestamp </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Date.</span><span style="color:#B392F0">now</span><span style="color:#E1E4E8">()</span></span></code></pre>
+<ul>
+<li><code>startTime</code>：记录生成开始时间，用于后续计算首 token 延迟。</li>
+<li><code>firstTokenLatency</code>：首 token 延迟（首次收到内容的耗时）。</li>
+<li><code>persistInterval</code>：持久化间隔，2秒。</li>
+<li><code>lastPersistTimestamp</code>：上次持久化的时间戳。</li>
+</ul>
+<h4 id="2-构造-prompt-上下文">2. 构造 prompt 上下文</h4>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="typescript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> promptMsgs</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#B392F0"> genMessageContext</span><span style="color:#E1E4E8">(settings, messages.</span><span style="color:#B392F0">slice</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">, targetMsgIx), model.</span><span style="color:#B392F0">isSupportToolUse</span><span style="color:#E1E4E8">())</span></span></code></pre>
+<ul>
+<li>生成用于模型推理的消息上下文（如历史消息、附件等），保证 prompt 完整性。</li>
+</ul>
+<h4 id="3-定义流式回调-modifymessagecache">3. 定义流式回调 modifyMessageCache</h4>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="typescript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#B392F0"> modifyMessageCache</span><span style="color:#F97583">:</span><span style="color:#B392F0"> OnResultChangeWithCancel</span><span style="color:#F97583"> =</span><span style="color:#F97583"> async</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">updated</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> textLength</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> getMessageText</span><span style="color:#E1E4E8">(targetMsg, </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">).</span><span style="color:#79B8FF">length</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">firstTokenLatency </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#E1E4E8"> textLength </span><span style="color:#F97583">></span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    firstTokenLatency </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Date.</span><span style="color:#B392F0">now</span><span style="color:#E1E4E8">() </span><span style="color:#F97583">-</span><span style="color:#E1E4E8"> startTime</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">  targetMsg </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    ...</span><span style="color:#E1E4E8">targetMsg,</span></span>
+<span class="line"><span style="color:#F97583">    ...</span><span style="color:#B392F0">pickBy</span><span style="color:#E1E4E8">(updated, identity),</span></span>
+<span class="line"><span style="color:#E1E4E8">    status: textLength </span><span style="color:#F97583">></span><span style="color:#79B8FF"> 0</span><span style="color:#F97583"> ?</span><span style="color:#E1E4E8"> [] </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> targetMsg.status,</span></span>
+<span class="line"><span style="color:#E1E4E8">    firstTokenLatency,</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#6A737D">  // update cache on each chunk and persist to storage periodically</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> shouldPersist</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> Date.</span><span style="color:#B392F0">now</span><span style="color:#E1E4E8">() </span><span style="color:#F97583">-</span><span style="color:#E1E4E8"> lastPersistTimestamp </span><span style="color:#F97583">>=</span><span style="color:#E1E4E8"> persistInterval</span></span>
+<span class="line"><span style="color:#F97583">  await</span><span style="color:#B392F0"> modifyMessage</span><span style="color:#E1E4E8">(sessionId, targetMsg, </span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">, </span><span style="color:#F97583">!</span><span style="color:#E1E4E8">shouldPersist)</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (shouldPersist) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    lastPersistTimestamp </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Date.</span><span style="color:#B392F0">now</span><span style="color:#E1E4E8">()</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li>
+<p>每次模型返回新内容（如流式 token）时被调用。</p>
+</li>
+<li>
+<p>统计首 token 延迟（只记录第一次有内容的耗时）。</p>
+</li>
+<li>
+<p>合并新内容到 targetMsg，清理 status。</p>
+</li>
+<li>
+<p><strong>低频持久化</strong>：每 2 秒才真正持久化到存储，其余时间只更新缓存（<code>updateOnlyCache</code>）。</p>
+</li>
+<li>
+<p>通过计算Persist的时间戳实现，结合modifyMessage的OnlyCache参数，验证当前的时间戳是否应该持久化</p>
+</li>
+</ul>
+<h4 id="4-发起流式生成">4. 发起流式生成</h4>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="typescript"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> result</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#B392F0"> streamText</span><span style="color:#E1E4E8">(model, {</span></span>
+<span class="line"><span style="color:#E1E4E8">  sessionId: session.id,</span></span>
+<span class="line"><span style="color:#E1E4E8">  messages: promptMsgs,</span></span>
+<span class="line"><span style="color:#E1E4E8">  onResultChangeWithCancel: modifyMessageCache,</span></span>
+<span class="line"><span style="color:#E1E4E8">  providerOptions: settings.providerOptions,</span></span>
+<span class="line"><span style="color:#E1E4E8">  knowledgeBase,</span></span>
+<span class="line"><span style="color:#E1E4E8">  webBrowsing,</span></span>
+<span class="line"><span style="color:#E1E4E8">})</span></span></code></pre>
+<ul>
+<li>
+<p>调用模型的流式接口，生成消息内容。</p>
+</li>
+<li>
+<p>每收到一块内容就触发 <code>modifyMessageCache</code>，实现“边生成边展示”。</p>
+</li>
+<li>
+<p>在 streamText 源码中，模型每生成一块内容就会调用一次 params.onResultChangeWithCancel，也就是modifyMessageCache的函数</p>
+</li>
+</ul>
+<h4 id="5-生成结束写入最终状态">5. 生成结束，写入最终状态</h4>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="typescript"><code><span class="line"><span style="color:#E1E4E8">targetMsg </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  ...</span><span style="color:#E1E4E8">targetMsg,</span></span>
+<span class="line"><span style="color:#E1E4E8">  generating: </span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  cancel: </span><span style="color:#79B8FF">undefined</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">  tokensUsed: targetMsg.tokensUsed </span><span style="color:#F97583">??</span><span style="color:#B392F0"> estimateTokensFromMessages</span><span style="color:#E1E4E8">([</span><span style="color:#F97583">...</span><span style="color:#E1E4E8">promptMsgs, targetMsg]),</span></span>
+<span class="line"><span style="color:#E1E4E8">  status: [],</span></span>
+<span class="line"><span style="color:#E1E4E8">  finishReason: result.finishReason,</span></span>
+<span class="line"><span style="color:#E1E4E8">  usage: result.usage,</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#F97583">await</span><span style="color:#B392F0"> modifyMessage</span><span style="color:#E1E4E8">(sessionId, targetMsg, </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">)</span></span></code></pre>
+<ul>
+<li>
+<p>标记生成结束，补充 token 统计、finishReason、usage 等信息。</p>
+</li>
+<li>
+<p>持久化最终消息状态。</p>
+</li>
+</ul>
+<p><strong>这段代码的作用：</strong></p>
+<ul>
+<li>实现了消息内容的流式生成与实时展示。</li>
+<li>通过 2 秒节流，降低持久化频率，提升性能。</li>
+<li>统计首 token 延迟，便于性能分析。</li>
+<li>保证每次内容变更都能被 UI 及时感知，最终状态可靠落盘。</li>
+</ul>
+<p><strong>核心优化点：</strong></p>
+<ul>
+<li><strong>流式回调 + 低频持久化</strong>（高频 UI 响应，低频存储写入）</li>
+<li><strong>首 token 延迟统计</strong></li>
+<li><strong>状态合并与错误处理</strong></li>
+</ul> </div> </article>  </main> </body></html>

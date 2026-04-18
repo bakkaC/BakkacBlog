@@ -2,11 +2,12 @@
 import BaseLayout from '../../layouts/Layout.astro';
 import ArticleList from '../../components/collection/ArticleList.astro';
 import { getCollection } from 'astro:content';
+import { getContentDateTimestamp } from '../../lib/content-date';
 
 const entries = await getCollection('blogs');
 const sorted = [...entries].sort((a, b) => {
-  const aDate = a.data.date ? new Date(a.data.date).getTime() : 0;
-  const bDate = b.data.date ? new Date(b.data.date).getTime() : 0;
+  const aDate = getContentDateTimestamp(a.data.date);
+  const bDate = getContentDateTimestamp(b.data.date);
   if (aDate !== bDate) return bDate - aDate;
   return a.slug.localeCompare(b.slug, 'zh-Hans');
 });

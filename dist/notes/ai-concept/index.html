@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ai-concept | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/ai-concept"><meta property="og:title" content="ai-concept | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/ai-concept"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="ai-concept | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-02-03T17:41:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"ai-concept","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/ai-concept","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/ai-concept"},"inLanguage":"zh-Hans","datePublished":"2026-02-03T17:41:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> ai-concept </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/2/3 </p> </div> <div class="markdown"> <ul>
+<li>
+<p>LLM 大语言模型</p>
+</li>
+<li>
+<p>LLM本身只能针对文字进下词元预测，即原始能力只有续写，所有衍生能力都是对续写的封装</p>
+</li>
+<li>
+<p>人为的为文字区分角色，即把一段字当做提问者，大语言当做解答者，让续写可以被封装成问答</p>
+</li>
+<li>
+<p>提问者使用场景下，输入的文字往往分为两个部分</p>
+<ul>
+<li>context：上下文，也就是背景信息</li>
+<li>prompt：提示词，也就是指令</li>
+</ul>
+</li>
+<li>
+<p>由于本质是续写，那么就只能做单次问答，无法实现追问，为了解决这个问题，可以把之前的对话内容也当做上下文，隐式的加入到下一次的提问中</p>
+<ul>
+<li>自动整理的对话内容，作为新的上下文，称之为 memory</li>
+<li>context 的概念，上下文也得到扩展，除了你给出的背景信息还有自动整理的 memory</li>
+</ul>
+</li>
+<li>
+<p>大语言模型本身的只能基于训练数据做预测续写，那么对于时效性和数据里没有提前准备好的部分，就无法保证内容质量</p>
+<ul>
+<li>想要得到期望的内容，最有效的方法就是给大语言模型他缺少的信息，但是人为的收集，再给大语言就本末倒置了，为什么自己去找了，还要再问大语言呢</li>
+<li>希望搜索，补充信息的过程自动化，这可以通过 coding 解决，调用 Google 的 API，然后补充信息，再生成回复</li>
+<li>在用户眼里就只有右侧的一问一答，于是又是一个成功的封装</li>
+<li>早期也就是简单的加一段 prompt ，根据大语言的回复做一些字符串判断是否调用 API</li>
+<li><img  loading="lazy" decoding="async" fetchpriority="auto" width="2210" height="1072" src="/CandyCoreBlog/_astro/file-20260223173413335.Bq4OR6oe_1odogs.webp" ></li>
+</ul>
+</li>
+<li>
+<p>因为这个中间的 layer 似乎有了智能，可以自己查询自己需要的内容，还能调用自己需要的工具（如这里的 web searching），所以将这个中间层取名为 智能体Agent</p>
+<ul>
+<li>既然Agent能联网搜索，那应该也能调用本地的外部文档数据，只不过不是用传统的数据库来做，而是使用向量 数据库，做语义化的检索</li>
+<li>这种通过向量检索做语义匹配，并加入上下文的技术，叫做 RAG 检索增强生成</li>
+<li>RAG 和 web search都可以被称为 search，即获取模型参数外信息的能力</li>
+</ul>
+</li>
+<li>
+<p>现在的架构如下<img  loading="lazy" decoding="async" fetchpriority="auto" width="1376" height="946" src="/CandyCoreBlog/_astro/file-20260223173413333.DO9U5_gY_2ai3Q8.webp" ></p>
+<ul>
+<li>前文提到 agent 使用字符串匹配，来判断工具的调用，但是大语言不确定的回答格式，显然会为这个规则带来困难</li>
+<li>为了解决这个困难，可以显式prompt 规定大模型回复 agent 的格式，比如 JSON</li>
+<li>就类似于前后端的 API 规定</li>
+</ul>
+</li>
+<li>
+<p>这种按照约定调用工具的方式，叫做 function calling</p>
+</li>
+<li>
+<p>前文的架构工具写在 Agent 内部的，而如果工具作为外部的服务，如何进行通信呢，于是就又规定了一套协议，用于规定通讯格式，也就是 MCP</p>
+</li>
+<li>
+<p>Agent 就像是一个传话筒，四处收集信息回答给我们<img  loading="lazy" decoding="async" fetchpriority="auto" width="2016" height="1092" src="/CandyCoreBlog/_astro/file-20260223173413331.B2PBJWJZ_shfTU.webp" ></p>
+</li>
+<li>
+<p>底层是肯定是文字，但是交互上可以有各种形式衍生<img  loading="lazy" decoding="async" fetchpriority="auto" width="1198" height="752" src="/CandyCoreBlog/_astro/file-20260223173413330%201.DAt-FjTg_1ppSAe.webp" ></p>
+</li>
+<li>
+<p>对于一些重复使用的可以编程固定的流程，每次让 Agent 发挥不仅不稳定，还效率低下，那为什么不把他们抽象出来呢，实现这个东西的方式，一种是 langchain，更低代码拖拽的形式就是 workflow<img  loading="lazy" decoding="async" fetchpriority="auto" width="2024" height="946" src="/CandyCoreBlog/_astro/file-20260223173413330.BfMi6-T9_1aKHt0.webp" ></p>
+</li>
+<li>
+<p>假设不是这种单一的场景，输入可能是各种格式，而输出又有可能是各种格式，那么写 if else 来判断显然不能是规模化的，不可能为所有的情况都写一套 workflow</p>
+</li>
+<li>
+<p>而解决方案是，把这一系列工具放在一个文件夹里，再写一个类似说明书的文档，让大模型去读取，按需生成回复，调用需要的工具，就可以实现上述无法实现的复杂判断了</p>
+</li>
+<li>
+<p>而这又带来了优化空间，可以规定其放在指定的位置里，这样不用每次都主动让 Agent 读取这个文件的一句废话，再把它隐式的加入prompt 中，而这就是 skill</p>
+</li>
+<li>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1896" height="1104" src="/CandyCoreBlog/_astro/file-20260223173413328.D2sGPx4C_1nyjEE.webp" ></p>
+</li>
+<li>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1914" height="1012" src="/CandyCoreBlog/_astro/file-20260223173413326.Ccf1KO6u_ZtbEcS.webp" ></p>
+</li>
+<li>
+<p>而现在导致上下文膨胀，显然会影响质量和成本</p>
+</li>
+<li>
+<p>于是又发明了subAgent，对上下文进行隔离子 Agent 的上下文不会再 Agent 里保存</p>
+</li>
+</ul>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1878" height="1006" src="/CandyCoreBlog/_astro/file-20260223173413325.BoFZkAo6_Z2oc4y3.webp" ></p> </div> </article>  </main> </body></html>

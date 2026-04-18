@@ -1,10 +1,11 @@
 import { defineCollection, z } from 'astro:content';
+import { normalizeContentDate } from '../lib/content-date';
 
 const baseSchema = z
   .object({
     title: z.string().optional(),
     description: z.string().optional(),
-    date: z.coerce.date().optional(),
+    date: z.preprocess(normalizeContentDate, z.string().optional()),
     tags: z.array(z.string()).optional(),
   })
   .passthrough();

@@ -1,0 +1,412 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>react并发模式原理与应用 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/react%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8"><meta property="og:title" content="react并发模式原理与应用 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/react%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="react并发模式原理与应用 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-02-01T16:49:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"react并发模式原理与应用","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/react%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/react%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8"},"inLanguage":"zh-Hans","datePublished":"2026-02-01T16:49:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> react并发模式原理与应用 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/2/1 </p> </div> <div class="markdown"> <p>React并发模式部分：</p>
+<ul>
+<li><a href="https://vercel.com/blog/how-react-18-improves-application-performance">https://vercel.com/blog/how-react-18-improves-application-performance</a></li>
+<li><a href="https://7km.top/main/scheduler">https://7km.top/main/scheduler</a></li>
+<li><a href="https://jser.dev/react/2022/03/16/how-react-scheduler-works">https://jser.dev/react/2022/03/16/how-react-scheduler-works</a></li>
+<li><a href="https://jser.dev/react/2022/03/26/lanes-in-react">https://jser.dev/react/2022/03/26/lanes-in-react</a></li>
+</ul>
+<h2 id="并发模式带来的优化">并发模式带来的优化</h2>
+<p>并发模式优化的是react执行渲染的所耗费的时间</p>
+<h3 id="相关性能指标">相关性能指标</h3>
+<p>总阻塞时间（TBT）是一个重要指标，它测量从首次内容绘制（First Contentful Paint, FCP）到可交互（Time to Interactive, TTI）之间的时间。TBT 是执行时间超过 50 毫秒的任务所花费时间的总和，这会对用户体验产生重大影响。</p>
+<p><img alt="由于在 TTI 之前有两个任务执行时间超过 50 毫秒，TBT 为 45 毫秒，这两个任务分别超过了 50 毫秒阈值 30 毫秒和 15 毫秒。总阻塞时间是这些值的累积：30 毫秒 + 15 毫秒 \\\\\\\= 45 毫秒。" loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="300" src="/CandyCoreBlog/_astro/imagesThe_TBT_is_45ms_since_we_have_two_tasks_that_took_longer_than_50ms_be.CeWGg9GL_Z2iUwLI.webp" ></p>
+<p>由于在 TTI 之前有两个任务执行时间超过 50 毫秒，TBT 为 45 毫秒，这两个任务分别超过了 50 毫秒阈值 30 毫秒和 15 毫秒。总阻塞时间是这些值的累积：30 毫秒 + 15 毫秒 = 45 毫秒。</p>
+<p>交互式下一次绘制（INP），一项新的核心网页指标，衡量用户首次与页面交互（例如点击按钮）到该交互在屏幕上可见（下一次绘制）的时间。这一指标对于具有大量用户交互的页面尤为重要，例如电子商务网站或社交媒体平台。它通过累积用户当前访问期间的所有 INP 测量值，并返回最差分数来衡量。</p>
+<p><img alt="交互式下一次绘制为 250 毫秒，因为这是测量的最高视觉延迟" loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="276" src="/CandyCoreBlog/_astro/imagesThe_Interaction_to_Next_Paint_is_250ms_as_its_the_highest_measured_vi.DjQv0Fvn_D0DpO.webp" ></p>
+<p>交互式下一次绘制为 250 毫秒，因为这是测量的最高视觉延迟</p>
+<ul>
+<li><strong>TBT（Total Blocking Time）</strong> 衡量：主线程被 >50ms 长任务阻塞的总时长。</li>
+<li><strong>INP（Interaction to Next Paint）</strong> 衡量：一次用户交互 → 下一次可视更新的延迟。</li>
+</ul>
+<p>二者的共同敌人都是：</p>
+<blockquote>
+<p>长时间不可中断的 JS 执行。</p>
+</blockquote>
+<p><strong>长时间不可中断的 JS 执行的来源于react的计算，这也是原本同步react的缺陷</strong></p>
+<h3 id="同步react">同步react</h3>
+<p>React 的渲染阶段是一个纯计算阶段，React 元素与现有 DOM 进行比对（即比较）。这个阶段涉及创建一个新的 React 元素树，也称为”虚拟 DOM”，它本质上是实际 DOM 的一个轻量级内存表示。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="622" src="/CandyCoreBlog/_astro/imagesimage.Be8LveR__1WGBg2.webp" ></p>
+<p>在渲染阶段，React 计算当前 DOM 与新的 React 组件树之间的差异，并准备必要的更新。</p>
+<p>在渲染阶段之后是提交阶段。在这个阶段，React 将渲染阶段计算出的更新应用到实际的 DOM 上。这包括创建、更新和删除 DOM 节点，以反映新的 React 组件树。</p>
+<p>在传统的同步渲染中，React 会对组件树中的所有元素给予相同的优先级。</p>
+<p>当渲染组件树时，无论是初始渲染还是状态更新，React 会继续以单个不可中断的任务渲染整个树，然后将其提交到 DOM 中以更新屏幕上的组件。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1660" height="256" src="/CandyCoreBlog/_astro/imagesThe_main_thread_is_responsible_for_handling_tasks_one_by_one.BJXA2ifo_ZCQMMw.webp" ></p>
+<p>react的执行时间是执行Javascript的时间，同步渲染的过程，每个组件一旦开始了就必须渲染出来（render phase，整颗fiber tree），不允许中断，在重型组件中，就会导致阻塞其他任务</p>
+<p>为了解决这个问题，有了并发模式的react</p>
+<h3 id="并发模式效果">并发模式效果</h3>
+<p>React 18 引入了一个新的并发渲染器，在后台运行。这个渲染器提供了一些方式让我们标记某些渲染为非紧急。</p>
+<p><img alt="在渲染低优先级组件（粉色）时，React 会让出主线程以检查更重要的任务" loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="683" src="/CandyCoreBlog/_astro/imagesWhen_rendering_the_low-priority_components_(pink)_React_yields_back_t.BHQ7F68g_Z1HvIgA.webp" ></p>
+<p>在渲染低优先级组件（粉色）时，React 会让出主线程以检查更重要的任务</p>
+<p>在这种情况下，React 每 5 毫秒会回退到主线程，查看是否有更重要的任务需要处理，例如用户输入，甚至渲染对用户体验更重要的 React 组件状态更新。通过持续回退到主线程，React 能够使这些渲染操作非阻塞，并优先处理更重要的任务。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="407" src="/CandyCoreBlog/_astro/imagesInstead_of_a_single_non-interruptible_task_for_every_render_the_concu.CA80ZvyN_Z26BVKU.webp" ></p>
+<p>在每次渲染不是单一不可中断的任务的情况下，并发渲染器在低优先级组件的（重新）渲染过程中每隔 5 毫秒将控制权交还给主线程。</p>
+<p>此外，并发渲染器能够在后台“并发地”渲染组件树的多个版本，而无需立即提交结果。</p>
+<p>同步渲染是一种全有或全无的计算，而并发渲染器允许 React 暂停和恢复一个或多个组件树的渲染，以实现最优的用户体验。</p>
+<p><img alt="React 基于用户交互而暂停当前渲染，迫使它优先渲染另一个更新" loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="788" src="/CandyCoreBlog/_astro/imagesReact_pauses_the_current_render_based_on_a_user_interaction_that_force.BJXBgLwJ_Z1yxS69.webp" ></p>
+<p>React 基于用户交互而暂停当前渲染，迫使它优先渲染另一个更新</p>
+<p>利用并发特性，React 可以根据用户交互等外部事件暂停和恢复组件的渲染。当用户开始与</p>
+<p>ComponentTwo 交互时，React 暂停了当前的渲染，优先渲染 ComponentTwo，然后继续渲染 ComponentOne 。</p>
+<p>假设有一个文本输入框和一个包含大量城市的列表，该列表会根据文本输入框的当前值进行过滤。在同步渲染中，React 会在每次按键时重新渲染 <strong><code>CitiesList</code></strong> 组件。由于列表包含数万个城市，这是一个非常昂贵的计算，因此，在按键和看到文本输入框中反映这一变化之间存在明显的视觉反馈延迟。如果你使用的是高端设备，你可能需要将 CPU 限制为 4 倍以模拟低端设备。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> React, { useState } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "react"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> CityList </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "./CityList"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> default</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> SearchCities</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">text</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setText</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Am"</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">   return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">main</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">h1</span><span style="color:#E1E4E8">>Traditional Rendering&#x3C;/</span><span style="color:#85E89D">h1</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">input</span><span style="color:#B392F0"> type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text"</span><span style="color:#B392F0"> onChange</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{(</span><span style="color:#FFAB70">e</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#B392F0"> setText</span><span style="color:#E1E4E8">(e.target.value) }   /></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">CityList</span><span style="color:#B392F0"> searchQuery</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{text} /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">main</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">     );</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<p>每次按键都会因为要渲染CityList发生长任务阻塞绘制，导致输入ab，的a和b之间存在明显的延迟，这是不理想的。</p>
+<p>在这种情况下，React 开发者通常会使用 <strong><code>debounce</code></strong> 等第三方库来延迟渲染，但没有内置的解决方案。</p>
+<p>在每次按键时直接更新并作为 <strong><code>searchQuery</code></strong> 参数的值，这反过来又会导致每次按键时进行同步渲染调用（props的更新导致render）</p>
+<p>并发模式下我们可以降低CityList更新的优先级，导致一个下一个字符被输入时，打断CityList的渲染，优先绘制输入的字符</p>
+<h2 id="并发模式的使用方式">并发模式的使用方式</h2>
+<p>常见的两种方式是transition和suspense</p>
+<ul>
+<li>transition 是：
+<ul>
+<li><strong>“由优先级标记触发的并发 render 调度”</strong></li>
+</ul>
+</li>
+<li>Suspense 本质上是：
+<ul>
+<li><strong>“由异步条件触发的并发 render 暂停 / 恢复”</strong></li>
+</ul>
+</li>
+</ul>
+<p>两者共享同一套机制：</p>
+<ul>
+<li>Fiber</li>
+<li>时间切片</li>
+<li>抢占式调度</li>
+</ul>
+<h3 id="transition">Transition</h3>
+<p>一个方式是使用useTransition的hooks</p>
+<p>我们可以通过使用由 <strong><code>useTransition</code></strong> 钩子提供的 <strong><code>startTransition</code></strong> 函数将更新标记为非紧急。这是一个强大的新功能，允许我们将某些状态更新标记为“过渡”，表示它们可能导致视觉变化，如果同步渲染，可能会中断用户体验。</p>
+<p>通过将状态更新包装在 <strong><code>startTransition</code></strong> 中，我们可以告诉 React 我们愿意推迟或中断渲染，以优先处理更重要的任务，保持当前用户界面具有交互性。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="902" src="/CandyCoreBlog/_astro/imagesimage-1.D2HFdre5_Z1daAcF.webp" ></p>
+<p>当触发startTransition时（类似setState是一个触发渲染的update信号），并发渲染器会开始构建fiber tree。一旦渲染完成，它会将结果保存在内存中，直到 React Scheduler能够高效地更新 DOM 以反映新状态。这个时刻可能是浏览器空闲且没有更高优先级的任务（如用户交互）待处理</p>
+<p>对于之前的例子，我们可以将状态拆分为两个值，并将 <strong><code>searchQuery</code></strong> 的状态更新在 <strong><code>startTransition</code></strong> 中。</p>
+<p>现在当我们输入字段中输入时，用户输入保持流畅，按键之间没有任何视觉延迟。这是因为 <strong><code>text</code></strong> 状态仍然同步更新，输入字段将其用作 <strong><code>value</code></strong> 。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> React, { useState, useTransition } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "react"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> CityList </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "./CityList"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> default</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> SearchCities</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">text</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setText</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"Am"</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">searchQuery</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setSearchQuery</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(text);</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">isPending</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">startTransition</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useTransition</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">   return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#85E89D">main</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">h1</span><span style="color:#E1E4E8">>&#x3C;</span><span style="color:#85E89D">code</span><span style="color:#E1E4E8">>startTransition&#x3C;/</span><span style="color:#85E89D">code</span><span style="color:#E1E4E8">>&#x3C;/</span><span style="color:#85E89D">h1</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#85E89D">input</span></span>
+<span class="line"><span style="color:#B392F0">              type</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"text"</span></span>
+<span class="line"><span style="color:#B392F0">              value</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{text}</span></span>
+<span class="line"><span style="color:#B392F0">              onChange</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{(</span><span style="color:#FFAB70">e</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">                 setText</span><span style="color:#E1E4E8">(e.target.value)</span></span>
+<span class="line"><span style="color:#B392F0">                 startTransition</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">                    setSearchQuery</span><span style="color:#E1E4E8">(e.target.value)</span></span>
+<span class="line"><span style="color:#E1E4E8">                 })</span></span>
+<span class="line"><span style="color:#E1E4E8">             }}  /></span></span>
+<span class="line"><span style="color:#E1E4E8">          &#x3C;</span><span style="color:#79B8FF">CityList</span><span style="color:#B392F0"> searchQuery</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{searchQuery} /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#85E89D">main</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">     );</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<p>在运行时，React 在每次按键时开始以并发模式渲染新的树。但这个任务并非1/0的同步操作，React 在当前 UI（显示“旧”状态）保持对进一步用户输入的响应的同时，开始在内存中准备组件树的新版本。</p>
+<h3 id="suspense-in-react-18">Suspense in react 18</h3>
+<p>另一个重要的并发特性是 <strong><code>Suspense</code></strong> 。</p>
+<p>早期（React 16）：</p>
+<ul>
+<li>Suspense ≈ <code>React.lazy</code> 的加载占位</li>
+<li>解决的是 <strong>代码没下载完</strong></li>
+</ul>
+<p>React 18 之后：</p>
+<ul>
+<li>Suspense 可以覆盖 <strong>数据没准备好</strong></li>
+<li>条件不再只是 “JS 加载完成”</li>
+<li>而是 <strong>“这个组件渲染所需的前置条件是否满足”</strong></li>
+</ul>
+<p>这里主要讲react 18下suspense基于并发模式的特性，在包体积相关的优化时会展开讲前者的用法</p>
+<blockquote>
+<p>Suspense 是一个声明式的“渲染是否可继续”边界。</p>
+</blockquote>
+<p>使用 <strong><code>Suspense</code></strong> ，我们可以在满足特定条件（如从远程源加载数据）之前延迟组件的渲染。在此期间，我们可以渲染一个备用组件，以指示该组件仍在加载中。</p>
+<ul>
+<li>不再写：</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">data)</span><span style="color:#F97583">return</span><span style="color:#E1E4E8">&#x3C;</span><span style="color:#79B8FF">Loading</span><span style="color:#E1E4E8"> /></span></span></code></pre>
+<ul>
+<li>而是：
+<ul>
+<li>组件在 render 阶段 <strong>直接等待（suspend）</strong></li>
+<li>外层 Suspense 决定显示 fallback</li>
+</ul>
+</li>
+</ul>
+<p>好处是因果关系很清楚：</p>
+<ul>
+<li><strong>数据没到 → 组件不能渲染 → fallback 出现</strong></li>
+<li>逻辑从「组件内部条件分支」转为「渲染流程的一部分」</li>
+</ul>
+<p>例如，当组件被挂起时，比如因为它仍在等待数据加载，React 不会只是闲置直到组件收到数据。相反，它会暂停挂起组件的渲染，并将注意力转移到其他任务上。</p>
+<ul>
+<li><strong>旧方案 (useEffect + useState)</strong>：</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> Profile</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">user</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setUser</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">null</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#E1E4E8"> [</span><span style="color:#79B8FF">loading</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">setLoading</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  useEffect</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">    fetchUser</span><span style="color:#E1E4E8">().</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">data</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">      setUser</span><span style="color:#E1E4E8">(data);</span></span>
+<span class="line"><span style="color:#B392F0">      setLoading</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">false</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }, []);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (loading) </span><span style="color:#F97583">return</span><span style="color:#E1E4E8"> &#x3C;</span><span style="color:#79B8FF">Spinner</span><span style="color:#E1E4E8"> />; </span><span style="color:#6A737D">// 手动处理状态</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">>{user.name}&#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">>;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li><strong>新方案 (Suspense + 支持异步的库)</strong>： 使用 TanStack Query (React Query) 或集成框架时：</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#6A737D">// 开启 suspense 模式</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> { </span><span style="color:#FFAB70">data</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">user</span><span style="color:#E1E4E8"> } </span><span style="color:#F97583">=</span><span style="color:#B392F0"> useSuspenseQuery</span><span style="color:#E1E4E8">({ queryKey: [</span><span style="color:#9ECBFF">'user'</span><span style="color:#E1E4E8">], queryFn: fetchUser });</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 组件里直接写业务逻辑，不需要判断 loading</span></span>
+<span class="line"><span style="color:#6A737D">// 如果数据没回，React 会自动去上层找最近的 &#x3C;Suspense></span></span>
+<span class="line"><span style="color:#F97583">return</span><span style="color:#E1E4E8"> &#x3C;</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">>{user.name}&#x3C;/</span><span style="color:#85E89D">div</span><span style="color:#E1E4E8">>;</span></span></code></pre>
+<ul>
+<li><strong>应用点</strong>：你可以把加载状态（Loading）的控制权上移到父级。多个并排的组件可以被包裹在一个 <code>Suspense</code> 里，实现“全有或全无”的同步显示，避免页面像打补丁一样一块块跳出来。</li>
+</ul>
+<p>Suspense结合服务端能力，进行ssr时，还能结合并发模式有更强的能力，最终出现rsc这样的东西，感兴趣可阅读一开始贴出的一些文章</p>
+<h2 id="concurrent-mode-under-the-hood">Concurrent mode Under the hood</h2>
+<p>这里谈并发模式这一套机制怎么实现的</p>
+<h3 id="scheduler">Scheduler</h3>
+<p>在使用scheduler之前，react使用的是requestidleCallback进行任务的执行（同步方案）</p>
+<p>他利用空闲时间的方式是以帧为单位</p>
+<blockquote>
+<p>浏览器判断：在下一帧截止前，还有“用不完的时间”</p>
+</blockquote>
+<p>这段时间：</p>
+<ul>
+<li>不影响输入</li>
+<li>不影响动画</li>
+<li>可以被“让出去”</li>
+</ul>
+<p>浏览器通过 <strong><code>requestIdleCallback</code></strong> 暴露它。</p>
+<p>浏览器的一帧(16.67ms)：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#79B8FF">1.</span><span style="color:#E1E4E8"> 处理输入事件（input </span><span style="color:#F97583">/</span><span style="color:#E1E4E8"> click </span><span style="color:#F97583">/</span><span style="color:#E1E4E8"> scroll）</span></span>
+<span class="line"><span style="color:#79B8FF">2.</span><span style="color:#E1E4E8"> 执行 JavaScript</span></span>
+<span class="line"><span style="color:#79B8FF">3.</span><span style="color:#E1E4E8"> 样式计算（Recalculate Style）</span></span>
+<span class="line"><span style="color:#79B8FF">4.</span><span style="color:#E1E4E8"> 布局（Layout </span><span style="color:#F97583">/</span><span style="color:#E1E4E8"> Reflow）</span></span>
+<span class="line"><span style="color:#79B8FF">5.</span><span style="color:#E1E4E8"> 绘制（Paint）</span></span>
+<span class="line"><span style="color:#79B8FF">6.</span><span style="color:#E1E4E8"> 合成（Composite）</span></span>
+<span class="line"><span style="color:#79B8FF">7.</span><span style="color:#E1E4E8"> 等待下一帧</span></span></code></pre>
+<p>Scheduler的想法是既然 JavaScript 不能被抢占，那就把一件大工作拆成很多次“短暂占用主线程”，每次占用完立刻退出，让浏览器有机会处理交互以及绘制等等任务</p>
+<p>拆分任务的单位是一次render，从root到fiber树构建到commit的过程，</p>
+<p>让出主线程的方式是，把当前的render任务放到eventloop的宏任务队列，这样主线程js执行的负担会大量减少，同步js基本不会阻塞事件、交互等等js的执行</p>
+<p>而等到主线程空闲时主线程自然就会处理宏任务，这样就自然地实现了任务的中断和恢复</p>
+<p>中断即意味着一次任务拆分，中断的触发由两个事情决定，分别是时间片耗尽和更高优先级的任务抢占</p>
+<p>调度器自己会维护一个优先队列，把短时间内的渲染任务放在里面，通过循环直至处理完所有任务</p>
+<p>完成一个任务/中断一个任务，会把优先队列的队头放入浏览器的宏任务队列，决定下一个执行的任务</p>
+<h3 id="优先级依据">优先级依据</h3>
+<p>核心依据有三类（从高到低）：</p>
+<ol>
+<li><strong>是否直接来自用户输入</strong>
+<ul>
+<li>例如：点击、输入、滚动、拖拽。</li>
+<li>这类更新如果延迟，用户会立刻感觉“卡”。</li>
+</ul>
+</li>
+<li><strong>是否会阻塞界面可用性</strong>
+<ul>
+<li>比如：影响布局、可点击状态、视觉反馈的更新。</li>
+<li>这些更新即使不是输入触发，也必须尽快完成。</li>
+</ul>
+</li>
+<li><strong>是否属于“可以延后”的状态变化</strong>
+<ul>
+<li>例如：搜索结果列表、复杂计算后的展示。</li>
+<li>延迟不会破坏当前交互，只影响“内容新不新”。</li>
+</ul>
+</li>
+</ol>
+<p>React 在内部会把这些场景映射到不同的 Lane 类型：</p>
+<ul>
+<li>同步（Sync）</li>
+<li>用户阻塞型（Input/Blocking）</li>
+<li>普通（Default）</li>
+<li>过渡（Transition）</li>
+<li>空闲（Idle）</li>
+</ul>
+<p>所以，<strong>优先级本质上 = 这个更新对“当前交互是否顺畅”的影响程度。</strong></p>
+<h3 id="lane">Lane</h3>
+<p>Update是触发react渲染的来源</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Update 类型</th><th>典型 API / 场景</th><th>语义</th><th>结果</th></tr></thead><tbody><tr><td>State 更新</td><td><code>setState</code>, <code>dispatch</code>, <code>useState</code></td><td>组件内部状态变化</td><td>分配 Lane → 触发一次 render</td></tr><tr><td>Props 变化</td><td>父组件重新 render</td><td>输入数据变化</td><td>子 Fiber 产生 Update</td></tr><tr><td>Context 更新</td><td><code>Context.Provider</code> value 改变</td><td>依赖的全局状态变化</td><td>所有订阅 Fiber 更新</td></tr><tr><td>Force 更新</td><td><code>forceUpdate()</code></td><td>跳过 shouldComponentUpdate</td><td>强制 render</td></tr><tr><td>外部 Store</td><td><code>useSyncExternalStore</code></td><td>外部数据源变更</td><td>并发安全订阅更新</td></tr><tr><td>Suspense 恢复</td><td>Promise resolve</td><td>异步数据就绪</td><td>从 fallback 恢复渲染</td></tr></tbody></table>
+<p>Update的对象是一个fiber，快照和快照之间发生的一系列update通过Lane表示</p>
+<p>Lane是一个表示某个fiber更新的优先级的集合，就像这样</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="cpp"><code><span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> TotalLanes </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 31</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> NoLanes: Lanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> NoLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                          */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> SyncLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000000001</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> InputContinuousHydrationLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*    */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000000010</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> InputContinuousLane: Lanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*            */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000000100</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> DefaultHydrationLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*            */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000001000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> DefaultLane: Lanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                    */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000010000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionHydrationLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000000100000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLanes: Lanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000001111111111111111000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane1: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000001000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane2: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000010000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane3: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000000100000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane4: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000001000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane5: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000010000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane6: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000000100000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane7: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000001000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane8: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000010000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane9: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                        */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000000100000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane10: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000001000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane11: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000010000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane12: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000000100000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane13: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000001000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane14: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000010000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane15: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000000100000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> TransitionLane16: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000001000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> RetryLanes: Lanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                            */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000111110000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> RetryLane1: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                             */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000010000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> RetryLane2: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                             */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000000100000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> RetryLane3: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                             */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000001000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> RetryLane4: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                             */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000010000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> RetryLane5: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                             */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0000100000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> SomeRetryLane: Lane </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> RetryLane1;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> SelectiveHydrationLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*          */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0001000000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#E1E4E8"> NonIdleLanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                                 */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0001111111111111111111111111111</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> IdleHydrationLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*               */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0010000000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> IdleLane: Lanes </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                       */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">0100000000000000000000000000000</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#E1E4E8"> OffscreenLane: Lane </span><span style="color:#F97583">=</span><span style="color:#6A737D"> /*                   */</span><span style="color:#F97583"> 0b</span><span style="color:#79B8FF">1000000000000000000000000000000</span><span style="color:#E1E4E8">;</span></span></code></pre>
+<p>Lane 的本质不是“优先级”，而是“可并行状态集合的高效表示符号与运算模型”。</p>
+<p>在复杂调度的语境下，相对普通类似集合的数据结构，位图模型的性能和实现难度都有很大的优势</p>
+<p><code>Lane</code> 用于标记更新的优先级，我们也可以说标记一项工作的优先级。</p>
+<p>fiber 树是一个可双向遍历的链表树</p>
+<p>这意味着lane可冒泡，最终是否yield是由这些子lane经过一系列冒泡位运算，得到的根lane</p>
+<p>rootlane参与scheduler的调度</p>
+<p>lane的生命周期：</p>
+<p>Lane诞生于一个update（比如一次setState，这往往发生在workloop之外，因为workloop是阻塞其他计算的），然后，update进入系统的方式是在current fiber进行标记，首先会冒泡影响root Lane，作为下次调度的优先级依据，其次下次的render的reconcile会把这个update消费落实</p>
+<h3 id="并发模式运行方式">并发模式运行方式</h3>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="800" src="/CandyCoreBlog/_astro/imagesimage-2.qzeJl9eO_1mtHCy.webp" ></p>
+<p>为了避免一些条件判断开销，旧的同步循环和新的并发循环是两种方式</p>
+<p>在用到了并发特性时，才会进入并发循环，发生上述的fiber行为变化，否则还是纯粹的同步循环</p>
+<p>对于一个fiber的节点：</p>
+<p>开始之前：</p>
+<ul>
+<li><strong>并发逻辑：</strong> 在进入 beginWork 之前，React 会先对比当前 rootFiber 节点的 <strong>lanes</strong>（优先级）。</li>
+<li><strong>Bailout (跳过) 机制：</strong> 如果当前 Fiber 节点的优先级低于本次渲染的优先级，且子节点也没有更高优先级的更新（检查 childLanes），React 会<strong>直接克隆并跳过</strong>这个 Fiber 及其子树，不去执行 Diff。这是并发模式高性能的关键。</li>
+</ul>
+<p>useState 在 Render Phase 的计算逻辑</p>
+<ul>
+<li>同步模式：hook.queue 里的 update 只要有，就全量执行，算出新 state。</li>
+<li><strong>并发模式：</strong> useState 的内部逻辑变成了 <strong>“优先级筛选器”</strong>。
+<ul>
+<li><strong>场景：</strong> 假设有三个更新：A(Sync), B(Transition), C(Sync)。</li>
+<li><strong>Render Phase 内部逻辑：</strong> 当 React 在渲染一个 Transition 优先级时，它会<strong>跳过</strong> A 和 C。</li>
+<li><strong>计算差异：</strong> 它必须维护一个 baseState 和 baseQueue。当它渲染低优先级的 B 时，它会记录下哪些高优先级的更新被跳过了，以便在未来重新合并。</li>
+<li><strong>结论：</strong> <strong>Hooks 的内部代码完全变了。</strong> 为了支持 Lane，Hooks 的状态更新函数需要处理复杂的数学逻辑，以保证在多次打断、重试后，状态依然正确。</li>
+</ul>
+</li>
+</ul>
+<p>Transition的工作方式：</p>
+<ul>
+<li><strong>分配低优先级 Lane：</strong> startTransition 会将其包裹的状态更新标记为 TransitionLane（这是一个比用户输入、点击优先级低很多的等级）。</li>
+<li><strong>渲染决策：</strong>
+<ul>
+<li>当渲染进入 workLoopConcurrent 时，React 发现当前处理的是 TransitionLane。</li>
+<li>在每一轮 Fiber 单元处理后，shouldYield() 会检查：<strong>“是否有更高优先级的任务（比如 SyncLane 的点击事件）进来了？”</strong></li>
+</ul>
+</li>
+<li><strong>打断（Interruption）：</strong>
+<ul>
+<li>如果有，React 会<strong>立即中断</strong>当前的 Transition 渲染。</li>
+<li><strong>关键点：</strong> 此时 WIP 树被丢弃或搁置，React 先去处理高优先级的点击事件，渲染完成后，再重新启动刚才被中断的 Transition 任务。</li>
+</ul>
+</li>
+<li><strong>感知：</strong> 这就是为什么你在搜索框输入时，输入框不会卡顿（SyncLane），而下方的搜索列表可以“慢吞吞”地渲染（TransitionLane）。</li>
+</ul>
+<p>这个过程是基本不影响fiber构建过程的，在影响fiber的选择上</p>
+<p>Suspense则不同</p>
+<p>在并发模式中，一个 Suspense 结构大致是：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>&#x3C;Suspense></span></span>
+<span class="line"><span>  primary children// 正常内容</span></span>
+<span class="line"><span>  fallback children// loading / 占位</span></span>
+<span class="line"><span>&#x3C;/Suspense></span></span></code></pre>
+<p>内部对应：</p>
+<ul>
+<li>一棵 <strong>主内容树（primary tree）</strong></li>
+<li>一棵 <strong>fallback 树</strong></li>
+<li>“切换” = 这次 commit 选择 fallback 作为可见子树</li>
+<li>而不是把原来的内容删掉再重建</li>
+</ul>
+<p>正常情况：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Suspense</span></span>
+<span class="line"><span> └─ PrimaryContent Fiber Tree</span></span></code></pre>
+<p>挂起时：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Suspense</span></span>
+<span class="line"><span> ├─ Offscreen(Primary ContentFiber Tree)// 隐藏</span></span>
+<span class="line"><span> └─ FallbackFiber Tree// 当前可见</span></span></code></pre>
+<p>Offscreen = 既不卸载，又不阻塞，还可被延后调度的隐藏子树。只是通过极低的lane让他到最后再执行</p>
+<p>挂起意味着，产生fiber过程中，某个fiber依赖的数据没有获取到，那么就能通过offScreen进行封存，保存生成的fiber，拿完数据后，下次rerender的diff中，不用生成已经生成过的fiber</p>
+<p>Suspense 的恢复 = Promise 触发一次低成本的重渲染，React 通过 Offscreen 复用旧 Fiber，把隐藏的主内容重新变为可见</p>
+<h1 id="whats-next">What’s next</h1>
+<p>懒加载和并发模式结合，在ssr中的性能优化，可以看这两个资料的相关部分</p>
+<p><a href="https://vercel.com/blog/how-react-18-improves-application-performance">https://vercel.com/blog/how-react-18-improves-application-performance</a></p>
+<p><a href="https://oceanofpdf.com/category/authors/nadia-makarevich/">https://oceanofpdf.com/category/authors/nadia-makarevich/</a></p> </div> </article>  </main> </body></html>

@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 
 import { FilesystemItem } from '../ui/filesystem-item';
+import { formatContentDate, getContentDateTimestamp } from '../../lib/content-date';
 
 interface Props {
   title: string;
@@ -20,9 +21,6 @@ const withBase = (path: string) => {
   const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
   return `${normalizedBase}${normalizedPath}`;
 };
-
-const formatDate = (value?: Date) =>
-  value ? new Date(value).toLocaleDateString('zh-Hans') : '';
 
 const accentThemes = [
   { path: '/notes', accent: '#60a5fa' },
@@ -82,8 +80,8 @@ const sortNodes = (nodes: TreeNode[]) => {
     if (a.entry && !b.entry) return 1;
     if (!a.entry && b.entry) return -1;
     if (a.entry && b.entry) {
-      const aDate = a.entry.data.date ? new Date(a.entry.data.date).getTime() : 0;
-      const bDate = b.entry.data.date ? new Date(b.entry.data.date).getTime() : 0;
+      const aDate = getContentDateTimestamp(a.entry.data.date);
+      const bDate = getContentDateTimestamp(b.entry.data.date);
       if (aDate !== bDate) return bDate - aDate;
     }
     return a.name.localeCompare(b.name, 'zh-Hans');
@@ -107,7 +105,7 @@ const toFilesystemNodes = (nodes: TreeNode[]): FilesystemNode[] => {
         href: withBase(`${rootPath}/${node.entry.slug}`),
         index: String(localIndex).padStart(2, '0'),
         title: node.entry.data.title ?? node.name,
-        meta: formatDate(node.entry.data.date),
+        meta: formatContentDate(node.entry.data.date),
         description: node.entry.data.description,
       };
     }

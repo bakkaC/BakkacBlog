@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import { formatContentDate } from '../../lib/content-date';
 
 export async function getStaticPaths() {
   const entries = await getCollection('blogs');
@@ -33,7 +34,7 @@ const { Content } = await entry.render();
       </h1>
       {entry.data.date ? (
         <p class="mt-2 text-sm text-muted-foreground">
-          {new Date(entry.data.date).toLocaleDateString('zh-Hans')}
+          {formatContentDate(entry.data.date)}
         </p>
       ) : null}
     </div>

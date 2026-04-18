@@ -1,0 +1,338 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>React 哲学-渲染-总结 new | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/thoughts/react-%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93-new"><meta property="og:title" content="React 哲学-渲染-总结 new | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/thoughts/react-%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93-new"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="React 哲学-渲染-总结 new | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-04-01"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"React 哲学-渲染-总结 new","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/thoughts/react-%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93-new","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/thoughts/react-%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93-new"},"inLanguage":"zh-Hans","datePublished":"2026-04-01","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch" aria-current="page"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> React 哲学-渲染-总结 new </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/4/1 </p> </div> <div class="markdown"> <h2 id="哲学">哲学</h2>
+<p>React 是一个 UI 库：你描述 UI，库自动帮你操作 DOM。它带来了编程思维的转变，使得前端开发不用再直接维护 DOM。</p>
+<p>React 的语法是 JSX，它把 JS 逻辑和 HTML、CSS 放在一起，提出“组件才是逻辑边界”。</p>
+<p>React 提出的模型是声明式编程。你的 UI 不应该是手动拼出来的，而是由数据自动生成的。</p>
+<ul>
+<li>命令式编程关注“怎么做”，你需要一步步告诉计算机如何执行任务</li>
+<li>声明式编程关注“做什么”，你只描述想要的结果，而不关心具体执行步骤</li>
+</ul>
+<p>React 的核心哲学是：UI 是状态的纯函数。</p>
+<p>这是一种 React 专属的声明式模型。声明式编程的效果加上函数式编程的实现，就是 <code>UI = f(state)</code>。函数式实现意味着 render 是纯函数，state 决定 UI，相同的 state 只能得到相同的输出，就像数学函数一样。</p>
+<h3 id="react-的性能优化">React 的性能优化</h3>
+<p>一次渲染，就是一次函数调用。UI 更新，就是一次新的函数调用，也就是 rerender。</p>
+<p>rerender 显然会带来严重的性能问题，React 的做法是引入 React Element 对象，也就是 React 世界里的 virtual DOM。</p>
+<ol>
+<li>不直接操作 DOM，而是操作代表 DOM、且可还原为 DOM 的 JS 对象，让浏览器环境的负担被转移和优化。</li>
+<li>这个对象可以用于对比前后差异，做最小化更新，使 rerender 不用重复做大量计算。</li>
+</ol>
+<h3 id="react-的-state-和不可变性">React 的 state 和不可变性</h3>
+<p>UI 是快照，state 是常量，UI 更新是通过创建新的 state 作为新的输入再次执行函数。</p>
+<p>这使得 React 的比较可以直接比较引用，不用递归，从而减少性能开销。因为更新意味着要重新创建值，引用天然会变化。</p>
+<h3 id="react-的-effect">React 的 Effect</h3>
+<p>这套模型带来了一种“无运动、无生命周期、只有常量”的 UI 抽象。但事实上，state 更新与数据变化往往不是纯声明式就能完整解决的。</p>
+<p>状态之间会相互影响，一些非 DOM 渲染逻辑 React 无法管理，异步操作和命令式 API 也天然和声明式哲学相悖。</p>
+<p>React 对这个现实问题给出的方案是 Effect 抽象，可以理解为：</p>
+<p><code>UI = f(state) + effect(state)</code></p>
+<p>一个声明式快照确定后，再执行这个快照对应的命令式副作用，去同步那些不属于 React 声明式管理范围内的部分，从而达到真实世界里需要的效果。</p>
+<p>这通过引入一个额外阶段，避免直接回到生命周期和命令式模型，但也带来了一些别扭感。某种意义上，Effect 的存在本身就说明前端 UI 世界很难被一个纯函数抽象彻底覆盖。</p>
+<h2 id="render-implementation">Render Implementation</h2>
+<p>React 的渲染实现也和上面的思路高度契合。回到 <code>UI = f(state) + effect(state)</code>，这天然地把逻辑分成两个阶段，而 React 的渲染也正是两个阶段。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="2748" height="2467" src="/CandyCoreBlog/_astro/file-20260413145628573.80TwS3hN_Z8fbGz.webp" ></p>
+<h3 id="why-fiber">Why Fiber</h3>
+<p>diff 的目的是最小化更新，而 diff 的前提是构造中的 element 必须有可比较的对象。</p>
+<p>这个可比较的树应该能代表已经确定的 DOM 结构。element 对象在遍历结束、没有引用后就会被垃圾回收。</p>
+<p>如果直接拿带 DOM 引用的 element 做比较，实际上会走向旧的 Stack Reconciler 模型。这个模型的问题在于：</p>
+<ul>
+<li>element 和实例树之间没有一个中间层保存临时状态</li>
+<li>遍历时必须边走边改 DOM</li>
+<li>一旦中间出错，就会污染 DOM，而且无法回滚</li>
+</ul>
+<p>所以 React 希望把更新分成两个阶段：</p>
+<ol>
+<li>先收集所有修改并打上标记</li>
+<li>再统一提交，避免中途失败污染真实 DOM</li>
+</ol>
+<p>但 diff 本身又是一个会互相影响的过程，前一个更新会影响后一个更新，插入和删除也会改变树结构，所以不能只靠一个简单的“变更表”。</p>
+<p>答案就是 fiber 的双缓冲结构，引入一个 work-in-progress 的草稿层，在内存里边遍历边修改，但不立刻修改 DOM。</p>
+<p>这使得 React 从“旧实例树 + element + DOM”的三层结构，演化成“旧 fiber + element + WIP fiber + DOM”的四层结构。</p>
+<p>fiber 从对象树变成链表树，遍历过程中通过修改指针来更新内存结构，标记 flag，收集 effect list，最终在整棵树构建完成之后统一提交，形成了今天的 render phase 和 commit phase。</p>
+<p>fiber 的结构示意：</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1645" height="1553" src="/CandyCoreBlog/_astro/file-20260413145719656.Bq1ptiFi_Z19zsVT.webp" ></p>
+<h3 id="render-phase">Render Phase</h3>
+<p>渲染流程可以概括为：</p>
+<p>从 root 出发，深度优先遍历。每创建一个新的 React Element，就创建一个对应的 WIP fiber，再将“新生成的 React Element”和“当前的 Fiber（Current Fiber）”进行 diff，也就是 reconciliation，根据结果给 WIP fiber 打标记。</p>
+<ul>
+<li><code>React.createElement()</code> 的调用本身就是嵌套递归的</li>
+<li>父组件里有子组件时，遍历顺序天然就是 DFS</li>
+<li>子组件 element 的创建过程，本来就属于父组件 element 的创建过程</li>
+</ul>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="2064" height="950" src="/CandyCoreBlog/_astro/file-20260413145758457.CEV9HKkW_Z2wrnXW.webp" ></p>
+<p>每创建一个 fiber，还要确定其真实父节点，以便后续 DOM 操作。因为 functional component 的存在，fiber tree 和 DOM tree 并不是一一对应的。</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="682" src="/CandyCoreBlog/_astro/file-20260413145830729.DO5AgOvD_1ARIN0.webp" ></p>
+<h3 id="diff-算法">Diff 算法</h3>
+<p>React 在 diff 时首先检查两个核心字段：</p>
+<ul>
+<li><code>type</code>：节点种类，例如 <code>div</code>、<code>span</code> 或自定义组件</li>
+<li><code>key</code>：节点唯一身份，告诉 React“虽然位置变了，但我还是原来的我”</li>
+</ul>
+<h4 id="场景一完全匹配">场景一：完全匹配</h4>
+<p>当 <code>type</code> 和 <code>key</code> 都相同，React 认为节点可以复用。</p>
+<ul>
+<li>基于旧 fiber 创建 WIP fiber</li>
+<li>继承旧 fiber 上的 DOM 实例 <code>stateNode</code></li>
+<li>如果 <code>props</code> 有变化，就打上 <code>Update</code> 标记</li>
+</ul>
+<h4 id="场景二不匹配">场景二：不匹配</h4>
+<p>当 <code>type</code> 不同，或者 <code>key</code> 不同，节点不可复用。</p>
+<ol>
+<li>将旧 fiber 标记为 <code>Deletion</code></li>
+<li>根据新的 React Element 创建新的 WIP fiber，并标记为 <code>Placement</code></li>
+</ol>
+<p>这意味着对应 DOM 节点会被彻底卸载并重新创建。</p>
+<h4 id="场景三只有-element">场景三：只有 Element</h4>
+<p>遍历新的 element 树时，如果某个位置有 element，但旧 fiber 里没有对应节点：</p>
+<ol>
+<li>根据 element 创建新的 WIP fiber</li>
+<li>标记为 <code>Placement</code></li>
+<li>在 commit 阶段将对应 DOM 实例挂载到父节点下</li>
+</ol>
+<h4 id="场景四只有-fiber">场景四：只有 Fiber</h4>
+<p>旧 fiber 树里还剩节点，但新的 element 树已经没有对应描述：</p>
+<ol>
+<li>将这些旧 fiber 标记为 <code>Deletion</code></li>
+<li>在 commit 阶段统一从真实 DOM 树中移除</li>
+</ol>
+<p>对于 DOM 操作，不能停在 functional component 上，必须找到最近的 DOM fiber。</p>
+<ul>
+<li><code>Placement</code> 要把当前节点链接到真正的 DOM fiber，而不是 functional component 的 fiber</li>
+<li><code>Deletion</code> 要把子 DOM fiber 从最近的父 DOM fiber 里移除</li>
+</ul>
+<h3 id="commit-phase">Commit Phase</h3>
+<p>diff，也就是 reconcile 阶段，用的是 current fiber 和 new element 的对比。</p>
+<p>mutation，也就是 commit 阶段，用的是 current fiber 和 work-in-progress fiber 的对比。</p>
+<p>commit phase 可以分成几个子阶段：</p>
+<ul>
+<li>Before Mutation
+<ul>
+<li>清理旧副作用</li>
+<li>读取旧的 DOM 状态</li>
+<li>运行旧的 <code>useEffect</code> cleanup</li>
+<li>处理 <code>getSnapshotBeforeUpdate</code></li>
+</ul>
+</li>
+<li>Mutation
+<ul>
+<li><code>Update</code>：移除旧 props 和事件，再挂上新的 props 和事件</li>
+<li><code>Deletion</code>：执行 <code>removeChild</code></li>
+<li><code>Placement</code>：执行 <code>appendChild</code></li>
+</ul>
+</li>
+<li>Layout
+<ul>
+<li>执行 <code>useLayoutEffect</code></li>
+</ul>
+</li>
+</ul>
+<h2 id="常见-hooks">常见 Hooks</h2>
+<h3 id="usestate">useState</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> useState</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">initialState</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (hooks.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ===</span><span style="color:#E1E4E8"> hookIndex) {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> hook</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">      value: initialState,</span></span>
+<span class="line"><span style="color:#E1E4E8">      queue: [],</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"><span style="color:#E1E4E8">    hooks.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(hook);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> currentHook</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> hooks[hookIndex];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (currentHook.queue.</span><span style="color:#79B8FF">length</span><span style="color:#F97583"> ></span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    let</span><span style="color:#E1E4E8"> baseValue </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> currentHook.value;</span></span>
+<span class="line"><span style="color:#E1E4E8">    currentHook.queue.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">action</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">      baseValue </span><span style="color:#F97583">=</span></span>
+<span class="line"><span style="color:#F97583">        typeof</span><span style="color:#E1E4E8"> action </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#F97583"> ?</span><span style="color:#B392F0"> action</span><span style="color:#E1E4E8">(baseValue) </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> action;</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">    currentHook.value </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> baseValue;</span></span>
+<span class="line"><span style="color:#E1E4E8">    currentHook.queue </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [];</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> thisHookIndex</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> hookIndex;</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> setState</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">action</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    hooks[thisHookIndex].queue.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(action);</span></span>
+<span class="line"><span style="color:#B392F0">    render</span><span style="color:#E1E4E8">(MyComponent);</span></span>
+<span class="line"><span style="color:#E1E4E8">  };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  hookIndex</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> [currentHook.value, setState];</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<h3 id="useeffect-的坑">useEffect 的坑</h3>
+<ul>
+<li>无限循环渲染：在 effect 内部更新了某个状态，而这个状态又是它自己的依赖</li>
+<li>闭包陷阱与陈旧值：依赖数组漏写依赖时，effect 永远锁定在旧渲染周期的值</li>
+<li>不必要的派生状态同步：props 变化后再通过 effect <code>setState</code> 同步一份本地状态，会多一次渲染</li>
+<li>忘记清理外部订阅：全局监听和定时器没有清理时，容易造成内存泄漏</li>
+<li>依赖陷阱：依赖数组里放组件内定义的函数，会导致 effect 高频重跑</li>
+</ul>
+<h3 id="其他-hooks">其他 hooks</h3>
+<ul>
+<li><code>useLayoutEffect</code>：只有当你需要在浏览器重绘前同步读写 DOM，以避免视觉抖动时才使用</li>
+<li><code>useRef</code>：提供一个跨渲染周期保持不变的容器，内部值变化不会触发重渲染</li>
+<li><code>useMemo</code> / <code>useCallback</code>：缓存值和函数，避免在 rerender 时重复创建</li>
+<li><code>useContext</code>：可以理解为 props drilling 的语法糖，但也会带来更大范围 rerender 的风险</li>
+<li><code>useReducer</code>：适合复杂状态逻辑</li>
+<li><code>useSyncExternalStore</code>：用于读取并订阅外部数据源，确保并发渲染模式下的数据一致性</li>
+</ul>
+<h2 id="状态管理工具">状态管理工具</h2>
+<p>Zustand 和 TanStack Query 是现在很常见的两个库。前者偏客户端状态管理，后者偏服务端状态管理。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>特性</th><th>Zustand / Redux</th><th>TanStack Query</th></tr></thead><tbody><tr><td>管理内容</td><td>本地同步状态（UI 交互）</td><td>服务端异步状态（接口数据）</td></tr><tr><td>底层模式</td><td>发布订阅 / 观察者</td><td>发布订阅 / 观察者</td></tr><tr><td>数据更新源</td><td>用户手动 <code>set</code> 或 <code>dispatch</code></td><td>网络请求、缓存失效、窗口聚焦等自动触发</td></tr><tr><td>React 桥梁</td><td><code>useSyncExternalStore</code></td><td><code>useSyncExternalStore</code></td></tr><tr><td>核心挑战</td><td>状态一致性</td><td>缓存失效策略、竞态处理、数据新鲜度</td></tr></tbody></table>
+<p>共同原理都是发布订阅加 <code>useSyncExternalStore()</code>。</p>
+<h3 id="1-zustand-的核心实现">1. Zustand 的核心实现</h3>
+<p>Zustand 的核心就是“一个外部对象 + 发布订阅”。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { useSyncExternalStore } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'react'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#B392F0"> createStore</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">createState</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  let</span><span style="color:#E1E4E8"> state;</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> listeners</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Set</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> getState</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> state;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> subscribe</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">listener</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">    listeners.</span><span style="color:#B392F0">add</span><span style="color:#E1E4E8">(listener);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> listeners.</span><span style="color:#B392F0">delete</span><span style="color:#E1E4E8">(listener);</span></span>
+<span class="line"><span style="color:#E1E4E8">  };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> setState</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">partial</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> nextState</span><span style="color:#F97583"> =</span></span>
+<span class="line"><span style="color:#F97583">      typeof</span><span style="color:#E1E4E8"> partial </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span><span style="color:#F97583"> ?</span><span style="color:#B392F0"> partial</span><span style="color:#E1E4E8">(state) </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> partial;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (nextState </span><span style="color:#F97583">!==</span><span style="color:#E1E4E8"> state) {</span></span>
+<span class="line"><span style="color:#E1E4E8">      state </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Object.</span><span style="color:#B392F0">assign</span><span style="color:#E1E4E8">({}, state, nextState);</span></span>
+<span class="line"><span style="color:#E1E4E8">      listeners.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">listener</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#B392F0"> listener</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  state </span><span style="color:#F97583">=</span><span style="color:#B392F0"> createState</span><span style="color:#E1E4E8">(setState, getState);</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> { getState, setState, subscribe };</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#B392F0"> create</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">createState</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> api</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> createStore</span><span style="color:#E1E4E8">(createState);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> useStore</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">selector</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#B392F0"> useSyncExternalStore</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">      api.subscribe,</span></span>
+<span class="line"><span style="color:#E1E4E8">      () </span><span style="color:#F97583">=></span><span style="color:#B392F0"> selector</span><span style="color:#E1E4E8">(api.</span><span style="color:#B392F0">getState</span><span style="color:#E1E4E8">())</span></span>
+<span class="line"><span style="color:#E1E4E8">    );</span></span>
+<span class="line"><span style="color:#E1E4E8">  };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> useStore;</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<p>关键点：</p>
+<ul>
+<li><code>createStore</code> 通过闭包持有唯一的 <code>state</code> 和 <code>listeners</code></li>
+<li><code>subscribe</code> 注册订阅者</li>
+<li><code>setState</code> 更新状态并通知所有订阅者</li>
+<li><code>useSyncExternalStore</code> 把这个外部 store 接进 React 渲染系统</li>
+</ul>
+<h3 id="2-tanstack-query-的核心实现">2. TanStack Query 的核心实现</h3>
+<p>TanStack Query 的核心是“全局缓存 Map + 异步任务调度 + 观察者”。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { useSyncExternalStore, useCallback } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'react'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> queryCache</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Map</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> listeners</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> Map</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#B392F0"> notify</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">key</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (listeners.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(key)) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    listeners.</span><span style="color:#B392F0">get</span><span style="color:#E1E4E8">(key).</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">cb</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#B392F0"> cb</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#B392F0"> fetchData</span><span style="color:#F97583"> =</span><span style="color:#F97583"> async</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">key</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">queryFn</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> data</span><span style="color:#F97583"> =</span><span style="color:#F97583"> await</span><span style="color:#B392F0"> queryFn</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">    queryCache.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(key, { data, status: </span><span style="color:#9ECBFF">'success'</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">  } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#E1E4E8">    queryCache.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(key, { error, status: </span><span style="color:#9ECBFF">'error'</span><span style="color:#E1E4E8"> });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  notify</span><span style="color:#E1E4E8">(key);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> const</span><span style="color:#B392F0"> useQuery</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">key</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">queryFn</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#79B8FF"> subscribe</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> useCallback</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">onStoreChange</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">listeners.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(key)) listeners.</span><span style="color:#B392F0">set</span><span style="color:#E1E4E8">(key, </span><span style="color:#F97583">new</span><span style="color:#B392F0"> Set</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">    listeners.</span><span style="color:#B392F0">get</span><span style="color:#E1E4E8">(key).</span><span style="color:#B392F0">add</span><span style="color:#E1E4E8">(onStoreChange);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">queryCache.</span><span style="color:#B392F0">has</span><span style="color:#E1E4E8">(key)) {</span></span>
+<span class="line"><span style="color:#B392F0">      fetchData</span><span style="color:#E1E4E8">(key, queryFn);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">      listeners.</span><span style="color:#B392F0">get</span><span style="color:#E1E4E8">(key).</span><span style="color:#B392F0">delete</span><span style="color:#E1E4E8">(onStoreChange);</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"><span style="color:#E1E4E8">  }, [key]);</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  const</span><span style="color:#B392F0"> getSnapshot</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> queryCache.</span><span style="color:#B392F0">get</span><span style="color:#E1E4E8">(key) </span><span style="color:#F97583">||</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">      status: </span><span style="color:#9ECBFF">'loading'</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">      data: </span><span style="color:#79B8FF">undefined</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"><span style="color:#E1E4E8">  };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#B392F0"> useSyncExternalStore</span><span style="color:#E1E4E8">(subscribe, getSnapshot);</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span></code></pre>
+<h3 id="3-两者的核心区别">3. 两者的核心区别</h3>
+<ol>
+<li>数据结构不同
+Zustand 是单一对象；TanStack Query 是按 key 划分的缓存 Map。</li>
+<li>更新驱动源不同
+Zustand 更偏手动触发；TanStack Query 更偏副作用驱动和异步状态机。</li>
+<li>订阅粒度不同
+Zustand 通过 selector 做局部过滤；TanStack Query 直接按 key 订阅。</li>
+<li><code>useSyncExternalStore</code> 的角色相同
+它们都把外部数据源安全地接到 React 并发渲染模型里。</li>
+</ol>
+<h3 id="map--store-设计差异为什么合理">Map / Store 设计差异为什么合理</h3>
+<ul>
+<li>TanStack Query 面对的是服务端数据，这些数据通常天然就是碎片化、按 key 独立存在的，所以适合 Map</li>
+<li>Zustand 面对的是本地 UI 状态，往往高度关联，适合用单对象做原子化更新</li>
+<li>Query 是缓存，没人使用时就应该清理</li>
+<li>Zustand 是仓库，通常不希望因为某个组件卸载就自动销毁</li>
+<li>Zustand 的 selector 让你可以灵活订阅任意派生结果，比预定义 key 更适合 UI 逻辑</li>
+</ul>
+<h2 id="react-18--19-更新">React 18 &#x26; 19 更新</h2>
+<p>React 18 的主线是并发模式，React 19 的主线包括 React Compiler，另一条长期主线则是 SSR 和 RSC 生态。</p>
+<p>常见的新能力包括：</p>
+<ul>
+<li><code>useTransition</code>：支持可打断的低优先级渲染</li>
+<li><code>useEventEffect</code>：解决 effect 里既想拿最新值、又不想因为依赖变化重跑订阅的问题</li>
+<li><code>&#x3C;Activity></code></li>
+<li><code>&#x3C;Suspense></code> 的增强</li>
+<li>与 RSC、SSR 相关的一系列能力</li>
+</ul> </div> </article>  </main> </body></html>

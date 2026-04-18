@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { formatSchemaDate } from '../lib/content-date';
 
 interface Props {
   title?: string;
@@ -43,7 +44,7 @@ const ogImageUrl = Astro.site
   : withBase(ogImagePath);
 
 const resolvedOgType = ogType ?? 'website';
-const publishedISO = publishedTime ? new Date(publishedTime).toISOString() : undefined;
+const publishedISO = formatSchemaDate(publishedTime);
 const rssUrl = Astro.site ? new URL(withBase('/rss.xml'), Astro.site).toString() : withBase('/rss.xml');
 
 const identityUrl = Astro.site ? new URL(withBase('/'), Astro.site).toString() : withBase('/');

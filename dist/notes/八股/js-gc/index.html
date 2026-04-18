@@ -1,1 +1,134 @@
-<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>八股/js-gc | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc"><meta property="og:title" content="八股/js-gc | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="八股/js-gc | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2025-12-08T13:04:00.000Z"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"八股/js-gc","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc"},"inLanguage":"zh-Hans","datePublished":"2025-12-08T13:04:00.000Z","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.Cp1AtLUs.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 八股/js-gc </h1> <p class="mt-2 text-sm text-muted-foreground"> 2025/12/8 </p> </div> <div class="markdown">  </div> </article>  </main> </body></html>
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>八股/js-gc | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc"><meta property="og:title" content="八股/js-gc | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="八股/js-gc | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2025-12-08T21:04:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"八股/js-gc","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/js-gc"},"inLanguage":"zh-Hans","datePublished":"2025-12-08T21:04:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 八股/js-gc </h1> <p class="mt-2 text-sm text-muted-foreground"> 2025/12/8 </p> </div> <div class="markdown"> <h1 id="一基本做法标记清理mark-sweep"><strong>一、基本做法：标记清理（Mark-Sweep）</strong></h1>
+<p>传统 GC 流程：</p>
+<ol>
+<li>开始时认为所有对象都是“需要清理”的（白色）。</li>
+<li>从根对象出发遍历，把访问到的对象标记为 active（黑色）。</li>
+<li>遍历结束后，未标记的对象即为垃圾。</li>
+<li>执行清理。</li>
+</ol>
+<p><strong>缺点</strong></p>
+<p>标记清除算法有一个很大的缺点，就是在清除之后，剩余的对象内存位置是不变的，也会导致空闲内存空间是不连续的，出现了 <code>内存碎片</code>，并且由于剩余空闲内存不是一整块，它是由不同大小内存组成的内存列表，这就牵扯出了内存分配的问题</p>
+<p>需要通过 <strong>标记整理（Mark-Compact）算法</strong> 进行内存整理</p>
+<hr>
+<h1 id="二v8-的代际优化generational-gc"><strong>二、V8 的代际优化（Generational GC）</strong></h1>
+<p>V8 把堆划分成：</p>
+<ul>
+<li><strong>新生代（新对象）</strong></li>
+<li><strong>老生代（存活较久的对象）</strong></li>
+</ul>
+<p>不同区域使用不同的回收算法，以获得最优性能。</p>
+<hr>
+<h1 id="三新生代scavenge复制算法-copying-gc"><strong>三、新生代：Scavenge（复制算法 Copying GC）</strong></h1>
+<h3 id="1-新生代特点"><strong>1. 新生代特点</strong></h3>
+<ul>
+<li>对象生命周期短，大部分对象在创建后很快死亡。</li>
+<li>空间较小（几 MB）。</li>
+<li>必须高频快速回收。</li>
+</ul>
+<h3 id="2-scavenge-机制from--to-复制"><strong>2. Scavenge 机制（From → To 复制）</strong></h3>
+<p>新生代堆分成两个等大小的半区：</p>
+<ul>
+<li>From 区（使用中）</li>
+<li>To 区（空闲）</li>
+</ul>
+<p>GC 流程：</p>
+<ol>
+<li>扫描 From 区的对象。也是标记法</li>
+<li>将存活对象（active）复制到 To 区并排序。活对象都转移到空闲区（修改指针）</li>
+<li>执行引用更新，由于活对象指针修改了，from 区只剩下死对象，进行清空</li>
+<li>From/To 角色互换。让真正空闲的区域变为空闲区，真正使用的区域变为使用区</li>
+</ol>
+<h3 id="3-复制算法的优点"><strong>3. 复制算法的优点</strong></h3>
+<ul>
+<li><strong>只处理活对象，死对象自动被淘汰，不需要额外清理。</strong></li>
+<li><strong>没有内存碎片</strong>（To 区是连续写入）。</li>
+<li><strong>分配速度快</strong>（bump pointer 方式分配）。</li>
+<li>非常适合新生代“死亡率高”的特性。</li>
+</ul>
+<h3 id="4-晋升到老生代"><strong>4. 晋升到老生代</strong></h3>
+<p>对象如果：</p>
+<ul>
+<li>经历多次新生代 GC 仍然存活，或</li>
+<li>占用空间较大</li>
+</ul>
+<p>则会被晋升到老生代。</p>
+<hr>
+<h1 id="四老生代标记--清理--整理mark-sweep--mark-compact"><strong>四、老生代：标记 + 清理 + 整理（Mark-Sweep + Mark-Compact）</strong></h1>
+<p>老生代对象多、存活时间长，不能用复制算法（成本太高）。</p>
+<p>流程：</p>
+<ol>
+<li>
+<p><strong>标记（Mark）</strong><br>
+从根对象扫描，标记可达对象。</p>
+</li>
+<li>
+<p><strong>清理（Sweep）</strong><br>
+回收未标记对象，但可能会产生碎片。</p>
+</li>
+<li>
+<p><strong>整理（Compaction）</strong><br>
+将存活对象移动，避免碎片（仅在需要时做，不是每次都做）。</p>
+</li>
+</ol>
+<hr>
+<h1 id="五v8-老生代优化增量标记"><strong>五、V8 老生代优化：增量标记</strong></h1>
+<p>老生代空间大，不能长时间阻塞 JS 线程，因此使用<strong>增量标记</strong>（Incremental Marking）：</p>
+<ul>
+<li>把原本一次性做完的“标记”拆分，让 JS 和 GC 交替执行。</li>
+<li>每次只处理一小部分标记任务。</li>
+</ul>
+<h3 id="三色法写屏障"><strong>三色法+写屏障：</strong></h3>
+<ul>
+<li><strong>白色</strong>：未访问（可能是垃圾）</li>
+<li><strong>灰色</strong>：已访问，子节点未处理</li>
+<li><strong>黑色</strong>：已访问，子节点也已处理</li>
+</ul>
+<p>GC 持续把灰色处理成黑色，直到无灰色对象。
+只有黑白二色，无法中断，因为一次执行的进度是没法表示的
+引入灰色之后就有了进度的概念，知道一次标记是否完成，知道执行到哪里了</p>
+<p>可以中断，可以增量的标记，使用户几乎感知不到 GC，pause time 大幅降低</p>
+<p>在增量标记过程中 JS 仍在执行，可能会出现：</p>
+<ul>
+<li>已标黑的对象新增指向白对象的引用</li>
+<li>这会破坏三色不变式，造成漏标</li>
+</ul>
+<p>解决方案就是写屏障</p>
+<p>当 JS 代码执行，会引起 bug 的情况就是黑 → 白，意味着已扫描的对象更新，最终本该清理的对象不会被清理</p>
+<p>写屏障使发生“黑 → 白”引用时，自动把白对象变成灰色（灰色一定会变为黑色，发生这个变色意味着这个节点就已经不会被删了，关键是其子节点），因为灰色把其子节点加入待处理队列了，不会漏扫</p>
+<p>保证：</p>
+<ul>
+<li>所有可达对象最终都会被标记到（变黑）</li>
+<li>清扫时不会误删仍然可达的对象</li>
+</ul>
+<hr>
+<h1 id="七增量标记为什么安全"><strong>七、增量标记为什么安全？</strong></h1>
+<ul>
+<li>
+<p>增量标记阶段<strong>不执行清扫</strong>，不会删除对象。</p>
+</li>
+<li>
+<p>最终会有一个短暂的 <strong>Final Mark（最终标记）</strong>：</p>
+<ul>
+<li>补齐所有可能漏掉的标记</li>
+<li>处理灰色队列</li>
+</ul>
+</li>
+<li>
+<p>Final Mark 之后，所有可达对象都为黑色；<br>
+白色对象才真正不可达，可执行清扫。</p>
+</li>
+</ul>
+<hr>
+<h1 id="八整体流程总结"><strong>八、整体流程总结</strong></h1>
+<h3 id="新生代"><strong>新生代</strong></h3>
+<ul>
+<li>算法：Scavenge（复制）</li>
+<li>特点：速度极快、无碎片、适用于大量短命对象</li>
+<li>晋升：多次存活的对象进入老生代</li>
+</ul>
+<h3 id="老生代"><strong>老生代</strong></h3>
+<ul>
+<li>算法：标记-清除 + 必要时压缩</li>
+<li>优化：三色法、增量标记、写屏障</li>
+<li>目标：减少 STW 时间（不阻塞 JS）</li>
+</ul> </div> </article>  </main> </body></html>

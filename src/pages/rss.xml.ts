@@ -1,6 +1,7 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import type { APIContext } from 'astro';
+import { getContentDateTimestamp, parseContentDate } from '../lib/content-date';
 
 export const prerender = true;
 
@@ -33,26 +34,26 @@ export async function GET(context: APIContext) {
       title: entry.data.title ?? entry.slug,
       description: entry.data.description,
       link: withBase(baseUrl, `/notes/${entry.slug}`),
-      pubDate: entry.data.date,
+      pubDate: parseContentDate(entry.data.date),
       categories: entry.data.tags,
     })),
     ...thoughts.map((entry) => ({
       title: entry.data.title ?? entry.slug,
       description: entry.data.description,
       link: withBase(baseUrl, `/thoughts/${entry.slug}`),
-      pubDate: entry.data.date,
+      pubDate: parseContentDate(entry.data.date),
       categories: entry.data.tags,
     })),
     ...blogs.map((entry) => ({
       title: entry.data.title ?? entry.slug,
       description: entry.data.description,
       link: withBase(baseUrl, `/blog/${entry.slug}`),
-      pubDate: entry.data.date,
+      pubDate: parseContentDate(entry.data.date),
       categories: entry.data.tags,
     })),
   ].sort((a, b) => {
-    const aTime = a.pubDate ? new Date(a.pubDate).getTime() : 0;
-    const bTime = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+    const aTime = getContentDateTimestamp(a.pubDate);
+    const bTime = getContentDateTimestamp(b.pubDate);
     return bTime - aTime;
   });
 
@@ -64,7 +65,7 @@ export async function GET(context: APIContext) {
       title: item.title,
       description: item.description ?? '',
       link: item.link,
-      pubDate: item.pubDate ?? new Date(),
+      ...(item.pubDate ? { pubDate: item.pubDate } : {}),
       categories: item.categories ?? [],
     })),
     customData: `<language>zh-cn</language>`,

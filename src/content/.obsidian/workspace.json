@@ -20,8 +20,37 @@
               "icon": "lucide-file",
               "title": "发布订阅模式"
             }
+          },
+          {
+            "id": "ed81752ce686ef0d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "notes/八股/Promise的拆解.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Promise的拆解"
+            }
+          },
+          {
+            "id": "aacac849cbbb046f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "writing/防抖与节流.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "防抖与节流"
+            }
           }
-        ]
+        ],
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -180,7 +209,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200
+    "width": 200,
+    "collapsed": true
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -198,52 +228,51 @@
   },
   "active": "adce2d0c460692ca",
   "lastOpenFiles": [
-    "未命名.base",
+    "实验报告.md",
+    "assets/实验报告/file-20260414143356038.png",
+    "assets/实验报告",
+    "assets",
+    "writing/防抖与节流.md",
+    "notes/八股/计算机网络（层级，协议，DNS，CDN，CORS）.md",
+    "notes/八股/simplified-setstate.md",
+    "notes/八股/Promise的拆解.md",
+    "notes/八股/事件循环.md",
+    "notes/八股/从 URL到浏览器渲染.md",
+    "notes/八股/前端工程化全史 1995-2025.md",
+    "notes/八股/浏览器渲染过程.md",
+    "notes/八股/对象&数组的深度遍历.md",
+    "notes/八股/发布订阅模式.md",
+    "notes/八股/js函数队列性质.md",
+    "notes/八股/js GC.md",
+    "notes/八股/JS ACM输入输出模板.md",
+    "notes/八股/HTTP.md",
+    "notes/八股/closure 闭包.md",
+    "thoughts/react设计策略与哲学.md",
+    "thoughts/React 哲学-渲染-总结 new.md",
+    "thoughts/AI coding Best Practice.md",
+    "thoughts/Adapter层的价值.md",
+    "thoughts/异步的价值.md",
+    "thoughts/assets/React 哲学-渲染-总结 new/file-20260413145847505.png",
+    "thoughts/assets/React 哲学-渲染-总结 new/file-20260413145830729.png",
+    "thoughts/assets/React 哲学-渲染-总结 new/file-20260413145758457.png",
+    "thoughts/assets/React 哲学-渲染-总结 new/file-20260413145719656.png",
+    "thoughts/assets/React 哲学-渲染-总结 new/file-20260413145628573.png",
+    "thoughts/assets/React 哲学-渲染-总结 new",
+    "notes/React并发模式原理与应用.md",
+    "notes/ESM 和 CJS.md",
+    "notes/chatbox阅读记录.md",
+    "notes/CRDT-Yjs 基本概念.md",
     "未命名 1.base",
-    "notes/实时通信策略—websocket-sse.md",
+    "未命名.base",
     "notes/assets/实时通信策略—websocket-sse/file-20260409163352684.png",
     "notes/assets/实时通信策略—websocket-sse/file-20260409163337605.png",
     "notes/assets/实时通信策略—websocket-sse",
-    "writing/防抖与节流.md",
-    "writing/Execution context 执行上下文.md",
-    "thoughts/style system.md",
-    "thoughts/UI的乐观更新策略.md",
-    "thoughts/图像批量裁剪的性能优化.md",
-    "thoughts/如何设计良好的react代码.md",
-    "thoughts/立绘预览的时序问题.md",
-    "notes/基于vite的代码拆分.md",
-    "notes/React并发模式原理与应用.md",
-    "notes/HTML渲染策略.md",
-    "notes/ESM 和 CJS.md",
-    "notes/CRDT-Yjs 基本概念.md",
-    "notes/chatbox阅读记录.md",
-    "thoughts/AI coding Best Practice.md",
-    "thoughts/react设计策略与哲学.md",
-    "thoughts/rsc--nextjs.md",
-    "thoughts/Standard Schema与全栈类型安全.md",
-    "blogs/3 月的阅读与思考.md",
-    "Excalidraw/Drawing 2026-04-09 14.08.20.excalidraw.md",
-    "notes/八股/发布订阅模式.md",
-    "archived/react Rendering strategy.md",
-    "Excalidraw/Drawing 2026-04-05 17.37.34.excalidraw.md",
-    "notes/八股/simplified-setstate.md",
-    "notes/八股/js函数队列性质.md",
     "Excalidraw/assets/ReactRrender.excalidraw/Pasted Image 20260214154710_147.png",
     "archived/assets/react Rendering strategy",
     "Excalidraw/assets/ReactRrender.excalidraw/Pasted Image 20260401223838_386.png",
-    "archived/assets/react Rendering strategy/file-20260401230911696.png",
-    "archived/assets/react Rendering strategy/file-20260401230911695.png",
-    "archived/assets/react Rendering strategy/file-20260401230911696 1.png",
     "archived/assets/文档bug相关记录",
     "thoughts/assets/style system",
     "archived/assets/状态管理库与组件解耦",
-    "notes/assets/chatbox阅读记录",
-    "notes/八股/assets/simplified-setstate",
-    "archived/assets/失恋-花-电锯",
-    "archived/assets/「 百米 」观后感",
-    "blogs/assets/3 月的阅读与思考/file-20260327153528682.png",
-    "notes/八股/assets/closure 闭包/file-20260222225252343.png",
-    "notes/assets/AI concept/file-20260223173413325.png",
     "未命名.canvas"
   ]
 }

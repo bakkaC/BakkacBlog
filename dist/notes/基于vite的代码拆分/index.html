@@ -1,0 +1,557 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>基于vite的代码拆分 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%9F%BA%E4%BA%8Evite%E7%9A%84%E4%BB%A3%E7%A0%81%E6%8B%86%E5%88%86"><meta property="og:title" content="基于vite的代码拆分 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%9F%BA%E4%BA%8Evite%E7%9A%84%E4%BB%A3%E7%A0%81%E6%8B%86%E5%88%86"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="基于vite的代码拆分 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2026-02-01T16:51:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"基于vite的代码拆分","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%9F%BA%E4%BA%8Evite%E7%9A%84%E4%BB%A3%E7%A0%81%E6%8B%86%E5%88%86","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%9F%BA%E4%BA%8Evite%E7%9A%84%E4%BB%A3%E7%A0%81%E6%8B%86%E5%88%86"},"inLanguage":"zh-Hans","datePublished":"2026-02-01T16:51:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 基于vite的代码拆分 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2026/2/1 </p> </div> <div class="markdown"> <p>参考和更多细节：</p>
+<p>包部分：</p>
+<ul>
+<li><a href="https://www.developerway.com/posts/bundle-size-investigation">https://www.developerway.com/posts/bundle-size-investigation</a></li>
+<li>以及文章作者的书：<a href="https://oceanofpdf.com/category/authors/nadia-makarevich/">https://oceanofpdf.com/category/authors/nadia-makarevich/</a></li>
+</ul>
+<h2 id="从包体积角度性能优化">从包体积角度性能优化</h2>
+<p>首先更系统的了解一下浏览器的流程</p>
+<p><strong>Network → Parse → Build → Layout/Paint → Execute &#x26; Interact</strong></p>
+<p>这条链路是顺序依赖的，中间任何一步变慢，后面的都会被拖住。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>HTML 下载</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>HTML Parse ──┬─> 遇到 CSS → 下载 → 构建 CSSOM</span></span>
+<span class="line"><span>             └─> 遇到 JS  → 下载 → 解析 → 执行（阻塞）</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>DOM + CSSOM → Render Tree</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>Layout → Paint → Composite</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>页面可见（FCP / LCP）</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>JS 继续执行</span></span>
+<span class="line"><span>  ↓</span></span>
+<span class="line"><span>页面可交互（TTI / INP）</span></span>
+<span class="line"><span></span></span></code></pre>
+<p>前文提到的都是js执行内部的优化，这里包体积则侧重于缩减js下载的网络时间</p>
+<h2 id="工具使用与前提">工具使用与前提</h2>
+<h3 id="打包器的职责">打包器的职责</h3>
+<p>首先js包是指一个chunk，若干js代码文件压缩后的集合</p>
+<p>后文中会提及两类chunk</p>
+<ul>
+<li><strong>一类 chunk</strong>：应用启动必须的代码（index）</li>
+<li><strong>另一类 chunk</strong>：第三方库，更新频率低、体积大（vendor）</li>
+</ul>
+<p>Vite的打包器（rollup）的默认行为</p>
+<p>可以把 Rollup 的默认行为概括为一句话：</p>
+<blockquote>
+<p>Rollup 会尝试“尽量少生成 chunk，同时避免明显的重复代码”。</p>
+</blockquote>
+<ul>
+<li><strong>减少请求（少生成 Chunk）：</strong> 浏览器发起 HTTP 请求是有开销的（尤其是建立连接的时间）。如果一个页面要下载 100 个 1KB 的小文件，速度远慢于下载 1 个 100KB 的大文件。所以 Rollup <strong>倾向于合包</strong>。</li>
+<li><strong>避免重复（去重）：</strong> 如果组件 A 和组件 B 都引用了 lodash，把 lodash 分别打包进 A 和 B 会导致重复下载。所以 Rollup <strong>倾向于把共享代码提取出来</strong>。</li>
+<li><strong>首屏纯净（按需）：</strong> 我只访问首页，你不能把后台管理页的代码也发给我。所以 Rollup <strong>倾向于把动态导入（lazy）的部分拆出去</strong>。</li>
+</ul>
+<p><strong>这三点是互相冲突的。</strong> 比如，为了“去重”，必然会增加“Chunk 数量”；为了“减少请求”，必然会牺牲“首屏纯净度”。</p>
+<ul>
+<li><strong>启发式算法（Heuristic）：</strong> Rollup 会分析你的整个<strong>依赖图（Dependency Graph）</strong>。它会观察：
+<ul>
+<li>这个模块被多少个地方引用了？</li>
+<li>它是被静态导入（import）还是动态导入（import()）的？</li>
+<li>如果我把它拆出来，会不会导致这个页面多出 10 个请求？</li>
+<li>如果我不拆出来，这个包会膨胀多少？</li>
+</ul>
+</li>
+</ul>
+<p><strong>Rollup 的逻辑是：</strong> 它没有绝对的对错，它在寻找一个它认为的“最优解”。如果你不手动干预（manualChunks），它会根据依赖关系的复杂程度，自动决定是“合”还是“拆”。</p>
+<h3 id="如何观测">如何观测</h3>
+<blockquote>
+<p>Bundle 的分析，必须基于“生产构建产物”，而不是开发模式。 因为 dev 和 build 的产物，在“体积、结构、执行方式”上几乎是两套系统。</p>
+</blockquote>
+<p>我们最终在意的是生产环境下的性能，所以当然应该build后分析</p>
+<p>由于项目使用的是 Vite，使用 <a href="https://github.com/btd/rollup-plugin-visualizer">“Rollup Plugin Visualizer”</a> 库来分析</p>
+<p>如果你使用的是其他工具，只需在谷歌上搜索”你的打包器名称 + 包分析器”——有很多这样的工具可供选择。安装依赖，在vite中完成相关配置</p>
+<p>在本地build然后start项目，进入stat.html页面，即可看到报告</p>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="951" src="/CandyCoreBlog/_astro/imagesimage-3.BiMPQzrD_12aNAw.webp" ></p>
+<ul>
+<li><strong>Rendered</strong>
+<ul>
+<li>打包后所有 JS 模块的原始体积之和（开发视角）</li>
+</ul>
+</li>
+<li><strong>Gzip / Brotli</strong>
+<ul>
+<li>浏览器真实下载成本的近似上限（生产视角）</li>
+</ul>
+</li>
+</ul>
+<p>点击也可以进入具体的包进行分析</p>
+<h3 id="如何确认首屏js包">如何确认首屏js包</h3>
+<p>build，start的环境下进入首屏，打开dev tool，进入network，勾选JS，disable cache，F5刷新</p>
+<p>可以看下图的右下角有传递包的总体积3287kb</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>对比一个工程上常用的经验线：</span></span>
+<span class="line"><span>- **≤ 2 MB**：很健康</span></span>
+<span class="line"><span>- **2–3 MB**：可接受但紧张</span></span>
+<span class="line"><span>- **> 3 MB**：明确有优化空间</span></span></code></pre>
+<p><img  loading="lazy" decoding="async" fetchpriority="auto" width="1280" height="643" src="/CandyCoreBlog/_astro/imagesimage-4.D87cfVW8_1cPh1R.webp" ></p>
+<h2 id="懒加载与预加载优化">懒加载与预加载优化</h2>
+<p>要做到包的懒加载，意味着需要进行以下四件事</p>
+<ol>
+<li>将代码的一部分标记为“初始加载时不需要”。</li>
+<li>将标记的代码提取到自己的代码块中 。</li>
+<li>控制下载的确切开始时间。</li>
+<li>控制下载进行时的行为。</li>
+</ol>
+<p>如何具体实现所有这些功能，答案略有依赖于你使用的框架和打包工具。</p>
+<p>在某些情况下，你只需要使用框架的“懒加载/动态导入”版本即可。有时，React的默认“懒加载”导入就能工作。有时，你需要将其与打包工具的配置更改结合起来。有时，你需要安装一个插件或库才能使其生效。</p>
+<h3 id="包的懒加载">包的懒加载</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#6A737D">// “import { MessageEditor } from '@fe/patterns/message-editor';”</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { lazy } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'react'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#6A737D">// lazy import for a named componentconst</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> MessageEditorLazy</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> lazy</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#F97583">   async</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">       return</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">           default: (</span><span style="color:#F97583">await</span><span style="color:#F97583"> import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'@fe/patterns/message-editor'</span><span style="color:#E1E4E8">)).MessageEditor,</span></span>
+<span class="line"><span style="color:#E1E4E8">       };</span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>lazy会使得相关的js包，只在被挂载时被下载，而不是最初一并下载，在没有设置manual chunk的情况下，也会把包拆成单独的</p>
+<p>懒加载组件行为的验证：</p>
+<ul>
+<li>如果组件在 clickedMessage ? <lazycomponent> : null 中，初始加载时网络请求中不会出现该组件的代码。</lazycomponent></li>
+<li>只有当你点击消息、状态变为 true、组件挂载时，网络面板才会出现 editor-vendor 等文件的下载记录。</li>
+</ul>
+<p>如果把懒加载组件从“条件渲染”改为“直接渲染”</p>
+<ul>
+<li><strong>现象</strong>：
+<ol>
+<li>浏览器先并行下载核心代码（index 和 vendor）。</li>
+<li>浏览器执行这些代码，发现里面有个懒加载组件需要挂载。</li>
+<li><strong>此时才开始</strong>下载懒加载的 Chunk。</li>
+</ol>
+</li>
+<li><strong>后果（瀑布流 Waterfall）</strong>：原本可以并行下载的所有 JS，现在变成了<strong>串行（按顺序）下载</strong>。浏览器在等待懒加载代码下载期间，屏幕可能是一片空白或卡顿。</li>
+<li><strong>教训</strong>：不要为了懒加载而懒加载。如果你在页面初始渲染时就需要这个组件，那么将其设为“懒加载”只会导致下载顺序由“并行”变“串行”，从而拖慢速度。</li>
+<li>为了解决“代码下载期间浏览器在干等”的问题，我们需要引入 React 的 Suspense。它允许我们在代码下载时展示一个占位符（Loading 状态），从而改善用户体验。</li>
+<li>这里的suspense针对的不是数据有没有fetch，而是针对一个组件的包有没有下载完</li>
+</ul>
+<p><strong>正确使用 Lazy + Suspense</strong>：</p>
+<ul>
+<li><strong>核心逻辑</strong>：React 渲染“关键路径”（如消息列表），<strong>不等待</strong>懒加载的编辑器代码。</li>
+<li><strong>结果</strong>：消息列表先显示，页面立即变得可交互。</li>
+</ul>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { lazy, Suspense } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> 'react'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> MessageEditorLazy</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> lazy</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./MessageEditor'</span><span style="color:#E1E4E8">));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// 在组件中</span></span>
+<span class="line"><span style="color:#E1E4E8">&#x3C;</span><span style="color:#79B8FF">Suspense</span><span style="color:#B392F0"> fallback</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">{&#x3C;</span><span style="color:#79B8FF">Spinner</span><span style="color:#E1E4E8"> />}></span></span>
+<span class="line"><span style="color:#E1E4E8">  &#x3C;</span><span style="color:#79B8FF">MessageEditorLazy</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">&#x3C;/</span><span style="color:#79B8FF">Suspense</span><span style="color:#E1E4E8">></span></span></code></pre>
+<h3 id="手动拆分包">手动拆分包</h3>
+<p><strong>为什么拆分chunk是必要的：减少不必要的下载负担</strong></p>
+<p>一些共享组件被多个页面用到，但不在同一个访问会话里</p>
+<p>结果：</p>
+<ul>
+<li>被抽成 shared chunk</li>
+<li>所有页面都要为它们付出下载成本</li>
+</ul>
+<p>在第二步，我们需要将“lazy”组件提取成独立的块，以减轻我们的供应商的负担。这一步将严重依赖于你使用的打包器或框架。有时，你不需要做任何事情。拆分将自动发生。</p>
+<p>经过测试，vite是会自动拆分lazy包的，但是手动分chunk在一些场景下依然是必要的</p>
+<p><strong>为什么手动拆分chunk依然是必要的：避免包结构不稳定性</strong></p>
+<p>随着代码演进：</p>
+<ul>
+<li>新页面加入</li>
+<li>依赖关系改变</li>
+<li>模块大小变化</li>
+</ul>
+<p>Rollup 可能会：</p>
+<ul>
+<li>今天把 A / B 合并</li>
+<li>明天又拆开</li>
+<li>后天又抽出 shared</li>
+</ul>
+<p>结果是：</p>
+<ul>
+<li>chunk hash 经常变</li>
+<li>缓存命中率下降</li>
+<li>线上性能波动，但没人改性能代码</li>
+</ul>
+<p>手动拆分chunk就是规定了chunk包括哪些文件，哪些文件属于哪些chunk，这是一个显式的约束策略，对于这些chunk就将不使用启发式策略，而是使用你自己定义的稳定的规则分chunk</p>
+<hr>
+<p>在vite里通过manualchunks的插件来实现这一点</p>
+<p>lazy 决定「一个 chunk 什么时候被请求」（lazy的作用对象本身就是以模块为单位的）</p>
+<p>manualChunks 决定「一个 chunk 里面放哪些模块」，一个chunk里包含哪些代码文件</p>
+<p>（1）对象形式：<strong>声明式、规则简单</strong></p>
+<p>（2）函数形式：<strong>命令式、完全可控</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#B392F0">manualChunks</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#B392F0">lodash</span><span style="color:#E1E4E8">: [</span><span style="color:#9ECBFF">'lodash'</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> manualChunks</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">id</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'node_modules'</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#9ECBFF">'vendor'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>逻辑是：</p>
+<p>这里的思路是：</p>
+<ul>
+<li>key = chunk 名称（<code>lodash.js</code>）</li>
+<li>Rollup <strong>遍历每一个解析后的模块</strong></li>
+<li>value = <strong>入口模块列表</strong></li>
+<li>把模块 id 交给你</li>
+<li>Rollup 会：
+<ul>
+<li>把这些模块</li>
+<li>以及它们在模块图里的依赖</li>
+<li>全部合并进这个 chunk</li>
+<li>前提是这些依赖没有已经被分到别的 manual chunk</li>
+</ul>
+</li>
+<li>你决定：
+<ul>
+<li>返回字符串 → 放进对应 chunk</li>
+<li>不返回 → Rollup 自己处理</li>
+</ul>
+</li>
+</ul>
+<p>⚠️ 关键点：</p>
+<blockquote>
+<p>即使你只 import ‘lodash/get’，也会把 整个 lodash 合并进来</p>
+</blockquote>
+<p>本质是一个 <strong>模块分类器</strong>。</p>
+<hr>
+<p>在复杂的项目中，我们往往会设置“把所有第三方库打包在一起（vendor）”来利用缓存。如果不手动把懒加载组件的依赖“剔除”出来，它们就会被规则捕获，强制塞进首屏包。</p>
+<p>如果设置了lazy相关模块启用了manual chunks，那么lazy将不会自动拆分包，会被manual chunks的规则覆盖。</p>
+<p>所以设置了lazy的模块，在启用manual chunks时，也应该精细化的进行配置</p>
+<p>“精细化” <code>manualChunks</code>（最终方案）</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#B392F0">manualChunks</span><span style="color:#E1E4E8">: (</span><span style="color:#FFAB70">id</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">  // 1. 先把重型库挑出来，单独打包成 editor-vendor</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"node_modules/@tiptap"</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">||</span><span style="color:#E1E4E8"> id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"node_modules/prosemirror"</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#9ECBFF"> "editor-vendor"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#6A737D">  // 2. 剩下的普通库才进主 vendor</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"node_modules"</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#9ECBFF"> "vendor"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li><strong>构建工具的行为</strong>：它发现 <code>MessageEditor</code> 是懒加载的，而它依赖的 <code>Tiptap</code> 被指派到了 <code>editor-vendor</code> 块中。</li>
+<li><strong>结果</strong>：
+<ul>
+<li><code>vendor.js</code>（首屏）变小了，因为它不再包含编辑器库。</li>
+<li><code>editor-vendor.js</code> 变成了懒加载块。只有当你渲染 <code>MessageEditorLazy</code> 时，浏览器才会同时去下载这个 <code>editor-vendor.js</code>。</li>
+</ul>
+</li>
+</ul>
+<h3 id="路由懒加载与缓存命中率">路由懒加载与缓存命中率</h3>
+<p>如果你打开 stats.html文件，查看所有 chunk 的内容，你会发现一个现象：你在项目中写的几乎所有代码都被打包进了 index 文件（这里只是一个称呼，指的是项目中代码会被打包在一个chunk里）</p>
+<hr>
+<p>我们可以继续进行拆分，但事情从这里开始就变得非常棘手，而且会受到 环境、团队、阶段 的影响。</p>
+<p>我们也可以为每个页面加条件，比如：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'dashboard'</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#9ECBFF">'dashboard'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'inbox'</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#9ECBFF">'inbox'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'login'</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#9ECBFF">'login'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> (id.</span><span style="color:#B392F0">includes</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'settings'</span><span style="color:#E1E4E8">)) {</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#9ECBFF">'settings'</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>这种方式并不优雅，但它：</p>
+<ul>
+<li>很容易添加</li>
+<li>不需要改业务代码</li>
+<li>易读、易理解、易修改</li>
+<li>将来项目更大时，甚至可以自动生成</li>
+</ul>
+<p>把这些逻辑加到 <code>vite.config.ts</code> 中，然后重新构建项目。你会看到，除了已有的 vendor chunks 之外，现在每个页面都会生成一个 chunk，而且大小也相当合理。</p>
+<p>因此，直觉上我们会认为：</p>
+<p>既然 JavaScript 下载时间是 LCP 的重要组成部分，那么 LCP 应该会有所改善。</p>
+<p>在 Chrome 中，HTTP/1 协议有<strong>连接数限制</strong>。超出限制的请求必须排队等待。</p>
+<p>如果你查看性能录制图，会看到：</p>
+<ul>
+<li>并行下载的 chunk 更多了</li>
+<li><strong>但出现了“链式加载（chained chunks）”</strong></li>
+</ul>
+<p>结果是：整体耗时更长。</p>
+<p>在生产环境中（理想情况下是 HTTP/2 或 HTTP/3），这些请求应该能并行执行，这个问题就不存在了。</p>
+<p>即便如此，LCP 也很难改善，但即使所有请求都能并行，LCP 也<strong>很可能不会变好</strong>。</p>
+<p>仔细看看哪个 chunk 最大 —— 它决定了所有 JavaScript 的整体等待时间。</p>
+<p>这个瓶颈是 <strong>vendor chunk</strong>，而它在这次拆分中根本没有变化。</p>
+<p>我们目前测量的，只是一个<strong>非常特定的场景</strong>：<strong>首次访问用户</strong>。</p>
+<p>如果大多数用户一生只打开你的网站一次，那么这次优化确实毫无意义，你必须从别的角度去优化 LCP。</p>
+<p>几乎所有独立的落地页或推广页都是这样：</p>
+<p>打开一次 → 转化（或不转化） → 不再回来。</p>
+<p>在这种情况下，所有努力都应该集中在<strong>拆分和瘦身 vendor chunk</strong> 上。</p>
+<p>如果是高复访率的网站，情况就不同了。</p>
+<p>此时，关键问题变成了：</p>
+<ul>
+<li>网站是否频繁更新</li>
+<li>有多少 chunk 能命中浏览器缓存</li>
+</ul>
+<p>如果网站几乎不更新，那么所有 chunk 都会被缓存，网络几乎不起作用，怎么拆都没意义。</p>
+<p>现实中，网站几乎不可能完全不更新。通常每周甚至每天都会部署。</p>
+<p>缓存的单位是chunk，拆分chunk使得部分文件的更新影响范围小，刷新的缓存少，在用户后续访问时可以提升缓存命中率，从而减少网络下载请求</p>
+<hr>
+<p>前文提到，不配置manual chunk的部分，lazy会做自动拆分，我们可以不通过设置manual chunk，而通过懒加载来实现同样的拆chunk，提升缓存命中率</p>
+<p>要做的事情和前文一样，需要做三件事：</p>
+<ol>
+<li>用 <code>lazy</code> 替换直接 import</li>
+<li>使用懒加载组件</li>
+<li>用 <code>Suspense</code> 包裹</li>
+</ol>
+<p>示例：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#E1E4E8">constDashboardPageLazy </span><span style="color:#F97583">=</span><span style="color:#B392F0">lazy</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#F97583">  async</span><span style="color:#E1E4E8"> () </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">     return</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">        default: (</span><span style="color:#B392F0">awaitimport</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./pages/dashboard'</span><span style="color:#E1E4E8">)).DashboardPage,</span></span>
+<span class="line"><span style="color:#E1E4E8">     };</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">);</span></span></code></pre>
+<p>在组件中：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#E1E4E8">&#x3C;</span><span style="color:#79B8FF">Suspense</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#79B8FF">DashboardPageLazy</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">&#x3C;/</span><span style="color:#79B8FF">Suspense</span><span style="color:#E1E4E8">></span></span></code></pre>
+<p>但是经过测试，这个结果是比最初完全不拆分的版本还要慢。</p>
+<p>虽然下载的代码变少了，但：</p>
+<ul>
+<li>不再是“并行下载 → 一次渲染”</li>
+<li>而是“下载一部分 → 初始化 → 再下载 → 再渲染”</li>
+</ul>
+<ol>
+<li>bundler 在模块图中看到 <strong>一个“异步边界”</strong></li>
+<li>它<strong>不能</strong>在首包里展开 <code>./Page</code> 的依赖</li>
+<li>于是形成：</li>
+</ol>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>主包（entry）</span></span>
+<span class="line"><span>  └── async boundary</span></span>
+<span class="line"><span>        └── Page chunk</span></span>
+<span class="line"><span>              └── Page 的依赖</span></span></code></pre>
+<p>运行时顺序自然就变成：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>1. 下载主包</span></span>
+<span class="line"><span>2. 初始化 React / Router</span></span>
+<span class="line"><span>3. 运行到 Suspense 边界</span></span>
+<span class="line"><span>4. 触发 import()</span></span>
+<span class="line"><span>5. 下载 Page chunk</span></span>
+<span class="line"><span>6. 初始化 Page 模块</span></span>
+<span class="line"><span>7. React 再次渲染</span></span></code></pre>
+<p><strong>「下载 → 初始化 → 再下载 → 再渲染」</strong></p>
+<p>这个<strong>额外阶段的开销</strong>抵消了 bundle 变小的收益。</p>
+<p>Lazy-loading per Route 的意义，不是立刻优化 LCP，而是让“首屏性能”从“不可控的整体成本”，变成“可被精确设计的关键路径”。</p>
+<p>缓存命中率的收益确实已经有了，只是被分阶段渲染的收益抵消了，但是路由懒加载还有别的收益，比如阻断了下载无关路由的内容</p>
+<p>虽然最终性能下降了，但是这让我们明确了每个页面的边界在于它自身，它的性能将不再受无关的其他页面影响，问题一定在于其自己的路由，工程意义上是更大的</p>
+<h3 id="关键路径下组件懒加载的lcp优化">关键路径下组件懒加载的LCP优化</h3>
+<p>通过路由懒加载，我们可以确定关键路径，就是当前的page，影响因素也是其子组件</p>
+<p>那么优化LCP的方式就是清晰可见的</p>
+<p>第一步：定位 LCP 元素</p>
+<ol>
+<li>打开首页，记录性能分析（Performance profile）。</li>
+<li>点击绿色的 <strong>LCP</strong> 标签，在 Summary 选项卡中找到指向的 DOM 元素（Related Node）。</li>
+<li>追踪代码：发现 LCP 元素是 <strong>“My Dashboards”</strong> 这个标题。它位于 <code>AppLayout</code> 组件内的 <code>Topbar</code> 中。</li>
+</ol>
+<p>第二步：重构组件结构</p>
+<p><strong>现状：</strong> 整个页面（包含标题和侧边栏）都被包裹在 <code>DashboardPageLazy</code> 中，而这个组件在 <code>App.tsx</code> 里被 <code>Suspense</code> 包裹。这意味着：<strong>标题必须等待懒加载的 JS 下载完才能显示。</strong></p>
+<p><strong>优化方案：</strong> 将 <code>AppLayout</code>（包含标题的关键布局）移出 <code>Suspense</code> 边界，使其成为“关键路径”的一部分。（把标题移出懒加载）</p>
+<p>这样，就能并行的执行渲染标题和下载js包了</p>
+<p><strong>重构后的代码逻辑（App.tsx）：</strong></p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> default</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> App</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#6A737D">    // AppLayout 现在在 Suspense 外部，属于“关键路径”</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#79B8FF">AppLayout</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">Suspense</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">        {</span><span style="color:#6A737D">/* 只有内部的具体内容是懒加载的 */</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">        &#x3C;</span><span style="color:#79B8FF">DashboardPageLazy</span><span style="color:#E1E4E8"> /></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;/</span><span style="color:#79B8FF">Suspense</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#79B8FF">AppLayout</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>既然标题最重要，那么**侧边栏（Sidebar）**其实可以被视为次要的。我们可以把侧边栏也变成懒加载，进一步减少首屏关键 JS 的体积。</p>
+<p>① 找到你的“一等公民”</p>
+<p>② 重新划定 Suspense 的范围</p>
+<p>③ 这种方案的代价</p>
+<p>最终的LCP可以进一步得到提升，甚至把路由懒加载的性能问题覆盖过去，所以路由懒加载是利大于弊的事情</p>
+<p>虽然首屏数据很好看，但在页面切换（导航）时会出现问题：</p>
+<ul>
+<li><strong>视觉闪烁</strong>：从“首页”跳到“设置页”时，中间的内容区域会因为触发新的懒加载而出现短暂的空白（或 fallback）。</li>
+<li><strong>布局冲突</strong>：如果从带侧边栏的页面跳到不带侧边栏的登录页，视觉体验会很突兀。</li>
+</ul>
+<p>为了解决导航时的白屏问题，我们需要在用户还没点击按钮之前，就偷偷下载好下一个页面的代码。</p>
+<h3 id="js包的预加载">JS包的预加载</h3>
+<p>现在问题在于导航的白屏，我们想要的是在首屏页面js下载好渲染之后，再自动的进行别的页面js包的下载，这样就既可以保证首屏性能，又可以在导航时快速加载了</p>
+<p>要实现这一点，方式根据打包器不同，在Webpack中，你可能需要安装一个插件来完成这个任务。然而，在Vite中，我们很幸运：我们只需要在文件顶部添加一个导入语句，它就会从这里接管。</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#6A737D">// Just add this at the top of ./dashboard.tsx</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./settings'</span><span style="color:#E1E4E8">);</span></span></code></pre>
+<p>作为小项目中的快速简便的胜利，这个解决方案完全没问题。然而，当项目增长时，手动在各个地方添加这些导入会很快变得令人厌烦。尤其是当你需要追踪哪个页面或组件在哪里被使用时。</p>
+<p>更好的方式是通过Link组件来做这件事</p>
+<p>你会看到所有链接都是通过Link组件（frontend/utils/link.tsx）实现的。在一个单页应用（SPA）中应该是这样的。所以，从理论上讲，这个Link可以成为所有URL和所有动态块之间的桥梁。</p>
+<p>最原生的方式是在Link组件中写以下代码：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="jsx"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> preloadingMap</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#9ECBFF">  '/'</span><span style="color:#E1E4E8">: () </span><span style="color:#F97583">=></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./pages/dashboard'</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#9ECBFF">  '/settings'</span><span style="color:#E1E4E8">: () </span><span style="color:#F97583">=></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./pages/settings'</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#9ECBFF">  '/inbox'</span><span style="color:#E1E4E8">: () </span><span style="color:#F97583">=></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./pages/inbox'</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#9ECBFF">  '/login'</span><span style="color:#E1E4E8">: () </span><span style="color:#F97583">=></span><span style="color:#F97583"> import</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">'./pages/login'</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">};</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">...</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// inside Link component</span></span>
+<span class="line"><span style="color:#B392F0">useEffect</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (href </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#E1E4E8"> preloadingMap[href]) {</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> preload</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> preloadingMap[href];</span></span>
+<span class="line"><span style="color:#B392F0">    preload</span><span style="color:#E1E4E8">();</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}, [href]);</span></span></code></pre>
+<p>但这种方式依然有缺陷，比如在登录页面回到主页时，懒加载的侧边栏由于单独打包，加载依旧需要耗时，我们没有对其进行预加载。</p>
+<p>要解决这个问题，我们需要一个路由映射到路由所使用代码文件的清单</p>
+<p>此外，在大项目中，如果有十几个链接，对其全部进行预加载会导致网络资源被占用，反而延迟关键内容，理想情况下，我们希望精确的控制预加载的内容</p>
+<p>实际开发中的场景的策略是，只对当前视图内的链接进行预加载或者对鼠标悬停的链接进行预加载</p>
+<p>如果继续向这个方向深入，就需要自己搓一个router工具/框架了，显然不可能自己搓next/react router/remix/tanstack ……这类工具，不如观察如何在现有的框架中解决这些问题</p>
+<h3 id="react-router-v7">React router v7</h3>
+<p>框架往往有规定的路由定义方式，那么他们就有路由映射到路由所使用代码文件的清单，就能够知道preloading的目标，然后它自己封装了一个Link组件，可以仅仅通过简单的配置就精确控制preLoading的策略</p>
+<p>框架的自动分包策略 (Chunking Strategy)</p>
+<ul>
+<li><strong>优点：</strong> 使用框架后，我们不再需要手动写 lazy() 或配置 manualChunks。框架自动完成了代码分割，且效果非常好，首次访问的 LCP（726ms）与我们极致优化的手动结果（695ms）非常接近（微弱的差距源于框架自身的代码开销）。</li>
+<li><strong>缺点：</strong> 框架默认不会像我们之前那样把 vendor（第三方库）和业务代码彻底分开。
+<ul>
+<li>这导致在“重复访问”场景下，由于业务代码和库代码混在一个包里，当业务代码改变时，整个包的缓存都会失效。</li>
+<li>结果：框架在重复访问时的 LCP（628ms）明显慢于我们手动优化的结果（545ms）。</li>
+<li><strong>对策：</strong> 如果对这个数字不满意，你依然可以手动修改框架底层的 Vite 配置来精细化分包。</li>
+</ul>
+</li>
+</ul>
+<p>框架的预加载策略 (Preloading Strategy)</p>
+<p>这是框架展现强大威力的地方。之前我们手动实现预加载（Preloading）需要维护复杂的路径映射表、修改 Link 组件、手动导入 Chunk，非常繁琐。</p>
+<p><strong>框架的Link自动处理了这一切：</strong></p>
+<ol>
+<li><strong>意图预加载 (Intent - 默认配置)：</strong> 当用户将鼠标悬停（Hover）在链接上时，框架认为用户“打算”点击，于是立即开始下载目标页面的 Chunk。</li>
+<li><strong>视口预加载 (Viewport)：</strong> 当链接滚动到屏幕可见区域时开始下载。</li>
+<li><strong>渲染预加载 (Render)：</strong> 当包含链接的组件被挂载时就开始下载。</li>
+</ol>
+<p>在框架中，切换这些复杂的策略只需要在 Link 组件上改一个属性，或者在配置文件里改一行设置。</p>
+<p>以下是 React Router v7 处理这些部分的具体方式：</p>
+<ol>
+<li>自动化的路由拆分 (Automatic Route Splitting)</li>
+</ol>
+<p>在文章中，你需要手动写 <code>lazy()</code> 并配置 <code>manualChunks</code>。 在 React Router v7 中，你只需在 <code>routes.ts</code> 中定义路由：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#6A737D">// routes.ts</span></span>
+<span class="line"><span style="color:#F97583">import</span><span style="color:#E1E4E8"> { </span><span style="color:#F97583">type</span><span style="color:#E1E4E8"> RouteConfig, route, index } </span><span style="color:#F97583">from</span><span style="color:#9ECBFF"> "@react-router/dev/routes"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> default</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#B392F0">  index</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"routes/home.tsx"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#B392F0">  route</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"settings"</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">"routes/settings.tsx"</span><span style="color:#E1E4E8">),</span></span>
+<span class="line"><span style="color:#E1E4E8">] </span><span style="color:#F97583">satisfies</span><span style="color:#B392F0"> RouteConfig</span><span style="color:#E1E4E8">;</span></span></code></pre>
+<ul>
+<li><strong>框架行为</strong>：React Router 会自动将 <code>routes/settings.tsx</code> 及其依赖拆分成独立的 Chunk。</li>
+<li><strong>对比</strong>：你不需要自己写 <code>React.lazy</code>，框架在构建阶段利用 Vite 插件自动完成了这一切。</li>
+</ul>
+<ol>
+<li>完美的“关键路径”控制 (Nested Routing &#x26; Layouts)</li>
+</ol>
+<p>文章中提到，为了优化 LCP，需要手动把 <code>AppLayout</code> 移到 <code>Suspense</code> 之外。 React Router v7 的**嵌套路由（Nested Routing）**天生就解决了这个问题：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#6A737D">// root.tsx (根布局，包含侧边栏和顶栏标题)</span></span>
+<span class="line"><span style="color:#F97583">export</span><span style="color:#F97583"> default</span><span style="color:#F97583"> function</span><span style="color:#B392F0"> Root</span><span style="color:#E1E4E8">() {</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;</span><span style="color:#79B8FF">AppLayout</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">      &#x3C;</span><span style="color:#79B8FF">Outlet</span><span style="color:#E1E4E8"> /> {</span><span style="color:#6A737D">/* 这里是子页面的占位符 */</span><span style="color:#E1E4E8">}</span></span>
+<span class="line"><span style="color:#E1E4E8">    &#x3C;/</span><span style="color:#79B8FF">AppLayout</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<ul>
+<li><strong>框架行为</strong>：<code>root.tsx</code> 是主入口的一部分，它的代码会被包含在初始加载的 Bundle 中。而 <code>Outlet</code> 里的内容（具体的页面）是延迟加载的。</li>
+<li><strong>性能效果</strong>：这正好达成了文章中“把 LCP 元素（标题/框架）留在关键路径，把沉重内容（页面）留给懒加载”的策略，且不需要手动调整组件结构。</li>
+</ul>
+<ol>
+<li>智能预加载策略 (Prefetching)</li>
+</ol>
+<p>React Router v7 提供了非常强大的 <code>&#x3C;Link></code> 预加载功能，类似于 TanStack 的实现：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="tsx"><code><span class="line"><span style="color:#E1E4E8">&#x3C;</span><span style="color:#79B8FF">Link</span><span style="color:#B392F0"> to</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"/settings"</span><span style="color:#B392F0"> prefetch</span><span style="color:#F97583">=</span><span style="color:#9ECBFF">"intent"</span><span style="color:#E1E4E8">></span></span>
+<span class="line"><span style="color:#E1E4E8">  Settings</span></span>
+<span class="line"><span style="color:#E1E4E8">&#x3C;/</span><span style="color:#79B8FF">Link</span><span style="color:#E1E4E8">></span></span></code></pre>
+<p>它支持三种模式：</p>
+<ul>
+<li><strong><code>none</code></strong> (默认): 不预加载。</li>
+<li><strong><code>intent</code></strong>: 当用户鼠标悬停（Hover）或聚焦（Focus）在链接上时，自动开始预加载该页面的 JS Chunk 和数据（loader）。</li>
+<li><strong><code>render</code></strong>: 只要链接出现在屏幕上（Render），就立即开始预加载。</li>
+</ul>
+<ol>
+<li>解决“瀑布流”：Single Fetch (新特性)</li>
+</ol>
+<p>文章中提到，懒加载最大的问题是<strong>瀑布流（Waterfall）</strong>：下载完主包 -> 运行 -> 发现要下页面包 -> 下载页面包。</p>
+<p>React Router v7 通过 <strong>Single Fetch</strong> 极大地优化了这一点：</p>
+<ul>
+<li>它会并行下载<strong>页面代码 (JS)</strong> 和<strong>页面数据 (Data)</strong>。</li>
+<li>当用户点击链接时，框架会发起一个统一的请求来获取该路由所需的所有数据，而浏览器会同时并行加载 JS Chunk。这消除了“先下代码，再发请求提数据”的延迟。</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>功能</th><th>手动实现</th><th>React Router v7</th></tr></thead><tbody><tr><td><strong>代码分割</strong></td><td>手动 <code>lazy()</code> + <code>import()</code></td><td><strong>自动化</strong>（基于文件路由）</td></tr><tr><td><strong>LCP 优化</strong></td><td>手动调整 <code>AppLayout</code> 位置</td><td><strong>天然支持</strong>（通过嵌套路由/Outlet）</td></tr><tr><td><strong>分包策略</strong></td><td>修改 <code>manualChunks</code> 配置</td><td><strong>同左</strong>（均基于 Vite/Rollup）</td></tr><tr><td><strong>预加载</strong></td><td>手动写 <code>onMouseEnter</code> 触发</td><td><strong>内置</strong>（Link 组件 <code>prefetch</code> 属性）</td></tr><tr><td><strong>瀑布流</strong></td><td>容易出现串行加载</td><td><strong>Single Fetch</strong> 并行优化</td></tr></tbody></table>
+<p>使用框架的情况下，路由级别的懒加载（拆分chunk，从而使得缓存命中率提高，减少重复下载），preloading（一定条件下预加载），对组件级别的懒加载，通过其所在页面Link的预加载解决</p>
+<p>所以，我们只需要做细粒度的依赖分块，以及组件级别的懒加载，其余直接利用框架设置预加载和懒加载就行，在“用了成熟框架”的前提下，绝大多数情况下应该停止使用 <code>manualChunks</code>，只用懒加载即可。</p>
+<h2 id="树摇优化">树摇优化</h2>
+<h3 id="1-什么是-tree-shaking">1. 什么是 Tree Shaking？</h3>
+<ul>
+<li><strong>定义</strong>：打包工具自动识别并移除项目中未使用的代码（Dead Code）的过程。</li>
+<li><strong>原理</strong>：打包工具会将文件、导出（exports）和导入（imports）构建成一棵“抽象树”。它会追踪哪些分支是“活的”（被使用了），哪些是“死的”（未被使用），并最终在生产构建中剔除“死分支”。</li>
+</ul>
+<h3 id="2-破坏-tree-shaking-的常见行为">2. 破坏 Tree Shaking 的常见行为</h3>
+<ul>
+<li><strong>命名空间导入与对象包装</strong>：
+<ul>
+<li>使用 <code>import * as Buttons</code> 并将其放入一个大对象（如 <code>export const Ui = { Buttons }</code>）会使打包工具难以追踪具体哪个组件被使用，从而导致即使只用了一个小组件，整个库也会被打包进去。</li>
+</ul>
+</li>
+<li><strong>模块格式问题（ESM vs. CJS）</strong>：
+<ul>
+<li>Tree Shaking 主要依赖 <strong>ESM (ES Modules)</strong> 格式（即 <code>import/export</code>）。</li>
+<li>旧的库（如 <strong>Lodash</strong>）如果使用的是 CommonJS 格式，打包工具往往无法对其进行有效的摇树优化。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-优化手段与实战技巧">3. 优化手段与实战技巧</h3>
+<p>为了减小 Bundle 体积，文章提出了几种具体的优化策略：</p>
+<ul>
+<li><strong>精确导入（Cherry-picking）</strong>：
+<ul>
+<li>不要导入整个库（如 <code>import _ from 'lodash'</code>），而应使用具体的子路径导入（如 <code>import trim from 'lodash/trim'</code>），这能绕过由于库本身不支持 ESM 导致的优化失效问题。</li>
+</ul>
+</li>
+<li><strong>避免重复功能的库</strong>：
+<ul>
+<li>开发中常会无意引入功能重叠的库。文章示例中发现项目中同时存在 <code>moment</code>、<code>luxon</code> 和 <code>date-fns</code> 三个日期库。</li>
+<li><strong>解决方案</strong>：统一使用体积更小、支持 Tree Shaking 的库（如 <code>date-fns</code>），或直接使用现代原生的 JavaScript 方法（如 <code>.trim()</code>）。</li>
+</ul>
+</li>
+<li><strong>处理传递依赖（Transitive Dependencies）</strong>：
+<ul>
+<li>有时即便删除了自己的代码，某些库依然存在。这是因为它们是其他库的依赖（例如 MUI 依赖于 Emotion）。</li>
+<li><strong>工具推荐</strong>：使用 <code>npm-why</code> 等工具追踪库的来源，评估是否可以通过替换顶层库（如将 MUI 替换为更轻量或更原生的 Radix UI）来彻底移除一整条依赖链。</li>
+</ul>
+</li>
+</ul>
+<hr> </div> </article>  </main> </body></html>

@@ -1,0 +1,482 @@
+<!DOCTYPE html><html lang="zh-Hans" class="bg-background text-foreground"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>八股/promise的拆解 | CdCore&#39;s Blog</title><meta name="description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="author" content="CdCore"><meta name="robots" content="index, follow"><link rel="canonical" href="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/promise%E7%9A%84%E6%8B%86%E8%A7%A3"><meta property="og:title" content="八股/promise的拆解 | CdCore's Blog"><meta property="og:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta property="og:type" content="article"><meta property="og:url" content="https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/promise%E7%9A%84%E6%8B%86%E8%A7%A3"><meta property="og:site_name" content="CdCore's Blog"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="八股/promise的拆解 | CdCore's Blog"><meta name="twitter:description" content="记录技术成长、分享生活感悟、探索思维边界"><meta name="twitter:image" content="https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"><meta property="article:published_time" content="2025-12-14T14:56:00+08:00"><link rel="alternate" type="application/rss+xml" title="CdCore's Blog RSS" href="https://cdhxr.github.io/CandyCoreBlog/rss.xml"><script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebSite","name":"CdCore's Blog","url":"https://cdhxr.github.io/CandyCoreBlog/","inLanguage":"zh-Hans"},{"@context":"https://schema.org","@type":"BlogPosting","headline":"八股/promise的拆解","description":"记录技术成长、分享生活感悟、探索思维边界","url":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/promise%E7%9A%84%E6%8B%86%E8%A7%A3","mainEntityOfPage":{"@type":"WebPage","@id":"https://cdhxr.github.io/CandyCoreBlog/notes/%E5%85%AB%E8%82%A1/promise%E7%9A%84%E6%8B%86%E8%A7%A3"},"inLanguage":"zh-Hans","datePublished":"2025-12-14T14:56:00+08:00","image":["https://cdhxr.github.io/CandyCoreBlog/kumiko.jpg"],"author":{"@type":"Person","name":"CdCore","url":"https://cdhxr.github.io/CandyCoreBlog/"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..900&display=swap"><link rel="icon" type="image/jpeg" href="/CandyCoreBlog/kumiko.jpg"><link rel="prefetch" href="/CandyCoreBlog/notes"><link rel="prefetch" href="/CandyCoreBlog/thoughts"><link rel="prefetch" href="/CandyCoreBlog/blog"><link rel="stylesheet" href="/CandyCoreBlog/_astro/_slug_.DXV6vDvB.css"></head> <body class="min-h-screen bg-background text-foreground"> <header class="sticky top-0 z-50 bg-background/80 backdrop-blur"> <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4"> <a href="/CandyCoreBlog/" class="text-base font-semibold sm:text-lg">CdCore's Blog</a> <nav class="flex items-center gap-6 text-xs md:text-sm"> <a class="hover:text-primary" href="/CandyCoreBlog/notes" rel="prefetch" aria-current="page"> Notes </a><a class="hover:text-primary" href="/CandyCoreBlog/thoughts" rel="prefetch"> Thoughts </a><a class="hover:text-primary" href="/CandyCoreBlog/blog" rel="prefetch"> Blogs </a> </nav> </div> </header> <main class="min-h-[calc(100vh-80px)]">  <article class="mx-auto w-full max-w-4xl px-6 py-12"> <div class="mb-8"> <h1 class="text-3xl font-bold"> 八股/promise的拆解 </h1> <p class="mt-2 text-sm text-muted-foreground"> 2025/12/14 </p> </div> <div class="markdown"> <h2 id="promise-核心方法">Promise 核心方法</h2>
+<p>构造方法的职责：初始化状态，回调队列，定义修改状态方法，执行 excutor</p>
+<p>then 的职责：返回新 promise 供链式调用，注册状态执行后的回调函数，如果状态已经确定立刻执行传入回调函数，展开返回值（使返回值不 thenable），回调执行出错，则抛出错误</p>
+<p>catch 的职责：如果状态转向 reject ，抛出错误，使用错误处理函数，这恰好就是 then 的错误分支语义：当 promise 的状态到 reject 后，使用错误处理函数处理错误</p>
+<h2 id="promise与其api本质实现">Promise与其API本质实现</h2>
+<p>将函数的执行状态机化，对于其的执行给于明确的状态语义，</p>
+<p>分为</p>
+<ul>
+<li>执行中</li>
+<li>顺利执行完</li>
+<li>执行失败</li>
+</ul>
+<p>并且赐予其一个执行结束后立刻执行的回调（利用事件循环的微任务确保这一点），也就是 then，允许函数执行结果在其中链式传递</p>
+<p>在此基础上发展出一系列针对函数执行的 API，也就是静态方法，即不用实例调用而是使用 Promise.xxx调用的方法</p>
+<p>resolve/reject :</p>
+<ul>
+<li>传入一个目标值，使用这个值，将当前 promise 状态确定</li>
+<li>注意链式调用的需求，若这个值不是 promise，将其再用一个 promise 包装
+<ul>
+<li>用 promise 包装其实意味着再把返回值给状态机化，对于普通值而言其实没意义，但是对于异步执行的函数或者 promise来说就是有意义的，因为我们没法预测 API 的使用场合所以自然应该将其 promise 化，使其支持进一步的调用</li>
+<li>resolve 是意味着得到成功值，规范限制了成功值必须是一个最终的结果，而不能得到一个 promise 容器所以对于 promise 是直接返回的，避免了 promise 的解析结果是一个 promise 的情况</li>
+<li>reject 是将执行失败化，规范不对失败原因限制，只是对失败原因做赋值</li>
+</ul>
+</li>
+</ul>
+<p>promise 数组作为参数的 API：</p>
+<ul>
+<li>all：要求全部完成才算完成，一个失败即集体失败</li>
+<li>race：谁先fullfilled/reject，就采用它</li>
+<li>allsettled：无论成功失败，等待全部完成</li>
+<li>any：采用第一个成功的，全部失败才失败</li>
+</ul>
+<p>会发现都是对一系列 promise 执行的成功或者失败的条件做定义，那么不就可以视作一个状态机，resolve 或者 reject 的条件限制吗</p>
+<p>所以自然他们共同的实现是将 promise 数组的执行包装在一个 new Promise 内部，用一个更大的状态机决定结果，使用 promise 构造函数的内置resolve/reject 提前结束执行，这又导致了需要对数组类型进行 promise 化的兜底，否则会带来编译错误，就有了以下的几乎必有的格式</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">	if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(promises)) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> TypeError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"..."</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#6A737D">	// ...</span></span>
+<span class="line"><span style="color:#E1E4E8">	promises.</span><span style="color:#B392F0">foreach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">p</span><span style="color:#E1E4E8">,</span><span style="color:#FFAB70">i</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">=></span><span style="color:#E1E4E8">{  </span><span style="color:#6A737D">// 或者只用到 p</span></span>
+<span class="line"><span style="color:#6A737D">		// ...</span></span>
+<span class="line"><span style="color:#79B8FF">		Promise</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(p).</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#FFAB70">			val</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#6A737D">				// ...</span></span>
+<span class="line"><span style="color:#E1E4E8">			}, </span><span style="color:#FFAB70">err</span><span style="color:#F97583"> =></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">				// ...</span></span>
+<span class="line"><span style="color:#B392F0">				rejected</span><span style="color:#E1E4E8">(err)</span></span>
+<span class="line"><span style="color:#E1E4E8">			}</span></span>
+<span class="line"><span style="color:#E1E4E8">		)</span></span>
+<span class="line"><span style="color:#E1E4E8">	}</span></span></code></pre>
+<ol>
+<li>用 promise 包装promise 的批处理，将其状态机化</li>
+<li>同步遍历注册启动</li>
+<li>将数组项 promise 化，注册 promise 的回调</li>
+</ol>
+<p>tips:</p>
+<ul>
+<li>promise 的启动是一创建就启动的，所以你调用任何 promises数组的情况，这里 promise 大概率都启动了，所以只用注册回调就行了</li>
+<li>promise.all不能把 js执行并行化，但能把 js 等待并行化，因为任务队列依旧是串行执行的，但是依赖运行时环境和网络 IO 的等待是可以并行的</li>
+</ul>
+<p>所有批处理方法其实都是这个框架：</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#F97583">new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {  </span></span>
+<span class="line"><span style="color:#F97583">  if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(promises)) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> TypeError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"..."</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">  promises.</span><span style="color:#B392F0">foreach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">p</span><span style="color:#E1E4E8">)</span><span style="color:#F97583">=></span><span style="color:#E1E4E8">{  </span></span>
+<span class="line"><span style="color:#79B8FF">    Promise</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(p).</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(  </span></span>
+<span class="line"><span style="color:#E1E4E8">      valueHandler,  </span></span>
+<span class="line"><span style="color:#E1E4E8">      errorHandler  </span></span>
+<span class="line"><span style="color:#E1E4E8">    );  </span></span>
+<span class="line"><span style="color:#E1E4E8">  }  </span></span>
+<span class="line"><span style="color:#E1E4E8">});</span></span></code></pre>
+<p>区别只在“处理策略”：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>方法</th><th>成功处理</th><th>失败处理</th></tr></thead><tbody><tr><td>all</td><td>收集，全部成功才 resolve</td><td>立即 reject</td></tr><tr><td>race</td><td>谁先完成用谁</td><td>谁先失败也用谁</td></tr><tr><td>any</td><td>第一个成功 resolve</td><td>全部失败才 reject</td></tr><tr><td>allSettled</td><td>记录状态</td><td>记录状态</td></tr></tbody></table>
+<p>可以进一步总结策略</p>
+<ul>
+<li>结束执行，使用参数的 resolve 或者 reject 方法，在回调中满足条件调用</li>
+<li>全部失败/成功，使用一个结果数组存储，比较这个数组的 length 和传入 promise 的 length</li>
+<li>规范要求 allsettled 存储状态使用{status:xx,value:xxx}的形式，使用 .finally校验全部结束后 resolve</li>
+<li>规范要求 any收集所有的失败原因使用 <code>(new AggregateError(errs, 'All promises were rejected')</code></li>
+</ul>
+<p>race相当于模板直出， all 的 reject 和 resolve 思路互换即可，用变量计数，处理完了再 resolve/reject，allsettled 则把成功和失败的信息都记到数组里，使用 finally 进行统计计数，然后处理完了 resolve 就行</p>
+<hr>
+<h2 id="源码">源码</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> FULFILLED</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> "FULFILLED"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> REJECTED</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> "REJECTED"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">const</span><span style="color:#79B8FF"> PENDING</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> "PENDING"</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">  constructor</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">executor</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> PENDING</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.value </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> undefined</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.reason </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> undefined</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.onResolvedCallbacks </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [];</span></span>
+<span class="line"><span style="color:#79B8FF">    this</span><span style="color:#E1E4E8">.onRejectedCallbacks </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> [];</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    let</span><span style="color:#B392F0"> resolve</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">value</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> PENDING</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> FULFILLED</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.value </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> value;</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.onResolvedCallbacks.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">fn</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#B392F0"> fn</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"><span style="color:#F97583">    let</span><span style="color:#B392F0"> reject</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">reason</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> PENDING</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> REJECTED</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.reason </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> reason;</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.onRejectedCallbacks.</span><span style="color:#B392F0">forEach</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">fn</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#B392F0"> fn</span><span style="color:#E1E4E8">());</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">      executor</span><span style="color:#E1E4E8">(resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">    } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#B392F0">      reject</span><span style="color:#E1E4E8">(error);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">  </span></span>
+<span class="line"><span style="color:#B392F0">  then</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">onFulFilled</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">onRejected</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">  	// 判断`then`传递的值是否缺省-特点1</span></span>
+<span class="line"><span style="color:#E1E4E8">    onFulFilled </span><span style="color:#F97583">=</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> onFulFilled </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#F97583"> ?</span><span style="color:#E1E4E8"> onFulFilled </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">v</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> v;</span></span>
+<span class="line"><span style="color:#E1E4E8">    onRejected </span><span style="color:#F97583">=</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> onRejected </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#F97583"> ?</span><span style="color:#E1E4E8"> onRejected </span><span style="color:#F97583">:</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">error</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> { </span><span style="color:#F97583">throw</span><span style="color:#E1E4E8"> error }</span></span>
+<span class="line"><span style="color:#E1E4E8">    </span></span>
+<span class="line"><span style="color:#6A737D">    // 每次`then`都会返回一个新的Promise-特点2</span></span>
+<span class="line"><span style="color:#F97583">    const</span><span style="color:#79B8FF"> newPromise</span><span style="color:#F97583"> =</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> FULFILLED</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#B392F0">        setTimeout</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">          try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">            const</span><span style="color:#79B8FF"> x</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> onFulFilled</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.value);</span></span>
+<span class="line"><span style="color:#79B8FF">            this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">#resolvePromise</span><span style="color:#E1E4E8">(newPromise, x, resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">          } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#B392F0">            reject</span><span style="color:#E1E4E8">(error);</span></span>
+<span class="line"><span style="color:#E1E4E8">          }</span></span>
+<span class="line"><span style="color:#E1E4E8">        }, </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> REJECTED</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#B392F0">        setTimeout</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">          try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">            const</span><span style="color:#79B8FF"> x</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> onRejected</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.reason);</span></span>
+<span class="line"><span style="color:#79B8FF">            this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">#resolvePromise</span><span style="color:#E1E4E8">(newPromise, x, resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">          } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#B392F0">            reject</span><span style="color:#E1E4E8">(error);</span></span>
+<span class="line"><span style="color:#E1E4E8">          }</span></span>
+<span class="line"><span style="color:#E1E4E8">        }, </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#F97583">      if</span><span style="color:#E1E4E8"> (</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.status </span><span style="color:#F97583">===</span><span style="color:#79B8FF"> PENDING</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.onResolvedCallbacks.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">          setTimeout</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">            try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">              const</span><span style="color:#79B8FF"> x</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> onFulFilled</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.value);</span></span>
+<span class="line"><span style="color:#79B8FF">              this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">#resolvePromise</span><span style="color:#E1E4E8">(newPromise, x, resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">            } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#B392F0">              reject</span><span style="color:#E1E4E8">(error);</span></span>
+<span class="line"><span style="color:#E1E4E8">            }</span></span>
+<span class="line"><span style="color:#E1E4E8">          }, </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">        });</span></span>
+<span class="line"><span style="color:#79B8FF">        this</span><span style="color:#E1E4E8">.onRejectedCallbacks.</span><span style="color:#B392F0">push</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">          setTimeout</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">            try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">              const</span><span style="color:#79B8FF"> x</span><span style="color:#F97583"> =</span><span style="color:#B392F0"> onRejected</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">this</span><span style="color:#E1E4E8">.reason);</span></span>
+<span class="line"><span style="color:#79B8FF">              this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">#resolvePromise</span><span style="color:#E1E4E8">(newPromise, x, resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">            } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#B392F0">              reject</span><span style="color:#E1E4E8">(error);</span></span>
+<span class="line"><span style="color:#E1E4E8">            }</span></span>
+<span class="line"><span style="color:#E1E4E8">          }, </span><span style="color:#79B8FF">0</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#E1E4E8">        });</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> newPromise;</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">  #</span><span style="color:#B392F0">resolvePromise</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">newPromise</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">x</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">  	// 如果返回的新Promise和传递的值是同一个引用像会导致循环引用-特点6</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (newPromise </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> x) </span><span style="color:#F97583">return</span><span style="color:#B392F0"> reject</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">new</span><span style="color:#B392F0"> TypeError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"..."</span><span style="color:#E1E4E8">));</span></span>
+<span class="line"><span style="color:#6A737D">    // 防止多次调用-特点4</span></span>
+<span class="line"><span style="color:#F97583">    let</span><span style="color:#E1E4E8"> called;</span></span>
+<span class="line"><span style="color:#6A737D">    // x 可能是一个 Promise-特点4</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> ((</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> x </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "object"</span><span style="color:#F97583"> &#x26;&#x26;</span><span style="color:#E1E4E8"> x </span><span style="color:#F97583">!==</span><span style="color:#79B8FF"> null</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">||</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> x </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      try</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">        let</span><span style="color:#E1E4E8"> then </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> x.then;</span></span>
+<span class="line"><span style="color:#6A737D">        // 如果`then`是一个函数说明 x 是 Promise-特点5</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> then </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">          then.</span><span style="color:#B392F0">call</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">            x,</span></span>
+<span class="line"><span style="color:#6A737D">            // 执行成功，将newResolve作为新promise的值-特点5</span></span>
+<span class="line"><span style="color:#E1E4E8">            (</span><span style="color:#FFAB70">newResolve</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">              if</span><span style="color:#E1E4E8"> (called) </span><span style="color:#F97583">return</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">              called </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#6A737D">              // </span></span>
+<span class="line"><span style="color:#79B8FF">              this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">#resolvePromise</span><span style="color:#E1E4E8">(newPromise, newResolve, resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">            },</span></span>
+<span class="line"><span style="color:#6A737D">            // 执行失败，将newReject作为新promise的值-特点5</span></span>
+<span class="line"><span style="color:#E1E4E8">            (</span><span style="color:#FFAB70">newReject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">              if</span><span style="color:#E1E4E8"> (called) </span><span style="color:#F97583">return</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">              called </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> true</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#B392F0">              reject</span><span style="color:#E1E4E8">(newReject)</span></span>
+<span class="line"><span style="color:#E1E4E8">            }</span></span>
+<span class="line"><span style="color:#E1E4E8">          );</span></span>
+<span class="line"><span style="color:#E1E4E8">        } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">          // x 是一个普通值-特点3</span></span>
+<span class="line"><span style="color:#B392F0">          resolve</span><span style="color:#E1E4E8">(x);</span></span>
+<span class="line"><span style="color:#E1E4E8">        }</span></span>
+<span class="line"><span style="color:#E1E4E8">      } </span><span style="color:#F97583">catch</span><span style="color:#E1E4E8"> (error) {</span></span>
+<span class="line"><span style="color:#6A737D">        // 对`then`中抛出的异常进行处理-特点7</span></span>
+<span class="line"><span style="color:#B392F0">        reject</span><span style="color:#E1E4E8">(error);</span></span>
+<span class="line"><span style="color:#E1E4E8">      }</span></span>
+<span class="line"><span style="color:#E1E4E8">    } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#6A737D">	  // x 是一个普通值-特点3</span></span>
+<span class="line"><span style="color:#B392F0">      resolve</span><span style="color:#E1E4E8">(x);</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  static</span><span style="color:#B392F0"> resolve</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">value</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">    // 如果值是一个 Promise 实例，直接返回值就行了，代表这个promise已经完成</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (value </span><span style="color:#F97583">instanceof</span><span style="color:#B392F0"> Promise</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#E1E4E8"> value;</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#6A737D">    // 如果值是 thenable 对象（有 then 方法），需要等待它完成</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (value </span><span style="color:#F97583">!==</span><span style="color:#79B8FF"> null</span><span style="color:#F97583"> &#x26;&#x26;</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> value </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'object'</span><span style="color:#F97583"> ||</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> value </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> value.then </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">      return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">        value.</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">      });</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#6A737D">    // 否则返回一个新的 resolved 状态的 Promise</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">      resolve</span><span style="color:#E1E4E8">(value);</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  catch</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">onRejected</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">null</span><span style="color:#E1E4E8">, onRejected);</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  static</span><span style="color:#B392F0"> reject</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">reason</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">_</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">        reject</span><span style="color:#E1E4E8">(reason);</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">  // 无论如何都会执行的内容。</span></span>
+<span class="line"><span style="color:#6A737D">  // 如果返回Promise则会等待其执行完毕，如果返回成功的Promise会采用上一次的结果，</span></span>
+<span class="line"><span style="color:#6A737D">  // 如果返回失败的Promise，会用这个失败的结果传递到catch中。</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">  finally</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">onFinally</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> this</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#FFAB70">      value</span><span style="color:#F97583"> =></span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">onFinally</span><span style="color:#E1E4E8">()).</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> value),</span></span>
+<span class="line"><span style="color:#FFAB70">      reason</span><span style="color:#F97583"> =></span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(</span><span style="color:#B392F0">onFinally</span><span style="color:#E1E4E8">()).</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> { </span><span style="color:#F97583">throw</span><span style="color:#E1E4E8"> reason; })</span></span>
+<span class="line"><span style="color:#E1E4E8">    );</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  static</span><span style="color:#B392F0"> all</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">promises</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(promises)) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> TypeError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"..."</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">        const</span><span style="color:#79B8FF"> res</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [];</span></span>
+<span class="line"><span style="color:#F97583">        let</span><span style="color:#E1E4E8"> counter </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#E1E4E8">        </span></span>
+<span class="line"><span style="color:#F97583">        const</span><span style="color:#B392F0"> processResultByKey</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> (</span><span style="color:#FFAB70">value</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">index</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">            res[index] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> value;</span></span>
+<span class="line"><span style="color:#E1E4E8">            counter</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> (counter </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> promises.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">return</span><span style="color:#B392F0"> resolve</span><span style="color:#E1E4E8">(res);</span></span>
+<span class="line"><span style="color:#E1E4E8">        };</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">let</span><span style="color:#E1E4E8"> i </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">; i </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8"> promises.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">; i</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> (promises[i] </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> promises[i].then </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">                promises[i].</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">value</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">                    processResultByKey</span><span style="color:#E1E4E8">(value, i);</span></span>
+<span class="line"><span style="color:#E1E4E8">                }, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">            } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">                processResultByKey</span><span style="color:#E1E4E8">(promises[i], i);</span></span>
+<span class="line"><span style="color:#E1E4E8">            }</span></span>
+<span class="line"><span style="color:#E1E4E8">        }</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  static</span><span style="color:#B392F0"> race</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">promises</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(promises)) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> TypeError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"..."</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">        for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">let</span><span style="color:#E1E4E8"> i </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">; i </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8"> promises.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">; i</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> (promises[i] </span><span style="color:#F97583">&#x26;&#x26;</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> promises[i].then </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> "function"</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#E1E4E8">                promises[i].</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">(resolve, reject);</span></span>
+<span class="line"><span style="color:#E1E4E8">            } </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#B392F0">                resolve</span><span style="color:#E1E4E8">(promises[i]);</span></span>
+<span class="line"><span style="color:#E1E4E8">            }</span></span>
+<span class="line"><span style="color:#E1E4E8">        }</span></span>
+<span class="line"><span style="color:#E1E4E8">    });</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">  static</span><span style="color:#B392F0"> allSettled</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">promises</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">!</span><span style="color:#E1E4E8">Array.</span><span style="color:#B392F0">isArray</span><span style="color:#E1E4E8">(promises)) </span><span style="color:#F97583">return</span><span style="color:#F97583"> new</span><span style="color:#B392F0"> TypeError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">"..."</span><span style="color:#E1E4E8">);</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#F97583"> new</span><span style="color:#79B8FF"> Promise</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">resolve</span><span style="color:#E1E4E8">, </span><span style="color:#FFAB70">reject</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#F97583">            const</span><span style="color:#79B8FF"> res</span><span style="color:#F97583"> =</span><span style="color:#E1E4E8"> [];</span></span>
+<span class="line"><span style="color:#F97583">            let</span><span style="color:#E1E4E8"> counter </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">            for</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">let</span><span style="color:#E1E4E8"> i </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span><span style="color:#E1E4E8">; i </span><span style="color:#F97583">&#x3C;</span><span style="color:#E1E4E8"> promises.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">; i</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#79B8FF">                Promise</span><span style="color:#E1E4E8">.</span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(promises[i]).</span><span style="color:#B392F0">then</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">value</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">                    res[i] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> { status: </span><span style="color:#79B8FF">FULFILLED</span><span style="color:#E1E4E8">, value };</span></span>
+<span class="line"><span style="color:#E1E4E8">                })</span></span>
+<span class="line"><span style="color:#E1E4E8">                .</span><span style="color:#B392F0">catch</span><span style="color:#E1E4E8">((</span><span style="color:#FFAB70">reason</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">                    res[i] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> { status: </span><span style="color:#79B8FF">REJECTED</span><span style="color:#E1E4E8">, reason };</span></span>
+<span class="line"><span style="color:#E1E4E8">                })</span></span>
+<span class="line"><span style="color:#E1E4E8">                .</span><span style="color:#B392F0">finally</span><span style="color:#E1E4E8">(() </span><span style="color:#F97583">=></span><span style="color:#E1E4E8"> {</span></span>
+<span class="line"><span style="color:#E1E4E8">                    counter</span><span style="color:#F97583">++</span><span style="color:#E1E4E8">;</span></span>
+<span class="line"><span style="color:#F97583">                    if</span><span style="color:#E1E4E8"> (counter </span><span style="color:#F97583">===</span><span style="color:#E1E4E8"> promises.</span><span style="color:#79B8FF">length</span><span style="color:#E1E4E8">) </span><span style="color:#B392F0">resolve</span><span style="color:#E1E4E8">(res);</span></span>
+<span class="line"><span style="color:#E1E4E8">                });</span></span>
+<span class="line"><span style="color:#E1E4E8">            }</span></span>
+<span class="line"><span style="color:#E1E4E8">        });</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<h2 id="核心要点">核心要点</h2>
+<h3 id="函数队列状态机延时控制">函数队列+状态机延时控制</h3>
+<p>Promise对象是一个状态机，他的一个状态值，绑定了他的一些数据（value/reason，cbQueue）</p>
+<p>then中的函数放在队列中存储，等待状态满足时再调用队列内容，状态相当于一个锁，把action锁住了</p>
+<h3 id="对象类型的判断和控制">对象类型的判断和控制</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#6A737D">/**</span></span>
+<span class="line"><span style="color:#6A737D"> * 判断一个值是否是 thenable</span></span>
+<span class="line"><span style="color:#6A737D"> * </span><span style="color:#F97583">@param</span><span style="color:#B392F0"> {*}</span><span style="color:#E1E4E8"> value</span><span style="color:#6A737D"> - 需要判断的值</span></span>
+<span class="line"><span style="color:#6A737D"> * </span><span style="color:#F97583">@returns</span><span style="color:#B392F0"> {boolean}</span><span style="color:#6A737D"> - 是否是 thenable</span></span>
+<span class="line"><span style="color:#6A737D"> */</span></span>
+<span class="line"><span style="color:#F97583">function</span><span style="color:#B392F0"> isThenable</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">value</span><span style="color:#E1E4E8">) {</span></span>
+<span class="line"><span style="color:#6A737D">  // 1. value 不能是 null</span></span>
+<span class="line"><span style="color:#6A737D">  // 2. value 必须是对象 (object) 或 函数 (function)</span></span>
+<span class="line"><span style="color:#6A737D">  // 3. value.then 必须是一个函数</span></span>
+<span class="line"><span style="color:#F97583">  return</span><span style="color:#E1E4E8"> (</span></span>
+<span class="line"><span style="color:#E1E4E8">    value </span><span style="color:#F97583">!==</span><span style="color:#79B8FF"> null</span><span style="color:#F97583"> &#x26;&#x26;</span></span>
+<span class="line"><span style="color:#E1E4E8">    (</span><span style="color:#F97583">typeof</span><span style="color:#E1E4E8"> value </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'object'</span><span style="color:#F97583"> ||</span><span style="color:#F97583"> typeof</span><span style="color:#E1E4E8"> value </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span><span style="color:#E1E4E8">) </span><span style="color:#F97583">&#x26;&#x26;</span></span>
+<span class="line"><span style="color:#F97583">    typeof</span><span style="color:#E1E4E8"> value.then </span><span style="color:#F97583">===</span><span style="color:#9ECBFF"> 'function'</span></span>
+<span class="line"><span style="color:#E1E4E8">  );</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6A737D">// if (value instanceof Promise) 判断是否是promise</span></span>
+<span class="line"><span style="color:#6A737D">// if (newPromise === x) 判断是否是本身</span></span>
+<span class="line"><span style="color:#6A737D">// ...</span></span></code></pre>
+<p>可以参考<a href="%E5%AF%B9%E8%B1%A1&#x26;%E6%95%B0%E7%BB%84%E7%9A%84%E6%B7%B1%E5%BA%A6%E9%81%8D%E5%8E%86.md">对象&#x26;数组的深度遍历</a></p>
+<h3 id="then的职责">then的职责</h3>
+<p>在 Promise 的设计中，<code>.then()</code> 方法远不止是一个简单的回调注册器。它承担了 Promise 规范中多个至关重要的职责，这些职责共同确保了 Promise 链的可靠性、可组合性和错误处理能力。</p>
+<p>以下是 <code>.then()</code> 在 Promise 规范中的核心职责总结：</p>
+<h4 id="1-状态订阅与回调注册-subscription">1. 状态订阅与回调注册 (Subscription)</h4>
+<p>这是最基本的功能。<code>.then()</code> 接受最多两个参数：</p>
+<ul>
+<li>
+<p><code>onFulfilled</code>：当前 Promise 解决 (Fulfilled) 时要执行的回调函数。</p>
+</li>
+<li>
+<p><code>onRejected</code>：当前 Promise 拒绝 (Rejected) 时要执行的回调函数。</p>
+</li>
+</ul>
+<h4 id="2-创建并返回新的-promise-chaining">2. 创建并返回新的 Promise (Chaining)</h4>
+<p>这是实现 Promise <strong>链式调用</strong>的关键。无论原始 Promise 的状态如何，也无论您是否提供了回调函数，<code>.then()</code> 都会<strong>立即返回一个新的 Promise 实例</strong>。</p>
+<p>JavaScript</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8; overflow-x: auto;" tabindex="0" data-language="plain"><code><span class="line"><span>const promise1 = new Promise(resolve => resolve(1));</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>// promise2 是一个新的 Promise 实例，而不是 promise1const promise2 = promise1.then(value => value + 1); </span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>// promise3 又是另一个新的 Promise 实例const promise3 = promise2.then(value => console.log(value)); // 输出 2</span></span></code></pre>
+<p>这个新 Promise (<code>promise2</code>) 的状态和结果，将完全由 <code>.then()</code> 中<strong>回调函数的执行结果</strong>决定（见职责 4 和 5）。</p>
+<h4 id="3-值和错误传递穿透projection">3. 值和错误传递（穿透/Projection）</h4>
+<p>如果 <code>.then()</code> 中省略了其中一个回调（例如，只提供了 <code>onFulfilled</code> 而没有提供 <code>onRejected</code>），<code>.then()</code> 必须确保值或错误能够<strong>穿透</strong>到链中的下一个 Promise。</p>
+<ul>
+<li>
+<p><strong>值穿透：</strong> 如果 Promise 成功，但您没有提供 <code>onFulfilled</code>，则前一个 Promise 的成功值会直接作为 <code>promise2</code> 的成功值。</p>
+</li>
+<li>
+<p><strong>错误穿透：</strong> 如果 Promise 失败，但您没有提供 <code>onRejected</code>（例如，您使用的是 <code>.then(onFulfilled)</code>），则前一个 Promise 的拒绝原因会直接作为 <code>promise2</code> 的拒绝原因。</p>
+</li>
+</ul>
+<p>正是这个机制允许您在 Promise 链的<strong>末尾</strong>使用一个 <code>.catch()</code> (等价于 <code>.then(null, onRejected)</code>) 来捕获链中任何位置发生的错误。</p>
+<h4 id="4-结果处理和转换-transformation">4. 结果处理和转换 (Transformation)</h4>
+<p>这是 <code>.then()</code> 最强大的功能。它定义了如何将前一个异步操作的结果，转换为下一个异步操作所需的输入。</p>
+<p>Promise 规范对回调函数 <code>onFulfilled</code> 的返回值 <code>x</code> 有严格的处理规则（称为 <strong>Promise 解决过程 <code>[[Resolve]](promise2, x)</code></strong>）：</p>
+<ul>
+<li>
+<p><strong>返回普通值：</strong> 如果 <code>onFulfilled</code> 返回一个普通值（非 Promise），则 <code>promise2</code> 将以这个值作为成功结果解决 (Fulfilled)。</p>
+</li>
+<li>
+<p><strong>返回 Promise：</strong> 如果 <code>onFulfilled</code> 返回另一个 Promise 实例 <code>p</code>，则 <code>promise2</code> 将被锁定，其状态和结果会<strong>与 <code>p</code> 的状态和结果保持一致</strong>。这实现了异步操作的扁平化。</p>
+</li>
+</ul>
+<p><strong>Promise Resolution Procedure</strong>，是 Promise/A+ 规范中定义的核心算法。这个解决过程是一个递归、尝试性的过程，其目的是为了 <strong>“拉平” (flatten) 任何深层嵌套的 Promise 或 Thenable</strong>，直到找到一个普通值或一个真正的错误。</p>
+<p>Promise Resolution Procedure 的“扁平化”，是为了保证：</p>
+<p>Promise 链始终是“一层一层的数据流”，而不会变成“嵌套的未来”。</p>
+<p>如果 Promise 不扁平化，状态会被嵌套的promise隐藏，整个异步数据流模型直接不可用。</p>
+<p>状态判断彻底失真：</p>
+<p><code>p.then(() => Promise.resolve(42))  .then(v => console.log(v));</code></p>
+<p>❌ 不扁平：</p>
+<ul>
+<li>第二个 <code>then</code> 拿到的是：</li>
+<li><code>v === Promise&#x3C;42></code></li>
+<li>用户必须手动 <code>.then</code></li>
+<li><strong>每一步都变复杂，链式模型崩溃</strong></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>步骤</th><th>条件</th><th>对 Promise 的影响</th><th>结果</th></tr></thead><tbody><tr><td>1</td><td>循环检查：x === promise</td><td>如果成立，视为自我解析（self-resolution）错误</td><td>Promise 被以 TypeError 拒绝</td></tr><tr><td>2</td><td>Promise：x 是一个 Promise 实例</td><td>Promise 进入“采纳”流程，锁定为 x 的状态</td><td>新 Promise 的状态与 x 同步，结果为 x 的结果或拒因</td></tr><tr><td>3</td><td>Thenable：x 是对象/函数且有 then 方法</td><td>尝试调用 x.then（可能异步），其行为决定新 Promise 的最终状态</td><td>新 Promise 的状态由 then 的回调（resolve/reject）决定</td></tr><tr><td>4</td><td>基础值：x 为普通值（非对象或无 then）</td><td>视为普通值，立即完成解析</td><td>Promise 立即以 x 为值被 fulfilled</td></tr></tbody></table>
+<p>这个机制是 <code>async/await</code> 能够正常工作的底层支撑：当你在 <code>async</code> 函数中 <code>return new Promise(...)</code> 时，外部的 <code>async</code> 函数返回的 Promise 就会通过这个解决过程，采纳你返回的内部 Promise 的状态。</p>
+<h4 id="5-错误捕获和转换-error-conversion">5. 错误捕获和转换 (Error Conversion)</h4>
+<p><code>.then()</code> 能够将同步世界中的错误，无缝地转换为异步世界的错误状态。</p>
+<ul>
+<li>如果 <code>onFulfilled</code> 或 <code>onRejected</code> 在执行过程中，使用 <code>throw new Error(...)</code> 抛出<strong>同步异常</strong>，那么 <code>.then()</code> 返回的<strong>新 Promise (<code>promise2</code>) 将立即进入 <code>Rejected</code> 状态</strong>，拒绝原因就是抛出的错误对象。</li>
+</ul>
+<p>这使得 <code>Promise</code> 链中的错误处理与同步 <code>try...catch</code> 一样自然，从而支持了 <code>async/await</code> 中 <code>try...catch</code> 的底层实现。</p>
+<p>异步错误处理的通用逻辑在于：</p>
+<p>如何将发生在非主线程或未来时机的错误可靠的传递回主线程的执行流程</p>
+<p>也就是给主线程同步执行的回调函数</p>
+<p>这是因为错误处理所需要的执行上下文只在主线程中存在</p>
+<p>错误处理需要主线程的执行上下文，因为它需要：</p>
+<blockquote>
+<ol>
+<li>
+<p><strong>安全地</strong>读取和修改应用程序的<strong>共享状态</strong>（如变量和 DOM）。</p>
+</li>
+<li>
+<p>利用 JavaScript <strong>单线程模型</strong>的优势，<strong>避免</strong>复杂的<strong>数据竞争</strong>和锁机制。</p>
+</li>
+<li>
+<p><strong>正确地</strong>与运行时环境进行交互，<strong>生成准确的栈跟踪</strong>并触发<strong>全局错误报告</strong>。</p>
+</li>
+</ol>
+</blockquote>
+<p>因此，<strong>Promise 的 <code>.catch()</code> 就是一个异步机制，它负责将异步世界中发生的错误（通过 <code>reject</code> 状态）转化为一个可供主线程安全、同步执行的错误处理回调（通过微任务）的 Trigger。</strong></p>
+<p>他对应同步世界的catch，也能实现类似同步世界的跳转逻辑</p>
+<p>只不过同步世界的catch，可以直接由运行时检测到异常，将控制流转移到 <code>catch</code> 块。</p>
+<p>而promise的catch是通过内部创建的对象，显示传递rejected状态和reason，最终传递到catch里，catch可以接收一个函数，类似同步的catch中的错误处理逻辑，进行错误处理</p>
+<p>而catch为什么由then实现呢，因为catch本身就是捕捉reject状态，执行reject队列中回调函数的行为，并且我们还需要更灵活的组合控制（即catch之后还能恢复resolve链式调用），那么就和then的行为完全一致了</p>
+<p>所以then其实还有错误处理的职责</p> </div> </article>  </main> </body></html>
