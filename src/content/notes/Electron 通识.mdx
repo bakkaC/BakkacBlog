@@ -1,0 +1,273 @@
+---
+title: Electron 通识
+description: "记录 Electron 的进程模型、Context Isolation、IPC、MessagePort、沙箱与线程/进程选择。"
+date: 2026-07-28T00:00
+tags: [Electron, IPC, 进程, 安全, 性能]
+---
+
+## 为什么选择 Electron
+
+[为什么选择 Electron | Electron](https://www.electronjs.org/zh/docs/latest/why-electon)
+
+- 通用的 Web 技术栈
+- 针对不同的操作系统，大量的可复用逻辑
+- 成熟、稳定、安全，经过生产项目验证
+- 桌面端能力
+
+## 进程模型
+
+Electron 继承了 Chromium 的多进程架构，这使得该框架在架构上非常类似于现代网络浏览器。
+
+浏览器需要多进程，除了用于渲染网络通信传来的内容，还需要处理多个 tab、加载扩展等能力。多进程使浏览器的不同页面间相互隔离，不会因为单一页面卡顿而阻塞所有页面，也不会因为单一页面的错误或恶意代码导致所有代码崩溃。单个浏览器进程控制这些进程，以及整个应用程序的生命周期。
+
+Electron 的架构非常相似。作为开发者，主要控制两种类型的进程：主进程和渲染进程。在实际划分项目结构时，也常常做明确的区分。
+
+- 每个 Electron 应用都有一个主进程，它作为应用的入口点。
+- Electron 应用有天然的 Node.js 能力（网络、文件系统等），主进程就运行在这里。
+- 主进程的主要目的是使用 `BrowserWindow` 模块创建和管理应用窗口。
+- 每个 `BrowserWindow` 实例都会创建一个应用程序窗口，该窗口在单独的渲染进程中加载网页。可以使用窗口的 `webContents` 对象从主进程与网页内容交互。
+
+```text
+                 Main Process
+                      |
+        --------------------------------
+        |                              |
+ Renderer Process              Utility Process
+ (网页/UI)                     (后台能力)
+```
+
+## Electron 如何让网页安全地使用桌面能力？
+
+Web 环境是不安全的，网页代码来自陌生来源，浏览器无法假设执行 JavaScript 是安全的，因此网页不应该拥有控制 PC 的权限。
+
+- renderer 和 main 必须分离。相同进程意味着编程环境和能力共享，攻击成功可能获得 PC 的高权限。
+- main 负责 Node API、桌面端 API 和进程控制等高权限能力；Renderer 作为有风险的 Web 环境，应与其隔离，通信依赖消息协议。
+- 发消息，而不是对象转发或函数调用。发消息意味着遵循协议，能力的使用与否取决于另一个 context 如何处理，所有权完全分离。
+- Renderer 不能自由地和 main 通信，因为 main 定义了所有 API 的消息处理协议，其中包括危险 API。
+- 不能通过限制 main 的消息协议来限制 API，因为 main 承载 Electron 的全部能力模型；限制它的能力就等于 API 不可用。
+
+因此，目标是让 Renderer 只能通过受控方式调用我们希望暴露的安全 API。答案是在 renderer process 中再创建一个隔离的 JavaScript runtime，称为 isolation context，承担与主进程通信的职责。它拥有用于通信的 Node 环境（最佳实践是这个 Node 仅用于 IPC 通信），主进程通过注入 `window` 对象把定义好的函数和 API 调用方式给到这个隔离环境，这个脚本称为 preload script，因为执行时间在渲染之前。
+
+网页 renderer 的 JavaScript 环境依然通过消息和 preload 通信。Electron 内部通过 context bridge 支持两者通信，消息协议因此受到限制：preload context 只有预先定义的 API 和函数，篡改的消息不会被另一个 context 处理。
+
+安全的关键是能力不可传递。Renderer 只能调用 preload 明确暴露的方法，无法访问 preload context 中其他对象和能力。因此即使 Renderer 被注入恶意代码，也只能使用已有的能力集合，而不能扩展权限。
+
+## IPC 通信模式
+
+Electron 的 IPC 使用 HTML 标准的 Structured Clone Algorithm 序列化进程间传递的对象，因此只有某些类型的对象可以通过 IPC 通道传递。
+
+DOM 对象（例如 `Element`、`Location` 和 `DOMMatrix`）、由 C++ 类支持的 Node.js 对象（例如 `process.env`、`Stream` 的一些成员）以及由 C++ 类支持的 Electron 对象（例如 `WebContents`、`BrowserWindow` 和 `WebFrame`）无法使用 Structured Clone 进行序列化。
+
+```text
+                IPC
+┌──────────┐  <-------->  ┌────────────┐
+│ Renderer │              │ Main       │
+│ (网页UI)  │              │ (Node环境) │
+└──────────┘              └────────────┘
+      ↑                         ↑
+      │                         │
+ React/Vue                  文件系统
+ DOM                        窗口控制
+ 用户交互                    系统 API
+```
+
+IPC 通信需要 Node 环境，因此由 renderer process 的隔离环境进行通信，渲染进程通过 preload 脚本唤起隔离环境中的 IPC：
+
+```text
+ renderer
+    |
+    |
+ preload.js
+    |
+    |
+  main
+```
+
+### Renderer → Main 单向通信
+
+- Renderer：`ipcRenderer.send()`
+- Main：`ipcMain.on()`
+
+Renderer 发消息，Main 收消息，没有返回值，适合通知型操作。
+
+```text
+调用 window.electronAPI.setTitle()
+ipcRenderer.send("set-title", title)
+IPC Channel: set-title
+执行业务逻辑
+BrowserWindow.setTitle()
+```
+
+### Renderer → Main：请求响应模式（invoke / handle）
+
+- Renderer：`ipcRenderer.invoke()`
+- Main：`ipcMain.handle()`
+
+同样是请求和响应，但返回 Promise：
+
+```text
+await window.api.openFile()
+ipcRenderer.invoke("dialog:openFile")
+请求 dialog:openFile
+执行文件选择逻辑
+dialog.showOpenDialog()
+返回 filePath
+Promise resolve
+返回结果
+await 得到文件路径
+```
+
+### Main → Renderer：主动推送（webContents.send）
+
+适合下载进度、AI Agent 输出流、文件监听变化、系统事件等场景。
+
+```text
+webContents.send("download-progress", 80)
+IPC Channel
+ipcRenderer.on()
+callback(progress)
+更新 UI
+```
+
+## MessagePort
+
+在 Electron 中，`ipcMain` 和 `ipcRenderer` 没有直接的方法在渲染器进程之间发送消息。可以使用主进程作为消息代理，也可以将一个 `MessagePort` 从主进程传递给渲染器，让渲染器建立直接通信。
+
+`MessagePort` 允许在不同的 JavaScript context 之间传递消息。它基于 Web 标准的 `MessageChannel`，Electron 只是让 Main 进程也能参与这种通信。`MessagePort` 本身也是可传递对象，普通 IPC 的 `send` 和 `invoke` 不能传递它，只能使用 `postMessage`。
+
+使用场景：
+
+- 对于需要大量消息传输的 CPU 密集场景，让 Worker 不经过主进程中转，性能更好。
+- Renderer 之间直接互相发消息，不需要经过主线程 IPC 中转。
+- 流式传递数据时建立一个持续存在的消息通道。
+- 通过主进程传递 `MessagePort`，连接两个原本无法通信的页面（例如由于同源限制），越过 isolation context 直接和主进程通信，而不是像 IPC 一样转发。
+
+```text
+Main                 Renderer
+  |                    |
+  | new MessageChannel |
+  |                    |
+  | ipcRenderer.postMessage(port1)
+  |                    |
+  | 获得 MessagePortMain |
+  | 保存 port2           |
+  |                    |
+  | port2.postMessage(data)
+  |                    |
+  | port1.postMessage(data)
+```
+
+## 项目里如何治理
+
+大型项目一般会抽象 IPC：
+
+```text
+src
+ ├─ main
+ │   ├─ ipc
+ │   │   ├─ file.ipc.ts
+ │   │   ├─ window.ipc.ts
+ │   │   └─ setting.ipc.ts
+ │
+ ├─ preload
+ │   └─ api.ts
+ │
+ └─ renderer
+     └─ services
+```
+
+```typescript
+// main:
+ipcMain.handle("file:read", fileService.read)
+
+// preload:
+file: {
+  read: (path) => ipcRenderer.invoke("file:read", path)
+}
+
+// renderer:
+await window.api.file.read(path)
+```
+
+最后 Renderer 感觉像调用普通 SDK，这和 RPC 是同一种设计思想。也可以把 Main 当成一个本地 Backend；从安全角度考虑，SQLite 应该由主线程来调用：
+
+```text
+React Renderer
+      |
+Preload API
+      |
+     IPC
+      |
+Main SQLite Service
+      |
+   app.db
+```
+
+## 进程沙箱
+
+之前的关注点是不能让 Web 代码使用 Electron 能力获得危险权限；沙箱则是限制 Web 本身不能获得危险权限，这也是每个浏览器都会处理的话题。
+
+Electron 应用安全模型：
+
+```text
+进程隔离       Main vs Renderer
+Context Isolation  JS 世界隔离
+Sandbox         Renderer 权限限制
+```
+
+Chromium 的一个关键安全特性是在沙盒中执行进程。沙盒应用于除主进程之外的大多数进程，包括渲染进程，以及音频服务、GPU 服务和网络服务等实用进程。Electron 中的沙盒进程与 Chromium 行为基本相同，Sandbox 就是把 Renderer 再关回 Chrome 的安全模型，主要是为了和 Web 安全模型对齐。
+
+## 性能优化
+
+[Performance | Electron](https://www.electronjs.org/docs/latest/tutorial/performance)
+
+大多数内容对于熟悉 Web 端性能优化的人来说都是很好理解的经验。独特的一点是，Electron 是一个专用于你的应用的浏览器，所以可以为应用创建很多窗口而不会突兀；窗口通信和主进程控制权都在开发者手上，这两个层级或许是额外需要考虑的点。
+
+## 一些问题
+
+### sharedworker？
+
+窗口通信并不一定要使用 IPC，也可以使用 SharedWorker。IPC 的设计原则很大程度是为了安全，即危险逻辑（Node）的共享而设计的。普通逻辑可以直接用 SharedWorker，避免创建进程、经过隔离上下文转发和脚本注入等资源开销，同时实现渲染进程间的相互通信，这也是 Chromium 设计 SharedWorker 的原因。
+
+### context isolation？
+
+它是一个独立的 JavaScript runtime，也就是 V8 context。它和渲染所用的 JavaScript runtime 在相同线程上，不同的 JS context 带来隔离；通信依赖 Electron 更底层的、基于 C++ 的实现，使两个 V8 context 可以相互通信。
+
+直觉上看，一个 runtime 往往对应一个线程，因为 CPU 的计算能力是不变的，所以即使创建两个 runtime，它们的执行依然是串行的。相比渲染所在的上下文环境，隔离上下文的工作很轻，单独分一个线程反而浪费资源。同进程同线程的实现更合适。
+
+### 线程与进程？
+
+线程和进程间的通信，从使用者角度很相似，都是基于消息抽象的 API。线程间共享内存，速度很快；进程间通信通常要经历数据复制和系统裁决，成本更高。
+
+线程间共享内存意味着 API 能力共享，而进程隔离意味着能力隔离。从应用程序角度看，这与 Electron 的安全设计是一致的。
+
+### Worker Thread 与 Utility Process
+
+本质上，Worker Thread 是 Node 进程里的线程，而 Utility Process 是新的 OS 进程：
+
+- Worker Thread：为了性能，把计算搬走，是经典的多线程使用场景。
+- Utility Process：为了隔离，把能力拆出去。对应的场景是：这个东西像一个独立产品，不希望它影响主程序，例如后台服务。
+
+你打开 VS Code：
+
+```text
+文件树
+编辑器
+终端
+```
+
+但是背后都是后台服务：
+
+```text
+语言服务器
+TypeScript Server
+Git
+搜索索引
+插件宿主
+```
+
+## what's next
+
+Electron 更大一部分的本质来自 Chromium。
+
+[How modern browsers work](https://x.com/addyosmani/status/2068394292796871019)
