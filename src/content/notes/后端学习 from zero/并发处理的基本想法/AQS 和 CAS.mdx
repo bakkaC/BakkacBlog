@@ -1,0 +1,135 @@
+---
+title: "AQS 和 CAS"
+description: "理解 CAS 原子操作与 AQS 同步器框架的关系。"
+date: 2026-06-13T17:01
+tags: [Java, 并发, CAS, AQS]
+parent: 并发处理的基本想法
+---
+
+> 上级：[[并发处理的基本想法]]
+
+简单说：
+
+```text
+CAS 是一种原子操作手段
+AQS 是一套构建锁和同步器的框架
+```
+
+很多 JUC 工具，比如 `ReentrantLock`、`Semaphore`、`CountDownLatch`，底层都和 AQS 有关；AQS 内部又大量依赖 CAS。
+
+## CAS 是什么
+
+CAS 全称是 Compare And Swap，比较并交换。
+
+逻辑是：
+
+```text
+我认为当前值应该是 A
+如果现在真的还是 A，就把它改成 B
+如果已经不是 A，说明别人改过了，那我就失败
+```
+
+伪代码：
+
+```text
+boolean compareAndSet(expectedValue, newValue) {
+    if (currentValue == expectedValue) {
+        currentValue = newValue;
+        return true;
+    }
+    return false;
+}
+```
+
+真实 CAS 是 CPU 级别的原子指令，所以不会出现两个线程同时修改成功的问题。
+
+`AtomicInteger.incrementAndGet()` 底层大致是 CAS 重试：
+
+```text
+while (true) {
+    int oldValue = get();
+    int newValue = oldValue + 1;
+
+    if (compareAndSet(oldValue, newValue)) {
+        return newValue;
+    }
+}
+```
+
+## CAS 的问题
+
+1. 自旋消耗 CPU：竞争激烈时，很多线程一直 CAS 失败、一直重试。
+2. 只能方便地保证单个变量的原子更新。
+3. ABA 问题：值从 A 变成 B 又变回 A，CAS 只看到它仍然是 A。
+
+ABA 可以通过版本号解决，比如 `AtomicStampedReference`：
+
+```text
+A, version=1
+B, version=2
+A, version=3
+```
+
+## AQS 是什么
+
+AQS 全称是 `AbstractQueuedSynchronizer`，是 Java 并发包里的同步器框架。
+
+它主要做三件事：
+
+```text
+用一个 state 表示同步状态
+用 CAS 修改 state
+用一个队列管理等待线程
+```
+
+不同工具对 `state` 的含义不同。
+
+在 `ReentrantLock` 里：
+
+```text
+state = 0：锁空闲
+state = 1：锁被某个线程持有一次
+state = 2：同一个线程重入了两次
+```
+
+在 `Semaphore` 里：
+
+```text
+state = 可用许可证数量
+```
+
+在 `CountDownLatch` 里：
+
+```text
+state = 还需要倒数的次数
+```
+
+## 等待队列
+
+如果线程获取同步状态失败，就会进入 AQS 队列等待。
+
+```text
+线程 A 拿到锁
+线程 B 来拿锁，失败，进入队列
+线程 C 来拿锁，失败，进入队列
+线程 D 来拿锁，失败，进入队列
+
+head -> B -> C -> D
+```
+
+当 A 释放锁后，AQS 会唤醒队列里的后继线程，让它重新尝试获取锁。
+
+## 关系
+
+可以这样理解：
+
+```text
+CAS 负责“抢状态”
+AQS 负责“抢不到怎么办”
+```
+
+一句话总结：
+
+> CAS：检查当前值是不是我预期的，是就原子修改，不是就失败重试。
+
+> AQS：用 state 表示资源状态，用 CAS 修改 state，用队列管理抢不到资源的线程。

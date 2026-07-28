@@ -1,0 +1,212 @@
+---
+title: "并发处理的基本想法"
+description: "后端并发问题的识别方式，以及锁、队列、背压、信号量和数据库锁的基本思路。"
+date: 2026-06-13T20:18
+tags: [后端, 并发, 锁, Java]
+parent: 后端学习 from zero
+---
+
+> 上级：[[后端学习 from zero]]
+
+不同于前端里程序通常运行在一对一的浏览器环境，后端的工作环境多对一是常态。多个请求可以同时作用于同一个业务对象，所以写入操作始终要考虑并发。
+
+可以先问三个问题：
+
+1. 多个请求会不会同时操作同一个业务对象？
+2. 如果同时操作，结果是否必须唯一或有顺序？
+3. 如果重复执行或交叉执行，业务结果会不会错？
+
+## 例子：座位预约
+
+多个线程同时预约同一个座位，如果「检查座位是否可预约」和「设置占用者」之间存在时间差，可能两方都判断座位可用，并都返回预约成功。
+
+朴素代码：
+
+```java
+public class BookingService {
+    Map<String, Seat> seats;
+
+    public boolean bookSeat(String seatId, String visitorId) {
+        Seat seat = seats.get(seatId);
+        if (seat.isAvailable()) {
+            seat.setOccupant(visitorId);
+            return true;
+        }
+
+        return false;
+    }
+}
+```
+
+## check-then-act
+
+`check-then-act` 是检查一个条件，然后基于这个条件采取行动。
+
+问题在于检查和行动是两个独立步骤，中间其他线程可能介入。解决方式是把它们视为一个原子操作。
+
+```java
+public class BookingService {
+    private final Map<String, Seat> seats;
+
+    public boolean bookSeat(String seatId, String visitorId) {
+        Seat seat = seats.get(seatId);
+
+        synchronized (seat) {
+            if (seat.isAvailable()) {
+                seat.setOccupant(visitorId);
+                return true;
+            }
+
+            return false;
+        }
+    }
+}
+```
+
+## read-modify-write
+
+`read-modify-write` 是读取一个值，计算新值，再写回去。计数器是典型例子。
+
+```java
+private int count = 0;
+
+public void increment() {
+    count++;
+}
+```
+
+`count++` 实际上包含读取、加一、写回三个步骤。多个线程抢写时会丢更新。
+
+简单计数可以用原子变量：
+
+```java
+private AtomicInteger count = new AtomicInteger(10);
+
+public void increment() {
+    count.incrementAndGet();
+}
+```
+
+## 队列与协调
+
+注册后发送邮件是耗时 IO。为了避免阻塞 API 线程，可以把任务交给后台工作线程。API 线程和工作线程之间需要协调，最自然的结构是队列。
+
+队列的好处：
+
+1. 解耦生产者和消费者。
+2. FIFO 能提供基本顺序。
+3. 可以控制流量。
+
+坏方法：
+
+- 忙等待：线程一直循环检查队列，浪费 CPU。
+- 睡眠轮询：节省 CPU，但会引入固定延迟。
+
+更好的方法是阻塞队列：
+
+```java
+BlockingQueue<Task> queue = new LinkedBlockingQueue<>();
+
+public void handleSignup(User user) {
+    saveUser(user);
+    queue.put(new EmailTask(user));
+}
+
+while (true) {
+    Task task = queue.take();
+    process(task);
+}
+```
+
+高并发时应该使用有界阻塞队列。队列满了就阻塞生产端，这种让生产端暂时「踩刹车」的机制叫背压。
+
+## 稀缺资源
+
+如果第三方 API 最多只允许 10 个并发请求，可以用信号量。
+
+```java
+permits.acquire();
+try {
+    doDownload();
+} finally {
+    permits.release();
+}
+```
+
+`release()` 必须放进 `finally`，否则异常会导致许可证泄露。
+
+如果稀缺的是「可复用对象」，比如数据库连接，信号量不够，因为它只能计数，不能给你一个具体对象。此时可以用阻塞队列实现对象池。
+
+```java
+BlockingQueue<Connection> pool = new LinkedBlockingQueue<>(10);
+
+public Result query(String sql) {
+    Connection conn = pool.take();
+    try {
+        return conn.execute(sql);
+    } finally {
+        pool.put(conn);
+    }
+}
+```
+
+## 锁的类型
+
+常见分类：
+
+- 进程内锁：比如 `synchronized`、`ReentrantLock`。
+- 悲观锁：先锁资源，再处理。
+- 乐观锁：更新时检查是否被别人修改过。
+- 自旋锁：等待锁时持续检查，不阻塞线程。
+
+相关子页：
+
+- [[synchronized]]
+- [[reentrant lock]]
+- [[AQS 和 CAS]]
+
+## 悲观锁
+
+悲观锁假设并发冲突总会发生，因此在整个数据处理过程中持有锁。
+
+数据库中典型实现：
+
+```sql
+select *
+from orders
+where id = ?
+for update;
+```
+
+适合写多读少、高并发冲突、事务逻辑复杂的场景。缺点是并发性能差，锁持有时间长时容易阻塞甚至死锁。
+
+## 乐观锁
+
+乐观锁假设大多数情况下不会冲突，读取时不加锁，更新时检查版本。
+
+```sql
+update products
+set stock = 9,
+    version = version + 1
+where id = 1
+  and version = 1;
+```
+
+适合读多写少、并发冲突概率低的场景。
+
+状态 CAS 也是一种常见中间做法：
+
+```sql
+update orders
+set status = 1
+where id = ?
+  and status = 0;
+```
+
+它关注的是当前是否处于允许执行的状态，而不是 version 是否变化。
+
+## NOWAIT
+
+`SELECT FOR UPDATE NOWAIT` 是悲观锁的非阻塞版本。拿不到锁时不等待，而是立即返回错误。
+
+适合高交互系统、避免请求长期阻塞、任务队列 worker 抢任务等场景。

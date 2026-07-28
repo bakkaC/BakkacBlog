@@ -1,0 +1,145 @@
+---
+title: "reentrant lock"
+description: "Java ReentrantLock 的基本用法、tryLock、可中断锁、公平锁与 Condition。"
+date: 2026-06-13T16:53
+tags: [Java, 并发, ReentrantLock]
+parent: 并发处理的基本想法
+---
+
+> 上级：[[并发处理的基本想法]]
+
+`ReentrantLock` 是 Java 并发包 `java.util.concurrent.locks` 里的可重入互斥锁。它和 `synchronized` 的核心作用都是：同一时刻只允许一个线程进入临界区。
+
+区别是 `ReentrantLock` 更像一把手动锁：功能更多，也要求你自己正确释放。
+
+## 基本用法
+
+```java
+import java.util.concurrent.locks.ReentrantLock;
+
+class Counter {
+    private int count = 0;
+    private final ReentrantLock lock = new ReentrantLock();
+
+    public void add() {
+        lock.lock();
+        try {
+            count++;
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+关键模式：
+
+```java
+lock.lock();
+try {
+    // 共享资源操作
+} finally {
+    lock.unlock();
+}
+```
+
+`unlock()` 一定要放在 `finally` 里，否则中间抛异常时锁不会释放。
+
+## 可重入
+
+同一个线程拿到锁之后，可以再次拿同一把锁。
+
+```java
+class Service {
+    private final ReentrantLock lock = new ReentrantLock();
+
+    public void a() {
+        lock.lock();
+        try {
+            b();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void b() {
+        lock.lock();
+        try {
+            System.out.println("b");
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+## tryLock
+
+`tryLock()` 不会一直阻塞，拿不到就返回 `false`。
+
+```java
+if (lock.tryLock()) {
+    try {
+        // 拿到锁了
+    } finally {
+        lock.unlock();
+    }
+} else {
+    // 没拿到锁，可以做别的事
+}
+```
+
+适合不想一直等待的场景，比如避免死锁、降级处理、快速失败。
+
+## lockInterruptibly
+
+`lockInterruptibly()` 可以响应中断，适合任务取消、超时控制、服务关闭等场景。
+
+```java
+try {
+    lock.lockInterruptibly();
+    try {
+        // 临界区
+    } finally {
+        lock.unlock();
+    }
+} catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+}
+```
+
+## 公平锁与非公平锁
+
+默认是非公平锁：
+
+```java
+ReentrantLock lock = new ReentrantLock();
+```
+
+公平锁：
+
+```java
+ReentrantLock lock = new ReentrantLock(true);
+```
+
+- 公平锁：先等待的线程优先拿锁，减少饥饿，但吞吐量通常低一些。
+- 非公平锁：新来的线程也可以抢锁，吞吐量通常更高，但个别线程可能等很久。
+
+## Condition
+
+`Condition` 类似于 `synchronized` 里的 `wait/notify`，但更灵活。
+
+```java
+private final ReentrantLock lock = new ReentrantLock();
+private final Condition notEmpty = lock.newCondition();
+private final Condition notFull = lock.newCondition();
+```
+
+阻塞队列可以用两个条件队列分别表达：
+
+```text
+队列满了：生产者等 notFull
+队列空了：消费者等 notEmpty
+```
+
+这比一个 `wait/notifyAll` 更精确。

@@ -1,0 +1,126 @@
+---
+title: "如何思考问题 CRUD"
+description: "从页面动作到接口、service、mapper 和底层 CRUD 的后端开发思考顺序。"
+date: 2026-05-18T20:53
+tags: [后端, CRUD, 数据建模]
+parent: 后端学习 from zero
+---
+
+> 上级：[[后端学习 from zero]]
+
+后端开发不应该直接从「写 CRUD」开始，而是先把业务动作拆清楚。
+
+比较自然的顺序是：
+
+```text
+页面动作
+-> 接口动作
+-> service 方法
+-> mapper / SQL
+-> 底层 CRUD
+```
+
+真正开始写代码时，需要先定义对象，比如 DTO、entity、VO。字段怎么定，来自业务需求和用户故事；字段约束则来自数据本身的规则。
+
+| 问题 | 常见约束 |
+| --- | --- |
+| 能不能没有 | nullable / not null |
+| 能不能重复 | unique |
+| 合法范围是什么 | check / enum |
+| 最大长度是多少 | varchar |
+| 默认是什么 | default |
+| 会不会频繁查询 | index |
+| 会不会修改 | immutable |
+| 是值还是关系 | foreign key |
+| 是否需要历史 | audit / version |
+| 是否有状态流转 | state machine |
+
+## 分类管理例子
+
+分类本身是一个单纯条目。从管理端看，对分类实体的操作通常不涉及其他实体，主要就是单表操作。
+
+但接口不等于简单的四个 CRUD。更快理解业务动作的方式是看 prototype：
+
+1. 添加分类。
+2. 删除分类。
+3. 设置在售状态。
+4. 更新分类信息。
+5. 根据 ID 查询。
+6. 分页查询。
+
+## 添加分类
+
+业务动作是添加一个分类，请求体通常携带分类名、所属类别、排序等字段，其他字段由后端补齐。
+
+service 逻辑可以拆成：
+
+1. 创建一个和数据库字段对齐的 `Category` 对象。
+2. 解析 request body 得到 `CategoryDTO`。
+3. 把 DTO 里的值赋给 entity。
+4. 补齐默认字段。
+5. 调用 mapper 执行 insert。
+
+## 分页查询
+
+分页本质上是把一个有序集合切成一页一页地看。它最少需要两件事：
+
+1. 总量：一共有多少条，决定总页数。
+2. 窗口：当前页从哪条开始、取多少条。
+
+所以分页查询天然对应两类 SQL：
+
+```sql
+select count(*)
+from category;
+
+select *
+from category
+order by sort asc
+limit 0, 10;
+```
+
+核心公式：
+
+```text
+offset = (page - 1) * pageSize
+```
+
+如果前端传了筛选条件，比如 `page=1&pageSize=10&name=热&type=1`：
+
+```sql
+select *
+from category
+where name like '%热%'
+  and type = 1
+order by sort asc
+limit 0, 10;
+```
+
+MyBatis 里常见写法：
+
+```xml
+<select id="getPageList" resultType="fun.cyhgraph.entity.Category">
+    select * from category
+    <where>
+        <if test="name != null and name != ''">
+            and name like concat('%', #{name}, '%')
+        </if>
+        <if test="type != null">
+            and type = #{type}
+        </if>
+    </where>
+    order by sort asc
+</select>
+```
+
+`<where>` 会帮你处理 `where` 和前面多余的 `and`。
+
+PageHelper 的使用大致是：
+
+```java
+public PageResult getPageList(CategoryTypePageDTO categoryTypePageDTO) {
+    PageHelper.startPage(categoryTypePageDTO.getPage(), categoryTypePageDTO.getPageSize());
+    Page<Category> pagelist = categoryMapper.getPageList(categoryTypePageDTO);
+    return new PageResult(pagelist.getTotal(), pagelist.getResult());
+}
+```

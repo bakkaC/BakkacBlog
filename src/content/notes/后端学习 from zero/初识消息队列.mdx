@@ -1,0 +1,115 @@
+---
+title: "初识消息队列"
+description: "RabbitMQ 基本概念、工作模式和代码组织方式。"
+date: 2026-05-14T20:04
+tags: [后端, 消息队列, RabbitMQ]
+parent: 后端学习 from zero
+---
+
+> 上级：[[后端学习 from zero]]
+
+## RabbitMQ 基本概念
+
+- Connection：客户端与 RabbitMQ 之间的连接。
+- Channel：连接内部的消息通道，负责实际通信。
+- Broker：消息队列服务器实体。
+- Virtual Host：虚拟主机，包含交换机、队列等对象。
+- Exchange：交换机，接收生产者消息，并按规则路由到队列。
+- Queue：队列，消息的载体。
+- Binding：交换机和队列之间的虚拟连接。
+
+基本流程：
+
+```text
+生产者 -> Exchange -> Queue -> 消费者
+```
+
+RabbitMQ 消息代理流程：
+
+1. 生产者与 Broker 建立连接，向指定 Virtual Host 发送消息。
+2. Virtual Host 内部的 Exchange 接收消息，并将消息传递到绑定的 Queue。
+3. 消费者连接 Broker，通过 Channel 消费队列中的消息。
+
+## 管理页面怎么看
+
+可以按这个顺序理解：
+
+1. Connections：确认程序连上了 MQ。
+2. Exchanges：确认交换机建好了。
+3. Queues and Streams：确认消息进队列、被消费。
+
+Exchange 的核心职责是：决定一条消息应该进哪些队列。
+
+## RabbitMQ 工作模式
+
+### 简单模式
+
+生产者通过 MQ 将消息放入队列，队列发送给消费者。实际工作中较少直接使用。
+
+### 工作队列
+
+类似负载均衡。多个消费者消费同一个队列里的消息，每个消费者收到不同消息。
+
+适合异步处理，可以通过增加消费者实例水平扩容。
+
+### 发布订阅
+
+有交换机参与。生产者把消息发到交换机，交换机把消息广播给绑定的多个队列。
+
+适合一份数据分发给多个订阅者。
+
+### 路由模式
+
+发布订阅的变种。Exchange 根据 routing key 有条件地把消息发给不同队列。
+
+典型场景是日志：`error` 级别日志进入监控队列。
+
+### 主题模式
+
+路由模式升级版，routing key 支持通配符。
+
+- `*` 匹配单个词。
+- `#` 匹配多个词。
+
+能用路由就不用主题，除非确实需要模糊匹配。
+
+### RPC 同步通信
+
+MQ 通常用于异步，但 RPC 模式需要生产者等待消费者反馈。实际用得较少。
+
+## 代码组织
+
+一个更清晰的组织方式：
+
+```mermaid
+flowchart TD
+    A["Controller"] --> B["OrderService"]
+    A2["Controller"] --> B2["UserService"]
+
+    B --> C["OrderEventPublisher"]
+    B2 --> C2["UserEventPublisher"]
+
+    C --> D["RabbitTemplate"]
+    C2 --> D
+    D --> E["RabbitMQ"]
+
+    E --> F["OrderCreatedListener"]
+    E --> G["SmsNotificationListener"]
+    E --> H["AuditLogListener"]
+
+    F --> I["InventoryService / PaymentService"]
+    G --> J["SmsService"]
+    H --> K["AuditService"]
+
+    L["RabbitInfrastructureConfig"]
+    L --> M["Exchange / Queue / Binding"]
+    L --> N["MessageConverter"]
+```
+
+- Controller 只接请求。
+- Service 只做业务。
+- Publisher 专门负责发消息。
+- Listener 专门负责收消息。
+- Config 统一管理交换机、队列、绑定、转换器。
+
+`RabbitTemplate` 用来发消息，`RabbitListener` 用来注解监听消息。

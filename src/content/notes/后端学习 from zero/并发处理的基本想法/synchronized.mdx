@@ -1,0 +1,124 @@
+---
+title: "synchronized"
+description: "Java synchronized 的锁对象、可重入、wait/notify 与锁升级。"
+date: 2026-06-13T16:33
+tags: [Java, 并发, synchronized]
+parent: 并发处理的基本想法
+---
+
+> 上级：[[并发处理的基本想法]]
+
+## 锁对象
+
+`synchronized` 锁的是对象监视器，也叫 monitor。
+
+锁的是哪个对象，决定了哪些代码之间会互斥。
+
+```java
+public synchronized void method() {
+    // 锁的是 this
+}
+
+public void method() {
+    synchronized (this) {
+        // 锁的也是 this
+    }
+}
+```
+
+指定锁对象：
+
+```java
+private final Object lock = new Object();
+
+public void method() {
+    synchronized (lock) {
+        // ...
+    }
+}
+```
+
+静态方法锁的是 Class 对象：
+
+```java
+public static synchronized void method() {
+    // 锁的是 Demo.class
+}
+```
+
+普通方法锁和静态方法锁不是同一把锁：
+
+```java
+class Demo {
+    public synchronized void a() {
+        // 锁 this
+    }
+
+    public static synchronized void b() {
+        // 锁 Demo.class
+    }
+}
+```
+
+## 可重入锁
+
+`synchronized` 和 `ReentrantLock` 都是可重入锁。
+
+可重入锁允许一个线程在已经持有锁的情况下，再次进入需要同一把锁的方法。
+
+```java
+class Account {
+    private int balance = 1000;
+
+    public synchronized void transferTo(Account target, int amount) {
+        if (canWithdraw(amount)) {
+            balance -= amount;
+            target.deposit(amount);
+        }
+    }
+
+    public synchronized boolean canWithdraw(int amount) {
+        return balance >= amount;
+    }
+
+    public synchronized void deposit(int amount) {
+        balance += amount;
+    }
+}
+```
+
+如果锁不可重入，`transferTo()` 内部调用 `canWithdraw()` 会卡住，因为线程要等待自己已经拿着的锁。
+
+## wait / notify
+
+`wait()`、`notify()`、`notifyAll()` 必须在 `synchronized` 内部使用，因为它们依赖对象监视器。
+
+- `wait()` 会释放锁，让别的线程进入同步代码。
+- `notify()` 只是唤醒一个等待线程，但不会立刻释放锁。
+- 被唤醒的线程要等当前线程退出 `synchronized` 后，重新抢到锁，才能继续执行。
+
+通常推荐用 `while` 判断条件，而不是 `if`，因为线程可能被虚假唤醒。
+
+## 注意事项
+
+1. 锁对象不要乱用字符串，字符串可能被常量池复用。
+2. 锁粒度不要太大，避免在锁内做网络请求、文件 IO、长时间计算。
+3. 避免嵌套多把锁，否则容易死锁。
+
+## 锁升级
+
+`synchronized` 是 Java 语法的一部分；无锁、偏向锁、轻量级锁、重量级锁是 HotSpot JVM 为了性能做的实现优化。
+
+早期常见升级路径：
+
+```text
+无锁 -> 偏向锁 -> 轻量级锁 -> 重量级锁
+```
+
+JDK 15 开始偏向锁默认禁用并被废弃，所以新版本里更常见的是：
+
+```text
+无锁 -> 轻量级锁 -> 重量级锁
+```
+
+轻量级锁主要靠 CAS 尝试获取锁；当竞争激烈时，JVM 会升级为重量级锁，让抢不到锁的线程阻塞等待，避免一直自旋浪费 CPU。
