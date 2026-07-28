@@ -31,3 +31,6 @@ yarn-error.log*
 /mobile-*.png
 /profilecard-cut-*.png
 /zoom-modal-after.png
+
+# Astro generated build/cache
+/.astro
