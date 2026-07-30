@@ -31,7 +31,7 @@ field: value
 
 连接生命周期：SSE 从建立连接 → 数据推送 → 断线 → 自动重连 → 续传
 
-```javascript
+```plaintext
 Client                           Server
   |                                |
   |-------- GET /events ---------> |
@@ -316,6 +316,133 @@ class ReconnectingWebSocket {
 }
 ```
 
+带保活的Websocket 连接器：
+```js
+class ReconnectingWebSocket {
+  constructor(url, options = {}) {
+    this.url = url;
+
+    this.heartbeatInterval = options.heartbeatInterval || 30000; // 心跳间隔
+    this.reconnectInterval = options.reconnectInterval || 3000; // 重连间隔
+    this.maxReconnectTimes = options.maxReconnectTimes || Infinity;
+
+    this.ws = null;
+    this.reconnectCount = 0;
+    this.heartbeatTimer = null;
+    this.reconnectTimer = null;
+
+    this.onMessage = options.onMessage || (() => {});
+    this.onOpen = options.onOpen || (() => {});
+    this.onClose = options.onClose || (() => {});
+
+    this.connect();
+  }
+
+  connect() {
+    console.log("WebSocket connecting...");
+
+    this.ws = new WebSocket(this.url);
+
+    this.ws.onopen = () => {
+      console.log("WebSocket connected");
+
+      this.reconnectCount = 0;
+      this.startHeartbeat();
+
+      this.onOpen();
+    };
+
+    this.ws.onmessage = (event) => {
+      const data = event.data;
+
+      // 服务端收到 pong 后可以忽略
+      if (data === "pong") {
+        return;
+      }
+
+      this.onMessage(data);
+    };
+
+    this.ws.onerror = (err) => {
+      console.error("WebSocket error", err);
+    };
+
+    this.ws.onclose = () => {
+      console.warn("WebSocket closed");
+
+      this.stopHeartbeat();
+      this.onClose();
+
+      this.reconnect();
+    };
+  }
+
+  reconnect() {
+    if (this.reconnectCount >= this.maxReconnectTimes) {
+      console.error("Max reconnect reached");
+      return;
+    }
+
+    clearTimeout(this.reconnectTimer);
+
+    this.reconnectCount++;
+
+    console.log(
+      `Reconnect attempt ${this.reconnectCount}`
+    );
+
+    this.reconnectTimer = setTimeout(() => {
+      this.connect();
+    }, this.reconnectInterval);
+  }
+
+  startHeartbeat() {
+    this.stopHeartbeat();
+
+    this.heartbeatTimer = setInterval(() => {
+      if (
+        this.ws &&
+        this.ws.readyState === WebSocket.OPEN
+      ) {
+        this.ws.send("ping");
+      }
+    }, this.heartbeatInterval);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  send(data) {
+    if (
+      this.ws &&
+      this.ws.readyState === WebSocket.OPEN
+    ) {
+      this.ws.send(data);
+    } else {
+      console.warn("WebSocket not connected");
+    }
+  }
+
+  close() {
+    clearTimeout(this.reconnectTimer);
+    this.stopHeartbeat();
+
+    if (this.ws) {
+      this.ws.close();
+    }
+  }
+}
+
+```
+
+
+
+
+
 3. 数据类型  
 SSE：只支持文本（UTF-8）
 
@@ -440,3 +567,5 @@ WebSocket 解决了什么：
   2. 因为连接一直连着同一台服务器，肯定能利用到那台机器上的记忆（解决了痛点 B）。
 
 这使得每次仅仅发送增量消息可行了，Context 的信息一直就留在对应的 GPU 上，无状态的 HTTP 是不能做到这一点的。
+
+

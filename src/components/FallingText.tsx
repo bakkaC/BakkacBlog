@@ -7,8 +7,6 @@ interface FallingTextProps {
   highlightWords?: string[];
   highlightClass?: string;
   trigger?: 'auto' | 'scroll' | 'click' | 'hover';
-  backgroundColor?: string;
-  wireframes?: boolean;
   gravity?: number;
   mouseConstraintStiffness?: number;
   fontSize?: string;
@@ -22,8 +20,6 @@ const FallingText: React.FC<FallingTextProps> = ({
   highlightWords = DEFAULT_HIGHLIGHT_WORDS,
   highlightClass = 'highlighted',
   trigger = 'auto',
-  backgroundColor = 'transparent',
-  wireframes = false,
   gravity = 1,
   mouseConstraintStiffness = 0.2,
   fontSize = '1rem',
@@ -31,9 +27,9 @@ const FallingText: React.FC<FallingTextProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
-  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [effectStarted, setEffectStarted] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
     if (!textRef.current) return;
@@ -46,6 +42,16 @@ const FallingText: React.FC<FallingTextProps> = ({
       .join(' ');
     textRef.current.innerHTML = newHTML;
   }, [text, highlightWords, highlightClass]);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotionPreference = () => setPrefersReducedMotion(motionQuery.matches);
+
+    updateMotionPreference();
+    motionQuery.addEventListener('change', updateMotionPreference);
+
+    return () => motionQuery.removeEventListener('change', updateMotionPreference);
+  }, []);
 
   useEffect(() => {
     if (trigger === 'auto') {
@@ -68,13 +74,14 @@ const FallingText: React.FC<FallingTextProps> = ({
   }, [trigger]);
 
   useEffect(() => {
-    if (!effectStarted) return;
+    if (!effectStarted || prefersReducedMotion) return;
 
-    const { Engine, Render, World, Bodies, Runner, Mouse, MouseConstraint } = Matter;
+    const { Engine, World, Bodies, Mouse, MouseConstraint } = Matter;
 
-    if (!containerRef.current || !canvasContainerRef.current || !textRef.current) return;
+    if (!containerRef.current || !textRef.current) return;
 
-    const containerRect = containerRef.current.getBoundingClientRect();
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
     const width = containerRect.width;
     const height = containerRect.height;
 
@@ -83,18 +90,8 @@ const FallingText: React.FC<FallingTextProps> = ({
     }
 
     const engine = Engine.create();
+    engine.enableSleeping = true;
     engine.world.gravity.y = gravity;
-
-    const render = Render.create({
-      element: canvasContainerRef.current,
-      engine,
-      options: {
-        width,
-        height,
-        background: backgroundColor,
-        wireframes
-      }
-    });
 
     const boundaryOptions = {
       isStatic: true,
@@ -116,7 +113,8 @@ const FallingText: React.FC<FallingTextProps> = ({
         render: { fillStyle: 'transparent' },
         restitution: 0.8,
         frictionAir: 0.01,
-        friction: 0.2
+        friction: 0.2,
+        sleepThreshold: 30
       });
 
       Matter.Body.setVelocity(body, {
@@ -129,12 +127,13 @@ const FallingText: React.FC<FallingTextProps> = ({
 
     wordBodies.forEach(({ elem, body }) => {
       elem.style.position = 'absolute';
-      elem.style.left = `${body.position.x - body.bounds.max.x + body.bounds.min.x / 2}px`;
-      elem.style.top = `${body.position.y - body.bounds.max.y + body.bounds.min.y / 2}px`;
-      elem.style.transform = 'none';
+      elem.style.left = '0';
+      elem.style.top = '0';
+      elem.style.willChange = 'transform';
+      elem.style.transform = `translate3d(${body.position.x}px, ${body.position.y}px, 0) translate(-50%, -50%) rotate(${body.angle}rad)`;
     });
 
-    const mouse = Mouse.create(containerRef.current);
+    const mouse = Mouse.create(container);
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse,
       constraint: {
@@ -142,36 +141,123 @@ const FallingText: React.FC<FallingTextProps> = ({
         render: { visible: false }
       }
     });
-    render.mouse = mouse;
 
     World.add(engine.world, [floor, leftWall, rightWall, ceiling, mouseConstraint, ...wordBodies.map(wb => wb.body)]);
 
-    const runner = Runner.create();
-    Runner.run(runner, engine);
-    Render.run(render);
+    let animationFrameId: number | null = null;
+    let lastFrameTime: number | null = null;
+    let isInViewport = true;
+    let stoppedAfterSettling = false;
+    let disposed = false;
 
-    const updateLoop = () => {
+    const clearCompositorHints = () => {
+      wordBodies.forEach(({ elem }) => {
+        elem.style.willChange = '';
+      });
+    };
+
+    const syncWordPositions = () => {
       wordBodies.forEach(({ body, elem }) => {
         const { x, y } = body.position;
-        elem.style.left = `${x}px`;
-        elem.style.top = `${y}px`;
-        elem.style.transform = `translate(-50%, -50%) rotate(${body.angle}rad)`;
+        elem.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${body.angle}rad)`;
       });
-      Matter.Engine.update(engine);
-      requestAnimationFrame(updateLoop);
     };
-    updateLoop();
+
+    const stopAnimation = () => {
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      lastFrameTime = null;
+      clearCompositorHints();
+    };
+
+    const updateLoop = (time: number) => {
+      animationFrameId = null;
+      if (disposed || document.hidden || !isInViewport) return;
+
+      const delta = lastFrameTime === null
+        ? 1000 / 60
+        : Math.min(time - lastFrameTime, 1000 / 30);
+      lastFrameTime = time;
+
+      Engine.update(engine, delta);
+      syncWordPositions();
+
+      if (wordBodies.every(({ body }) => body.isSleeping)) {
+        stoppedAfterSettling = true;
+        clearCompositorHints();
+        return;
+      }
+
+      animationFrameId = window.requestAnimationFrame(updateLoop);
+    };
+
+    const startAnimation = () => {
+      if (disposed || document.hidden || !isInViewport || animationFrameId !== null) return;
+
+      stoppedAfterSettling = false;
+      lastFrameTime = null;
+      wordBodies.forEach(({ elem }) => {
+        elem.style.willChange = 'transform';
+      });
+      animationFrameId = window.requestAnimationFrame(updateLoop);
+    };
+
+    const handlePointerDown = () => {
+      startAnimation();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopAnimation();
+      } else if (!stoppedAfterSettling) {
+        startAnimation();
+      }
+    };
+
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      isInViewport = entry?.isIntersecting ?? true;
+      if (isInViewport && !stoppedAfterSettling) {
+        startAnimation();
+      } else {
+        stopAnimation();
+      }
+    });
+
+    container.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    visibilityObserver.observe(container);
+    startAnimation();
 
     return () => {
-      Render.stop(render);
-      Runner.stop(runner);
-      if (render.canvas && canvasContainerRef.current) {
-        canvasContainerRef.current.removeChild(render.canvas);
-      }
+      disposed = true;
+      stopAnimation();
+      visibilityObserver.disconnect();
+      container.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+      container.removeEventListener('mousemove', mouse.mousemove);
+      container.removeEventListener('mousedown', mouse.mousedown);
+      container.removeEventListener('mouseup', mouse.mouseup);
+      container.removeEventListener('wheel', mouse.mousewheel);
+      container.removeEventListener('touchmove', mouse.mousemove);
+      container.removeEventListener('touchstart', mouse.mousedown);
+      container.removeEventListener('touchend', mouse.mouseup);
+      Mouse.clearSourceEvents(mouse);
+
+      wordBodies.forEach(({ elem }) => {
+        elem.style.position = '';
+        elem.style.left = '';
+        elem.style.top = '';
+        elem.style.transform = '';
+        elem.style.willChange = '';
+      });
+
       World.clear(engine.world, false);
       Engine.clear(engine);
     };
-  }, [effectStarted, gravity, wireframes, backgroundColor, mouseConstraintStiffness, chaosFactor]);
+  }, [effectStarted, prefersReducedMotion, gravity, mouseConstraintStiffness, chaosFactor]);
 
   const handleTrigger = () => {
     if (!effectStarted && (trigger === 'click' || trigger === 'hover')) {
@@ -198,7 +284,6 @@ const FallingText: React.FC<FallingTextProps> = ({
           lineHeight: 1.4
         }}
       />
-      <div ref={canvasContainerRef} className="falling-text-canvas" />
     </div>
   );
 };

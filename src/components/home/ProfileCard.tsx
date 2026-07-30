@@ -80,8 +80,6 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
           text="React TailwindCSS TanstackStart Codex PostgreSQL AfterEffects Figma Springboot Vite"
           highlightClass="highlighted"
           trigger="auto"
-          backgroundColor="transparent"
-          wireframes={false}
           gravity={0.56}
           chaosFactor={1.5}
           fontSize="clamp(0.75rem,2.2vw,1.9rem)"

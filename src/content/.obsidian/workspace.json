@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "团剧共创-前端复杂度与简历写法.md",
+                "file": "notes/CRDT-Yjs 基本概念.mdx",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "团剧共创-前端复杂度与简历写法"
+              "title": "CRDT-Yjs 基本概念"
             }
           }
         ]
@@ -53,7 +53,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "tag:Web Worker",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -171,8 +171,8 @@
             "state": {
               "type": "git-view",
               "state": {},
-              "icon": "git-pull-request",
-              "title": "Source Control"
+              "icon": "lucide-ghost",
+              "title": "git-view"
             }
           }
         ],
@@ -199,18 +199,19 @@
   },
   "active": "e4716d5fe9f01a97",
   "lastOpenFiles": [
-    "notes/工程化/构建工具和包管理器.mdx",
-    "团剧共创-前端复杂度与简历写法.md",
-    "未命名.md",
-    "notes/后端学习 from zero/目录.mdx",
-    "notes/后端学习 from zero/并发处理的基本想法/synchronized.mdx",
-    "notes/后端学习 from zero/并发处理的基本想法/reentrant lock.mdx",
-    "notes/后端学习 from zero/并发处理的基本想法/AQS 和 CAS.mdx",
-    "notes/后端学习 from zero/读与写：case-post-counter.mdx",
-    "notes/后端学习 from zero/权限控制.mdx",
-    "notes/后端学习 from zero/数据建模steps.mdx",
-    "notes/后端学习 from zero/数据库.mdx",
-    "notes/后端学习 from zero/慢sql.mdx",
+    "notes/实时通信策略—websocket-sse.mdx",
+    "thoughts/编辑器的开发思考.mdx",
+    "尝试演讲，然后失败.md",
+    "thoughts/Adapter层的价值.mdx",
+    "thoughts/立绘预览的时序问题.mdx",
+    "thoughts/性能分析：RSC 与 SSR.mdx",
+    "thoughts/web worker 与轻量线程池实现.mdx",
+    "thoughts/style system.mdx",
+    "thoughts/Standard Schema与全栈类型安全.mdx",
+    "thoughts/NextJS 的问题.mdx",
+    "thoughts/AI coding Best Practice.mdx",
+    "archived/面试准备.md",
+    "archived/团剧共创-前端复杂度与简历写法.md",
     "Vite 的构建流程.md",
     "thoughts/未命名.md",
     "Excalidraw/MessageEditor.excalidraw.md",
@@ -224,7 +225,6 @@
     "thoughts/性能分析：RSC 与 SSR.md",
     "thoughts/立绘预览的时序问题.md",
     "thoughts/NextJS 的问题.md",
-    "面试准备.md",
     "thoughts/Adapter层的价值.md",
     "thoughts/web worker 与轻量线程池实现.md",
     "thoughts/AI coding Best Practice.md",

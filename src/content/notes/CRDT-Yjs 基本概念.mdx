@@ -12,11 +12,11 @@ Conflict-free Replicated Data Types
 
 当多个用户同时编辑时，会出现冲突：
 
-```plain text
+```mermaid
 graph LR
-    UserA[User A: "Hello"] -->|edit| Doc1[(Document)]
-    UserB[User B: "World"] -->|edit| Doc1
-    Doc1 -->|conflict| Issue[❌ Conflict!]
+    UserA["User A: &quot;Hello&quot;"] -->|edit| Doc1[(Document)]
+    UserB["User B: &quot;World&quot;"] -->|edit| Doc1
+    Doc1 -->|conflict| Issue["❌ Conflict!"]
 ```
 
 CRDTs 是一种可以自动合并的数据结构，即使并发编辑时也是如此：  
@@ -45,11 +45,11 @@ CRDTs are data structures that can be merged automatically, even when edited con
 </tr>
 </table>
 
-```plain text
+```mermaid
 graph LR
-    UserA[User A: "Hello"] --> Doc[(Yjs Doc)]
-    UserB[User B: "World"] --> Doc
-    Doc -->|auto-merge| Result[✅ "Hello World"]Copy
+    UserA["User A: &quot;Hello&quot;"] --> Doc[(Yjs Doc)]
+    UserB["User B: &quot;World&quot;"] --> Doc
+    Doc -->|auto-merge| Result["✅ &quot;Hello World&quot;"]
 ```
 
 ### **Types of CRDTs**

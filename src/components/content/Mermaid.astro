@@ -1,0 +1,68 @@
+---
+interface Props {
+  code: string;
+}
+
+const { code } = Astro.props as Props;
+---
+
+<figure class="mermaid-figure not-prose" data-mermaid-diagram>
+  <div class="mermaid-container" data-mermaid-container>
+    <pre class="mermaid-fallback" aria-label="Mermaid 图表源码">{code}</pre>
+    <p class="mermaid-status" data-mermaid-status hidden role="status">
+      Mermaid 图表渲染失败，已显示源码。
+    </p>
+  </div>
+  <figcaption class="sr-only">Mermaid 图表</figcaption>
+</figure>
+
+<script>
+  import mermaid from 'mermaid';
+
+  const renderMermaidDiagrams = async () => {
+    const diagrams = document.querySelectorAll('[data-mermaid-diagram]');
+
+    if (!diagrams.length) {
+      return;
+    }
+
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'default',
+    });
+
+    for (const [index, diagram] of diagrams.entries()) {
+      if (!(diagram instanceof HTMLElement) || diagram.dataset.mermaidRendered === 'true') {
+        continue;
+      }
+
+      const fallback = diagram.querySelector('[data-mermaid-container] .mermaid-fallback');
+      const container = diagram.querySelector('[data-mermaid-container]');
+      const status = diagram.querySelector('[data-mermaid-status]');
+      const source = fallback?.textContent?.trim();
+
+      if (!(container instanceof HTMLElement) || !source) {
+        continue;
+      }
+
+      try {
+        const { svg, bindFunctions } = await mermaid.render(
+          `mermaid-diagram-${index}-${crypto.randomUUID()}`,
+          source
+        );
+        container.innerHTML = svg;
+        diagram.dataset.mermaidRendered = 'true';
+        bindFunctions?.(container);
+      } catch (error) {
+        diagram.dataset.mermaidError = 'true';
+        if (status instanceof HTMLElement) {
+          status.hidden = false;
+        }
+        console.error('[Mermaid] Failed to render diagram.', error);
+      }
+    }
+  };
+
+  void renderMermaidDiagrams();
+</script>

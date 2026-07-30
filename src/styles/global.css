@@ -88,6 +88,43 @@
     border-radius: 1rem;
   }
 
+  .mermaid-figure {
+    margin: 2rem 0;
+    width: 100%;
+  }
+
+  .mermaid-container {
+    min-height: 8rem;
+    overflow-x: auto;
+    border: 1px solid color-mix(in oklab, var(--color-border) 85%, var(--color-foreground) 15%);
+    border-radius: 0.75rem;
+    background: color-mix(in oklab, var(--color-card) 94%, var(--color-muted) 6%);
+    padding: 1rem;
+  }
+
+  .mermaid-container svg {
+    display: block;
+    height: auto;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .mermaid-fallback {
+    margin: 0;
+    overflow-x: auto;
+    white-space: pre;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+
+  .mermaid-status {
+    margin: 0.75rem 0 0;
+    color: var(--color-destructive);
+    font-size: 0.875rem;
+  }
+
   .viewport-frame {
     pointer-events: none;
     position: fixed;

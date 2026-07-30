@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import { fileURLToPath } from 'url';
 import { remarkWikiLinks } from './src/lib/remark-wiki-links.js';
+import { remarkMermaid } from './src/lib/remark-mermaid.js';
 // @ts-check
 
 import tailwindcss from '@tailwindcss/vite';
@@ -38,7 +39,10 @@ export default defineConfig({
   },
   markdown: {
     processor: unified({
-      remarkPlugins: [[remarkWikiLinks, { base: siteBase }]],
+      remarkPlugins: [
+        [remarkWikiLinks, { base: siteBase }],
+        remarkMermaid,
+      ],
     }),
   },
 });
