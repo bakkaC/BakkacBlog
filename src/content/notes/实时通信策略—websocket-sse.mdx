@@ -276,6 +276,7 @@ ws.send(
 ```
 
 2. 自动重连机制  
+
 SSE：内置自动重连和断点续传
 
 ```javascript
@@ -286,161 +287,78 @@ const eventSource = new EventSource('/events');
 // retry: 5000
 ```
 
-WebSocket：需要手动实现重连
+WebSocket：需要手动实现重连和保活机制
 
-```javascript
-class ReconnectingWebSocket {
-  constructor(url) {
-    this.url = url;
-    this.reconnectDelay = 1000;
-    this.shouldReconnect = true;
-    this.connect();
-  }
-
-  connect() {
-    this.ws = new WebSocket(this.url);
-
-    this.ws.onclose = () => {
-      if (this.shouldReconnect) {
-        setTimeout(() => {
-          this.reconnectDelay *= 2; // 指数退避
-          this.connect();
-        }, this.reconnectDelay);
-      }
-    };
-
-    this.ws.onopen = () => {
-      this.reconnectDelay = 1000; // 重置延迟
-    };
-  }
-}
-```
-
-带保活的Websocket 连接器：
 ```js
-class ReconnectingWebSocket {
-  constructor(url, options = {}) {
-    this.url = url;
+let socket;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 10;
+const baseInterval = 5000;   // 初始重连间隔 5s
+const pingInterval = 30000;  // 心跳间隔 30s
+let pingTimer;
 
-    this.heartbeatInterval = options.heartbeatInterval || 30000; // 心跳间隔
-    this.reconnectInterval = options.reconnectInterval || 3000; // 重连间隔
-    this.maxReconnectTimes = options.maxReconnectTimes || Infinity;
-
-    this.ws = null;
-    this.reconnectCount = 0;
-    this.heartbeatTimer = null;
-    this.reconnectTimer = null;
-
-    this.onMessage = options.onMessage || (() => {});
-    this.onOpen = options.onOpen || (() => {});
-    this.onClose = options.onClose || (() => {});
-
-    this.connect();
-  }
-
-  connect() {
-    console.log("WebSocket connecting...");
-
-    this.ws = new WebSocket(this.url);
-
-    this.ws.onopen = () => {
-      console.log("WebSocket connected");
-
-      this.reconnectCount = 0;
-      this.startHeartbeat();
-
-      this.onOpen();
-    };
-
-    this.ws.onmessage = (event) => {
-      const data = event.data;
-
-      // 服务端收到 pong 后可以忽略
-      if (data === "pong") {
-        return;
-      }
-
-      this.onMessage(data);
-    };
-
-    this.ws.onerror = (err) => {
-      console.error("WebSocket error", err);
-    };
-
-    this.ws.onclose = () => {
-      console.warn("WebSocket closed");
-
-      this.stopHeartbeat();
-      this.onClose();
-
-      this.reconnect();
-    };
-  }
-
-  reconnect() {
-    if (this.reconnectCount >= this.maxReconnectTimes) {
-      console.error("Max reconnect reached");
-      return;
+function startPing() {
+  pingTimer = setInterval(() => {
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({
+        type: "ping",
+        timestamp: new Date().toISOString()
+      }));
     }
-
-    clearTimeout(this.reconnectTimer);
-
-    this.reconnectCount++;
-
-    console.log(
-      `Reconnect attempt ${this.reconnectCount}`
-    );
-
-    this.reconnectTimer = setTimeout(() => {
-      this.connect();
-    }, this.reconnectInterval);
-  }
-
-  startHeartbeat() {
-    this.stopHeartbeat();
-
-    this.heartbeatTimer = setInterval(() => {
-      if (
-        this.ws &&
-        this.ws.readyState === WebSocket.OPEN
-      ) {
-        this.ws.send("ping");
-      }
-    }, this.heartbeatInterval);
-  }
-
-  stopHeartbeat() {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = null;
-    }
-  }
-
-  send(data) {
-    if (
-      this.ws &&
-      this.ws.readyState === WebSocket.OPEN
-    ) {
-      this.ws.send(data);
-    } else {
-      console.warn("WebSocket not connected");
-    }
-  }
-
-  close() {
-    clearTimeout(this.reconnectTimer);
-    this.stopHeartbeat();
-
-    if (this.ws) {
-      this.ws.close();
-    }
-  }
+  }, pingInterval);
 }
 
+function connectWebSocket() {
+  socket = new WebSocket("ws://your-server-url/chat");
+  
+  socket.onopen = () => {
+    console.log("Connected");
+    reconnectAttempts = 0;       // 重置重连计数
+    startPing();                // 启动心跳
+  };
+
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "pong") {
+      console.log("Received Pong");
+    } else {
+      console.log("Message:", data);
+    }
+  };
+
+  socket.onclose = () => {
+    clearInterval(pingTimer);   // 停止心跳
+    if (reconnectAttempts < maxReconnectAttempts) {
+      reconnectAttempts++;
+      // 指数退避：base × 2^attempts，上限 30s
+      const delay = Math.min(
+        baseInterval * Math.pow(2, reconnectAttempts),
+        30000
+      );
+      console.log(`Reconnect in ${delay / 1000}s`);
+      setTimeout(connectWebSocket, delay);
+    }
+  };
+}
+
+connectWebSocket();
 ```
 
-
-
+1. 启动连接时，要启动心跳，每隔轮询 ping 一次，避免因为长时间不通信而断开连接，浪费资源
+2. 关闭连接时，要停止心跳，按照指数退避的方式重试连接:
+    假设你有 10,000 个客户端连接到同一个服务端，导致服务端宕机了：
+	如果所有客户端都用固定 5 秒重连，服务端刚恢复就被 10,000 个请求同时砸中，又被压垮——这就是**雪崩效应**（Thundering Herd）。恢复 → 压垮 → 恢复 → 压垮，死循环。
+	 
+    **第一层：为什么需要退避？** 固定 5 秒重连会导致雪崩——10,000 个客户端同时重试，服务端刚恢复就被压垮，形成死循环。
+    
+	**第二层：为什么不用固定长间隔（比如直接 30 秒）？** 如果只是网络抖动 3 秒就恢复了，你却等 30 秒才重连，用户体验太差。第一次重连应该快——10 秒就够了，也许只是短暂抖动。
+	
+	**第三层：为什么是指数而不是线性？** 这是关键。看上图的对比：
+	
+	- **固定 5s**：2 分钟内 24 次重连，请求**均匀分布**——服务端始终承受 2,000 req/s 的恒定压力，永远没有恢复的窗口
+	- **指数退避**：2 分钟内只有 5 次重连，而且**间隔越来越大**（10s → 20s → 30s → 30s）——服务端在两次重连波之间获得了越来越长的喘息时间
+	
+	线性退避（5s, 10s, 15s, 20s...）虽然也在减速，但减速太慢——前 2 分钟内仍然会有约 7 次重连，而且间隔增长太慢。指数退避的**衰减速度刚好**：前几次快速试探（也许只是短暂故障），后续越来越慢（大概是持久故障，别急着重试）。
 
 
 3. 数据类型  

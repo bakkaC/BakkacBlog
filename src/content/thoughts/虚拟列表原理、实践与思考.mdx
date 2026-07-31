@@ -1,0 +1,203 @@
+---
+date: 2026-07-31T00:00:00
+description: "从浏览器滚动模型、可变高度测量到 React Virtuoso 的数据结构与业务适配，梳理虚拟列表在聊天室和编辑器中的实现思路。"
+tags: [前端, React, 虚拟列表, 性能优化, React Virtuoso]
+---
+
+## 虚拟列表的背景
+
+浏览器的默认滚动行为只会移动视觉窗口，改变可观测的 DOM 节点；DOM 本身仍会完整渲染并保持可交互。大多数场景中，这更简单，也不需要更细的任务单元。
+
+聊天室里会同时存在大量消息。全量渲染会带来性能问题，修改、添加等操作也常常触发大范围替换；但用户真正消费的只有视觉窗口内的一小部分信息。虚拟列表会卸载窗口外无关的 DOM 元素，并随滚动动态挂载和卸载，只保留视口内部及附近的少量元素，从而显著降低渲染负担。
+
+虚拟列表通过高度监听识别关键元素，用 JavaScript 自定义渲染逻辑取代浏览器默认的完整渲染，以适配大列表场景。
+
+## 固定高度与可变高度
+
+高度是否可变决定了虚拟列表的复杂度。固定高度时，总滚动高度为 `totalCount * H`，不需要知道每条内容即可计算位置。这种实现简单、性能好，适用于通讯录或表格行等高度一致的场景。
+
+聊天消息高度不固定：纯文本可能是 36px，图片可能是 400px，视频更高，不能简单用 `scrollTop / itemHeight` 计算索引。可变高度通常有两种策略：
+
+- 测量后缓存：项目渲染后测量真实高度并缓存，下次滚动直接使用。准确，但新项目首次渲染时可能发生布局偏移。
+- 估算后修正：先使用 `estimatedHeight`，渲染后测量真实高度，再修正总高度与后续项目位置。
+
+Virtuoso 使用估算加修正的方案：内部维护高度缓存，测量后平滑调整滚动位置，减少跳动。
+
+## React Virtuoso 概览
+
+React Virtuoso 支持不需要手动测量的可变高度项目、自动尺寸变化处理、自定义 Header 和 Footer、初始滚动位置、滚动到指定索引、置顶项目等能力。
+
+宏观流程如下：
+
+1. 基于滚动位置和视口大小计算可见范围。
+2. 只渲染可见范围及缓冲区内的项目。
+3. 使用 CSS transform 将项目定位到正确位置。
+4. 滚动时重新计算范围并更新 DOM。
+5. 动态追踪项目尺寸，准确计算总滚动高度。
+
+常用输入可以分为几类：
+
+- 数据：`data`、`totalCount`。
+- 渲染：`itemContent`、`computeItemKey`、`components`、`context`。
+- 尺寸和滚动：`defaultItemHeight`、`fixedItemHeight`、`itemSize`、`customScrollParent`、`initialTopMostItemIndex`、`initialScrollTop`、`alignToBottom`、`followOutput`。
+- 状态回调：`atBottomStateChange`、`atTopStateChange`、`atBottomThreshold`、`atTopThreshold`。
+
+## ResizeObserver 与尺寸采集
+
+`ResizeObserver` 监听 DOM 元素的宽高变化。它不同于 `window.resize` 或轮询：元素尺寸变化时可以可靠获知，并且回调在布局完成后异步执行，因此能拿到最终布局结果。
+
+```text
+JS Task
+  |
+  | 修改 DOM
+  v
+Style Calculation
+  |
+  v
+Layout
+  |
+  v
+ResizeObserver
+  |
+  v
+Paint
+```
+
+它与 `MutationObserver` 的区别是：前者关注布局结果与尺寸变化，例如图片加载导致高度变化；后者关注 DOM 树或属性变化，例如 class 变化。
+
+虚拟列表必须知道每个 item 的真实高度，因此先渲染项目并绑定测量节点：
+
+```tsx
+<div ref={measureRef}>内容</div>
+```
+
+随后 `ResizeObserver.observe(div)` 在浏览器完成布局后回调，将例如 `item[5].height = 134` 写入内部测量缓存。列表从估计高度矫正为真实高度，再调整滚动位置，这就是基本工作流。
+
+Virtuoso 在首次没有尺寸信息时会渲染一小组 probe items，获取真实 DOM 高度后开始精确计算，并持续监听已渲染项目和容器的尺寸变化。
+
+尺寸采集层会遍历子元素，对比每项 `data-known-size` 和 `data-index`，只收集与预测值不同的项目，压缩为连续的 `SizeRange[]` 后上报，同时采集 `scrollTop`、`scrollHeight`、`viewportHeight` 与 `gap`。
+
+## SizeTree 与 OffsetTree
+
+Virtuoso 的核心是懒测量、增量更新、分层数据结构和滚动稳定：只测量 DOM 中已经渲染的项目，未渲染项目使用已知高度估算；尺寸变化只触发局部重算；`SizeTree` 管理高度映射，`OffsetTree` 管理偏移映射；总高度变化时补偿 `scrollTop`，保持用户视角稳定。
+
+```text
+内容变化（图片加载、展开、字体变化）
+  -> ResizeObserver
+  -> 对比 data-known-size，生成 SizeRange[]
+  -> sizeSystem 更新 AA SizeTree，局部重建 OffsetTree
+  -> listStateSystem 依据 scrollTop 和 OffsetTree 计算可见范围
+  -> React 重渲染对应项目
+  -> upwardScrollFixSystem 根据高度变化补偿 scrollTop
+```
+
+`SizeTree` 是以起始索引为 key、项目高度为 value 的 AA 树。相同高度的连续项目会合并成一个区间：
+
+```ts
+// 初始：0 到无穷的项目都是 50px
+{ 0: 50 }
+
+// 第 3 项图片加载后变为 200px
+{ 0: 50, 3: 200, 4: 50 }
+```
+
+`OffsetTree` 解决“第 N 项距离顶部多少像素”。它不保存每一项的偏移，只保存高度变化的起点：
+
+```ts
+[
+  { index: 0, offset: 0, size: 50 },
+  { index: 3, offset: 150, size: 200 },
+  { index: 4, offset: 350, size: 50 },
+]
+```
+
+查第 7 项的偏移时，先二分找到最近起点，再按公式计算。渲染还需要“像素到索引”的反查，例如 `scrollTop = 3200px`、视口高 600px 时，找出 3200px 到 3800px 对应的索引范围。前缀和数组查询快，但中间插入或删除需移动元素；AA 树作为支持 `O(log n)` 随机插入、删除的有序字典，适合这类高度映射。
+
+项目渲染时会保留尺寸层需要的属性：
+
+```tsx
+listState.items.map((item) => (
+  <ItemComponent
+    data-index={item.originalIndex}
+    data-known-size={item.size}
+    key={computeItemKey(item.index)}
+    style={ITEM_STYLE}
+  >
+    {itemContent(item.index, item.data)}
+  </ItemComponent>
+))
+```
+
+容器的 `paddingTop` 与 `paddingBottom` 分别撑开第一项之前和最后一项之后的空白。`bottom` 为最后一个已渲染项的 `offset + size`，`offsetBottom = totalHeight - bottom`，二者共同表示整个可滚动高度。
+
+## 滚动补偿
+
+第 3 项从 50px 变为 200px 时，后续内容整体下移 150px。若用户在列表中间或向上滚动，画面会跳动。滚动补偿通过计算偏移量并调用 `scrollBy` 抵消这次位移。
+
+Virtuoso 内置补偿适合高度变化、末尾追加和顶部 prepend。`totalCount` 改变时它不能判断变化位于视口上方还是下方：末尾追加不该补偿，中间删除通常该补偿，顶部 prepend 则走 `firstItemIndex` 的专门路径。因此不能仅根据 `totalHeight` 的差值决定补偿。
+
+## 聊天列表的业务适配
+
+Virtuoso 负责通用基础设施：测量、偏移、渲染范围、滚动补偿。业务还需要处理已读同步、消息跟随、拖拽自动滚动、跳转高亮、稳定 key 与浮层事件代理。
+
+### 稳定 key
+
+普通消息可直接使用稳定的服务端 `messageId`。乐观消息在服务端确认前后会从临时 ID 变为正式 ID：
+
+```text
+发送 -> 临时 messageId = -1 -> 服务端确认 messageId = 9527
+```
+
+若 key 直接使用 `messageId`，React 会卸载旧组件并挂载新组件，Virtuoso 也会视为新的列表项，丢失测量和 DOM 身份。因此渲染层应按生命周期五级回退：
+
+| 阶段 | key | 原因 |
+| --- | --- | --- |
+| 乐观消息 | `local:xxx` | 尚无服务端 ID |
+| 服务端已确认但 syncId 可变 | `stable:xxx` | `__tcStableKey` 跨 syncId 保持稳定 |
+| 普通持久化消息 | `id:xxx` | `messageId` 唯一且不变 |
+| 系统消息 | `pos:xxx` | 可能没有 `messageId` |
+| 极端兜底 | `idx:xxx` | 至少避免崩溃 |
+
+`position` 与索引本身不稳定，只应当作为最后的降级路径。
+
+### overscan 与跟底
+
+`overscan = 480` 不只是性能调优。React 卸载音频或视频组件会丢失播放状态；放大实际挂载范围可减少短距离滚动时的卸载重建。
+
+聊天数据从末端持续增长，滚动策略需区分用户是否正在阅读历史：用户上滑时不强制跟底，位于底部时自动跟随新消息。`followOutput` 可以根据这一状态决定是否滚动到底部；初始化用 `index: 'LAST'` 与 `align: 'end'` 显示最后一条消息。顶部达到 `atTopThreshold` 时则加载更早历史。
+
+## 编辑器中的锚点保留
+
+编辑器的 block 操作是中间增删和重排，不属于末尾追加或顶部 prepend。Virtuoso 的内置补偿不能可靠覆盖此场景，因此编辑器需要自行保留锚点：
+
+1. 捕获：滚动时遍历已挂载 block DOM，找到第一个底部超过视口顶部的 block，记录 `blockId` 和相对顶部偏移。
+2. 选锚：结构变化后原锚点仍存在则使用；被删除时从原位置向两侧寻找最近的幸存邻居；尚未挂载则先 `scrollToIndex`。
+3. 恢复：锚点挂载后，计算其当前偏移与记录偏移的差值，超过 0.5px 时以 `scrollBy(delta)` 微调。
+
+例如用户在中部观看距视口顶部 32px 的 `B6`，删除位于其上方、高 200px 的 `B5` 后，`B6` 会向上移动。Virtuoso 因 `totalCount` 从 8 变为 7 而不补偿；锚点机制则重新定位到 `B6`，将它恢复到距顶部 32px 的位置，使用户看到的画面保持稳定。
+
+编辑器显式禁用浏览器的 `overflow-anchor`，因为默认锚定在虚拟列表中不够可靠。`useLayoutEffect` 和 `requestAnimationFrame` 都在首次绘制前完成测量与补偿，用户不会看到中间跳动。
+
+## 编辑器封装细节
+
+消息编辑器用 `forwardRef` 将 Virtuoso 包装为有限的 imperative handle：
+
+```ts
+type MessageEditorVirtualizedBlockListHandle = {
+  getVisibleRange: () => ListRange | null;
+  isBlockRendered: (blockId: string) => boolean;
+  scrollBlockIntoView: (blockId: string, options?: unknown) => boolean;
+  scrollBy: (top: number) => void;
+};
+```
+
+项目额外实现了：
+
+1. 高度估算。首次渲染前根据文本字数、媒体宽高比或已有 `editorHeight` 估算高度，减少 layout shift。文本可根据容器宽度、字体、每行字数与行高估算；媒体优先复用缓存高度，缺失时按宽高比换算。
+2. 滚动锚点保留。结构变更前后捕获并恢复视口位置，锚点删除时选择邻近的幸存 block。
+3. DOM 注册。`setBlockSlotRef` 将每个 block DOM 写入 ref map，业务层可查询是否已渲染、进行锚点定位、点击和选区交互，而不侵入列表渲染。
+4. stale index 防御。数据窗口重置时 Virtuoso 可能短暂返回过期索引，因此 `itemContent` 中应使用 `if (!block) return null`。
+
+## 总结
+
+虚拟列表的关键并非简单地“少渲染一些节点”，而是在可变高度、异步内容变化和复杂业务交互下，持续维护尺寸、偏移、可见范围与用户视角之间的一致性。Virtuoso 提供通用的测量和滚动基础设施；聊天室与编辑器仍需要围绕稳定身份、媒体状态、已读同步和结构变更锚点等具体语义进行补充。
