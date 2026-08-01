@@ -14,6 +14,7 @@ interface FallingTextProps {
 }
 
 const DEFAULT_HIGHLIGHT_WORDS: string[] = [];
+const LEGACY_PHYSICS_SPEED = 2;
 
 const FallingText: React.FC<FallingTextProps> = ({
   text = '',
@@ -124,11 +125,13 @@ const FallingText: React.FC<FallingTextProps> = ({
       Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.05 * chaosFactor);
       return { elem, body };
     });
+    type WordBody = (typeof wordBodies)[number]['body'];
 
     wordBodies.forEach(({ elem, body }) => {
       elem.style.position = 'absolute';
       elem.style.left = '0';
       elem.style.top = '0';
+      elem.style.margin = '0';
       elem.style.willChange = 'transform';
       elem.style.transform = `translate3d(${body.position.x}px, ${body.position.y}px, 0) translate(-50%, -50%) rotate(${body.angle}rad)`;
     });
@@ -149,6 +152,7 @@ const FallingText: React.FC<FallingTextProps> = ({
     let isInViewport = true;
     let stoppedAfterSettling = false;
     let disposed = false;
+    let isPointerDown = false;
 
     const clearCompositorHints = () => {
       wordBodies.forEach(({ elem }) => {
@@ -161,6 +165,74 @@ const FallingText: React.FC<FallingTextProps> = ({
         const { x, y } = body.position;
         elem.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%) rotate(${body.angle}rad)`;
       });
+    };
+
+    const clampBodyToContainer = (body: WordBody) => {
+      const correction = { x: 0, y: 0 };
+
+      if (body.bounds.min.x < 0) {
+        correction.x = -body.bounds.min.x;
+      } else if (body.bounds.max.x > width) {
+        correction.x = width - body.bounds.max.x;
+      }
+
+      if (body.bounds.min.y < 0) {
+        correction.y = -body.bounds.min.y;
+      } else if (body.bounds.max.y > height) {
+        correction.y = height - body.bounds.max.y;
+      }
+
+      if (correction.x === 0 && correction.y === 0) return false;
+
+      Matter.Body.translate(body, correction);
+
+      // Only cancel velocity that is still pushing the body out of the canvas.
+      // Keeping inward velocity preserves the original collision/fall response.
+      const velocity = { x: body.velocity.x, y: body.velocity.y };
+      if (correction.x > 0 && velocity.x < 0) velocity.x = 0;
+      if (correction.x < 0 && velocity.x > 0) velocity.x = 0;
+      if (correction.y > 0 && velocity.y < 0) velocity.y = 0;
+      if (correction.y < 0 && velocity.y > 0) velocity.y = 0;
+      Matter.Body.setVelocity(body, velocity);
+      return true;
+    };
+
+    const clampBodiesToContainer = () => {
+      let activeBodyWasClamped = false;
+
+      wordBodies.forEach(({ body }) => {
+        const wasClamped = clampBodyToContainer(body);
+        if (wasClamped && body === mouseConstraint.body) {
+          activeBodyWasClamped = true;
+        }
+      });
+
+      if (activeBodyWasClamped && mouseConstraint.body && mouseConstraint.constraint.pointB) {
+        mouse.position.x = mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x;
+        mouse.position.y = mouseConstraint.body.position.y + mouseConstraint.constraint.pointB.y;
+      }
+    };
+
+    const constrainMouseTarget = () => {
+      const activeBody = mouseConstraint.body;
+      const pointB = mouseConstraint.constraint.pointB;
+      if (!isPointerDown || !activeBody || !pointB) return;
+
+      const halfWidth = Math.max(
+        activeBody.position.x - activeBody.bounds.min.x,
+        activeBody.bounds.max.x - activeBody.position.x
+      );
+      const halfHeight = Math.max(
+        activeBody.position.y - activeBody.bounds.min.y,
+        activeBody.bounds.max.y - activeBody.position.y
+      );
+      const targetCenterX = mouse.position.x - pointB.x;
+      const targetCenterY = mouse.position.y - pointB.y;
+      const centerX = Math.max(halfWidth, Math.min(width - halfWidth, targetCenterX));
+      const centerY = Math.max(halfHeight, Math.min(height - halfHeight, targetCenterY));
+
+      mouse.position.x = centerX + pointB.x;
+      mouse.position.y = centerY + pointB.y;
     };
 
     const stopAnimation = () => {
@@ -181,7 +253,18 @@ const FallingText: React.FC<FallingTextProps> = ({
         : Math.min(time - lastFrameTime, 1000 / 30);
       lastFrameTime = time;
 
-      Engine.update(engine, delta);
+      if (!isPointerDown && mouse.button === 0) {
+        mouse.button = -1;
+        Mouse.clearSourceEvents(mouse);
+      }
+      constrainMouseTarget();
+      // The previous implementation advanced Matter once in Runner and once in its own RAF.
+      Engine.update(engine, delta * LEGACY_PHYSICS_SPEED);
+      // Static walls/floor handle normal physics. Manual clamping is only
+      // needed while dragging, when the mouse constraint can pull through them.
+      if (isPointerDown) {
+        clampBodiesToContainer();
+      }
       syncWordPositions();
 
       if (wordBodies.every(({ body }) => body.isSleeping)) {
@@ -204,8 +287,34 @@ const FallingText: React.FC<FallingTextProps> = ({
       animationFrameId = window.requestAnimationFrame(updateLoop);
     };
 
-    const handlePointerDown = () => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+      isPointerDown = true;
+      try {
+        container.setPointerCapture?.(event.pointerId);
+      } catch {
+        // Synthetic pointer events do not own a capturable pointer.
+      }
       startAnimation();
+    };
+
+    const releasePointer = (pointerId?: number) => {
+      isPointerDown = false;
+      mouse.button = -1;
+      Mouse.clearSourceEvents(mouse);
+
+      if (pointerId !== undefined && container.hasPointerCapture?.(pointerId)) {
+        container.releasePointerCapture(pointerId);
+      }
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      releasePointer(event.pointerId);
+    };
+
+    const handleWindowBlur = () => {
+      releasePointer();
     };
 
     const handleVisibilityChange = () => {
@@ -226,6 +335,12 @@ const FallingText: React.FC<FallingTextProps> = ({
     });
 
     container.addEventListener('pointerdown', handlePointerDown);
+    container.addEventListener('pointerup', handlePointerUp);
+    container.addEventListener('pointercancel', handlePointerUp);
+    container.addEventListener('lostpointercapture', handlePointerUp);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('blur', handleWindowBlur);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     visibilityObserver.observe(container);
     startAnimation();
@@ -235,7 +350,14 @@ const FallingText: React.FC<FallingTextProps> = ({
       stopAnimation();
       visibilityObserver.disconnect();
       container.removeEventListener('pointerdown', handlePointerDown);
+      container.removeEventListener('pointerup', handlePointerUp);
+      container.removeEventListener('pointercancel', handlePointerUp);
+      container.removeEventListener('lostpointercapture', handlePointerUp);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      releasePointer();
 
       container.removeEventListener('mousemove', mouse.mousemove);
       container.removeEventListener('mousedown', mouse.mousedown);
@@ -250,6 +372,7 @@ const FallingText: React.FC<FallingTextProps> = ({
         elem.style.position = '';
         elem.style.left = '';
         elem.style.top = '';
+        elem.style.margin = '';
         elem.style.transform = '';
         elem.style.willChange = '';
       });
