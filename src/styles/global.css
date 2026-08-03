@@ -35,6 +35,23 @@
     hyphens: auto;
   }
 
+  .markdown :not(pre) > code {
+    border: 1px solid color-mix(in oklab, var(--color-border) 70%, transparent);
+    border-radius: 0.25rem;
+    background: color-mix(in oklab, var(--color-muted) 85%, var(--color-background) 15%);
+    padding: 0.12em 0.35em;
+    color: var(--color-foreground);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875em;
+    font-weight: 500;
+  }
+
+  .markdown :not(pre) > code::before,
+  .markdown :not(pre) > code::after {
+    content: none;
+  }
+
   .markdown .wiki-link {
     position: relative;
     border-bottom: 1px dashed color-mix(in oklab, var(--color-chart-1) 65%, var(--color-foreground) 35%);

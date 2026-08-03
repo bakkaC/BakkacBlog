@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 352.5,
-    "collapsed": true
+    "width": 352.5
   },
   "right": {
     "id": "a6730353173b5cab",
@@ -172,8 +171,8 @@
             "state": {
               "type": "git-view",
               "state": {},
-              "icon": "lucide-ghost",
-              "title": "git-view"
+              "icon": "git-pull-request",
+              "title": "Source Control"
             }
           }
         ],
@@ -181,8 +180,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200,
-    "collapsed": true
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -198,8 +196,23 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "e4716d5fe9f01a97",
+  "active": "adce2d0c460692ca",
   "lastOpenFiles": [
+    "thoughts/事件溯源.mdx",
+    "notes/工程化/pnpm.mdx",
+    "thoughts/assets/事件溯源/image-1.png",
+    "thoughts/assets/事件溯源",
+    "notes/工程化/assets/pnpm/image-9.png",
+    "notes/工程化/assets/pnpm/image-8.png",
+    "notes/工程化/assets/pnpm/image-7.png",
+    "notes/工程化/assets/pnpm/image-6.png",
+    "notes/工程化/assets/pnpm/image-5.png",
+    "notes/工程化/assets/pnpm/image-4.png",
+    "notes/工程化/assets/pnpm/image-3.png",
+    "notes/工程化/assets/pnpm/image-2.png",
+    "notes/工程化/assets/pnpm/image-1.png",
+    "notes/工程化/assets/pnpm",
+    "notes/工程化/assets",
     "notes/CRDT-Yjs 基本概念.mdx",
     "notes/实时通信策略—websocket-sse.mdx",
     "thoughts/编辑器的开发思考.mdx",
@@ -207,11 +220,6 @@
     "thoughts/Adapter层的价值.mdx",
     "thoughts/立绘预览的时序问题.mdx",
     "thoughts/性能分析：RSC 与 SSR.mdx",
-    "thoughts/web worker 与轻量线程池实现.mdx",
-    "thoughts/style system.mdx",
-    "thoughts/Standard Schema与全栈类型安全.mdx",
-    "thoughts/NextJS 的问题.mdx",
-    "thoughts/AI coding Best Practice.mdx",
     "archived/面试准备.md",
     "archived/团剧共创-前端复杂度与简历写法.md",
     "Vite 的构建流程.md",
@@ -236,16 +244,6 @@
     "notes/React 哲学-渲染-总结 new.md",
     "notes/HTML渲染策略.md",
     "notes/ESM 和 CJS.md",
-    "未命名.canvas",
-    "assets/实验报告/file-20260414143356038.png",
-    "thoughts/assets/React 哲学-渲染-总结 new/file-20260413145847505.png",
-    "notes/assets/React 哲学-渲染-总结 new/file-20260512141022150.png",
-    "notes/assets/React 哲学-渲染-总结 new/file-20260512141022154.png",
-    "notes/assets/React 哲学-渲染-总结 new/file-20260512141022152.png",
-    "notes/assets/React 哲学-渲染-总结 new/file-20260512141022153.png",
-    "notes/assets/实时通信策略—websocket-sse/file-20260409163352684.png",
-    "notes/assets/实时通信策略—websocket-sse/file-20260409163337605.png",
-    "Excalidraw/assets/ReactRrender.excalidraw/Pasted Image 20260214154710_147.png",
-    "Excalidraw/assets/ReactRrender.excalidraw/Pasted Image 20260401223838_386.png"
+    "未命名.canvas"
   ]
 }
