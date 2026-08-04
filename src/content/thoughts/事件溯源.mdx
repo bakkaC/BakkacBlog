@@ -56,14 +56,14 @@ T 时刻状态 = reduce(apply, [], 截止到 T 的事件)
 - 优化 3：投影 / 读模型（Projections）—— CQRS 标配
 	- 把"重放算状态"改成"预先重放好，存成查询友好的格式"。
 		```text
-事件日志（不可变、只追加）
-    │
-    │ 实时投影
-    ▼
-读模型（预计算好的查询表）
-    ├── 物品数量表 {sword: 2, bow: 1, ...}
-    ├── 按来源统计表 {sword: {castle, dungeon}, ...}
-    └── 按时间索引 [...]
+		事件日志（不可变、只追加）
+		    │
+		    │ 实时投影
+		    ▼
+		读模型（预计算好的查询表）
+		    ├── 物品数量表 {sword: 2, bow: 1, ...}
+		    ├── 按来源统计表 {sword: {castle, dungeon}, ...}
+		    └── 按时间索引 [...]
 		```
 	- 查询时直接读读模型，O(1)，不用重放。
 	- 投影本质是**把重放从"查询时"提前到"写入时"**：每个事件 arrive 时增量更新读模型，查询走预计算结果。
@@ -82,17 +82,17 @@ T 时刻状态 = reduce(apply, [], 截止到 T 的事件)
 - 优化 5：分区重放 / 分片
 	- 单流重放是瓶颈，把事件流按聚合根 ID 分片：
 		```text
-事件流按 item_name 分片:
-  shard_sword:    [所有 sword 相关事件]
-  shard_bow:      [所有 bow 相关事件]
-  shard_torch:    [所有 torch 相关事件]
+		事件流按 item_name 分片:
+		  shard_sword:    [所有 sword 相关事件]
+		  shard_bow:      [所有 bow 相关事件]
+		  shard_torch:    [所有 torch 相关事件]
 		```
 	- 查询"sword 多少把"，只重放 sword 分片，不用扫全量日志。多分片可以并行重放。**适用**：大规模、单聚合根状态不大的场景
 - 优化 6：压缩（Log Compaction）
 	- 借鉴 Kafka 的 log compaction 思路：**对于同一个 key，只保留最新的状态事件，删掉中间的历史事件**。
 		```text
-压缩前: [ADD sword@10:00, ADD sword@10:05, REMOVE sword@10:10]
-压缩后: [REMOVE sword@10:10]      ← 只留每个 key 最后一条
+		压缩前: [ADD sword@10:00, ADD sword@10:05, REMOVE sword@10:10]
+		压缩后: [REMOVE sword@10:10]      ← 只留每个 key 最后一条
 		```
 	- 简单而言就是把过时的事件删去，也不需要审计这部分的过去
 	- **适用**：纯物化视图、不需要完整审计的场景

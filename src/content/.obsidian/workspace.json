@@ -196,10 +196,13 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "adce2d0c460692ca",
+  "active": "e4716d5fe9f01a97",
   "lastOpenFiles": [
-    "thoughts/事件溯源.mdx",
+    "notes/React并发模式原理与应用.mdx",
     "notes/工程化/pnpm.mdx",
+    "notes/工程化/基于vite的代码拆分.mdx",
+    "notes/实时通信策略—websocket-sse.mdx",
+    "thoughts/事件溯源.mdx",
     "thoughts/assets/事件溯源/image-1.png",
     "thoughts/assets/事件溯源",
     "notes/工程化/assets/pnpm/image-9.png",
@@ -214,12 +217,9 @@
     "notes/工程化/assets/pnpm",
     "notes/工程化/assets",
     "notes/CRDT-Yjs 基本概念.mdx",
-    "notes/实时通信策略—websocket-sse.mdx",
     "thoughts/编辑器的开发思考.mdx",
     "尝试演讲，然后失败.md",
     "thoughts/Adapter层的价值.mdx",
-    "thoughts/立绘预览的时序问题.mdx",
-    "thoughts/性能分析：RSC 与 SSR.mdx",
     "archived/面试准备.md",
     "archived/团剧共创-前端复杂度与简历写法.md",
     "Vite 的构建流程.md",
