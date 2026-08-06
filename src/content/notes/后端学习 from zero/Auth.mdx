@@ -1,0 +1,131 @@
+---
+title: "Auth"
+description: "Authentication、Authorization，以及 Session、JWT、OAuth2、OIDC 和 RBAC/ABAC/ReBAC。"
+date: 2026-08-06T14:20
+tags: [后端, 认证, 授权, JWT, OAuth2]
+parent: 后端学习 from zero
+---
+
+> 上级：[[后端学习 from zero]]
+
+## Authentication 和 Authorization
+
+前者是“认证”，证明你是谁；后者是“授权”，决定你能做什么。
+
+```text
+Authentication: 你是谁？
+Authorization: 你能对什么资源做什么操作？
+```
+
+## Authentication
+
+当用户或第三方服务请求 API Gateway 时，系统先通过认证服务器确认身份。身份有效，请求才会被放行到内部服务；否则返回 `401 Unauthorized`。
+
+### Basic Auth
+
+客户端把 `用户名:密码` 做 Base64 编码，放到 `Authorization: Basic <value>` 中。
+
+Base64 不是加密，可以轻易反向解码，因此必须配合 HTTPS；现代生产环境很少直接使用。
+
+### Digest Auth
+
+服务器先发一个随机数 `nonce`，客户端用 nonce 和密码计算摘要，只把摘要发回服务器。它避免了密码明文传输，但依赖 MD5，流程复杂，现在也很少使用。
+
+### API Key
+
+服务端生成一段随机字符串，客户端每次请求携带它，服务器根据 Key 查询调用方和权限。
+
+API Key 本身通常不包含身份信息，泄露后需要主动吊销；如果每次都查数据库，还会把认证变成额外的查询瓶颈。生产环境应保存 Key 的哈希，而不是明文。
+
+### Session
+
+Session 是服务端状态模型：
+
+1. 用户使用账号密码登录。
+2. 服务端验证通过后，在内存或 Redis 创建 Session。
+3. 浏览器收到包含 Session ID 的 Cookie。
+4. 后续请求自动携带 Cookie。
+5. 服务端用 Session ID 查找登录状态。
+
+它可以随时吊销，适合传统 Web；代价是服务端必须保存状态。分布式部署时不能依赖单机内存，通常需要 Redis 或其他共享存储。
+
+## Token 和 JWT
+
+Token 认证的是“请求方持有可信系统签发的有效凭据”，不是每次重新证明自己知道密码。
+
+要拆开几个概念：
+
+- Session：服务端状态模型。
+- JWT：一种自包含、可验签的 Token 格式。
+- Cookie：浏览器保存并自动发送数据的机制。
+- Bearer：HTTP 中携带认证凭据的一种方式，谁持有 Token 谁就能使用它。
+
+常见组合包括 `Cookie + Session ID`、`Bearer + opaque token`、`Bearer + JWT` 和 `Cookie + JWT`。浏览器网页登录常见 `Cookie + Session`，API、移动端和服务调用常见 `Authorization: Bearer + Token`。
+
+JWT 通常包含用户 ID、角色、签发时间和过期时间。服务端用密钥验证签名，不必每次查询用户表，因此易于横向扩展。但 JWT 不是加密容器，Payload 可以被读取；敏感信息不应放进去。撤销和权限即时变化也需要额外的黑名单、短过期时间或版本号设计。
+
+### Access Token 和 Refresh Token
+
+- Access Token：寿命短，每次访问 API 携带，泄露后的窗口较小。
+- Refresh Token：寿命长，只用于向认证服务器换取新的 Access Token。
+
+浏览器场景中 Refresh Token 不要放在 `localStorage`，更适合放在 `HttpOnly`、`Secure`、合适 `SameSite` 策略的 Cookie 中；同时仍需考虑 CSRF 防护和 Token 轮换。
+
+## OAuth2 和 OIDC
+
+### OAuth2
+
+OAuth2 是授权框架，不是认证协议。比如第三方应用想读取 Google Drive 文件，用户在 Google 的同意页面授权，应用获得 Access Token 后调用 Drive API，但这个 Token 主要表达“应用被允许做什么”。
+
+### OIDC
+
+OIDC 构建在 OAuth2 之上，通过额外的 `ID Token` 表达用户身份。ID Token 通常是包含邮箱、姓名等声明的 JWT，所以“使用 Google 账号登录”背后通常是 OAuth2 + OIDC。
+
+### SSO
+
+SSO 是用户体验模式，不是底层协议：用户在中央身份提供商 IdP 登录一次，之后访问生态内其他应用时，由 IdP 的全局 Session 帮助完成登录。
+
+## Authorization 模型
+
+### RBAC
+
+RBAC 是“你是什么角色，所以你能做什么”。`admin`、`member`、`guest` 都是角色。它简单直观，但很难表达“这个用户只能访问这三篇文章”之类的例外。
+
+### ABAC
+
+ABAC 根据四类属性综合判断：
+
+1. Subject：用户、部门、角色、账号状态。
+2. Action：查看、创建、更新、删除、审核。
+3. Resource：资源类型、作者、状态等。
+4. Environment：时间、IP、设备安全状态。
+
+```typescript
+type PermissionCheck<T> =
+  | boolean
+  | ((user: User, data: T) => boolean)
+
+// 规则不只存 true/false，也可以根据资源属性计算
+const canUpdateTodo = (user: User, todo: Todo) =>
+  todo.userId === user.id || todo.invitedUsers.includes(user.id)
+```
+
+ABAC 适合把业务条件写成策略，避免每增加一个模块就复制一套权限表；但策略本身需要测试、审计和明确的 deny 优先级。
+
+### ReBAC
+
+ReBAC 关注“你和资源是什么关系”。文档系统里，用户可能是文档 owner、editor、viewer，文档还可能属于某个文件夹并继承父级关系。
+
+```typescript
+type RelationTuple = {
+  object: { type: "document" | "folder"; id: string }
+  relation: "owner" | "editor" | "viewer" | "parent"
+  subject: { type: "user" | "folder"; id: string }
+}
+```
+
+页面共享、团队空间、页面树继承和外部访客访问，都更接近 ReBAC。
+
+## 选择时的顺序
+
+先明确认证对象、凭据生命周期、撤销需求和客户端类型，再选择 Session 或 Token；授权则从 RBAC 起步，只有当资源属性或实体关系确实复杂时，再引入 ABAC 或 ReBAC。安全设计的核心不是追逐最复杂的方案，而是让凭据、权限和失败处理都可验证、可撤销、可审计。

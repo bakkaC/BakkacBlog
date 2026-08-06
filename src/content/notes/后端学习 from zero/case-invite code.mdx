@@ -137,6 +137,10 @@ invite_relation(
 - 索引是低风险优化，只改查询路径，不改数据语义。
 - 冗余会引入一致性维护成本。
 
+`UNIQUE` 在语义上是唯一性约束，数据库通常通过唯一索引实现它。常见类型约束可以按业务规模选择：ID 使用 `BIGINT`，邀请码使用 `VARCHAR(32)`，状态使用枚举或小整数，时间使用带毫秒的时间类型。
+
+如果以后需要汇总优化，可以增加按用户维护的 `pending_invite_count`、`valid_invite_count` 和 `invalid_invite_count`，但它们是派生值，必须允许从关系表重算；不要让汇总表成为唯一事实来源。
+
 ## 业务逻辑
 
 被邀请方：
@@ -175,3 +179,19 @@ invite_relation(
 6. 运营能不能查清和修正。
 7. 是否容易被作弊。
 8. 规则变化后能不能重算。
+
+## 并发与接口设计
+
+注册绑定邀请码时，后端至少要在事务中完成：校验邀请码状态、校验非自邀、插入邀请关系。`invitee_user_id` 唯一约束保证同一个被邀请用户只能绑定一次；勋章表使用 `(user_id, badge_type)` 唯一约束，发放时“尝试插入，插入成功才算首次授予”。
+
+状态迁移也要带旧状态条件，避免已经 `invalid` 的关系被重复改回 `valid`：
+
+```sql
+update invite_relation
+set status = 'valid', effective_at = current_timestamp
+where id = ? and status = 'pending';
+```
+
+刷新邀请码可以合并为一个接口：先找到当前用户的 active 码并置为 disabled，再插入新的 active 码。邀请链接是邀请码的派生字段，直接在 response 中根据注册地址和 code 生成，不必单独落库。
+
+消息或异步任务重跑时，不能直接“再加一次计数”。应保存事件 ID、关系状态变更和勋章授予记录，并对关键写入建立唯一约束；发现作弊或误绑时用 `invalid` 和撤销记录修正，不要硬删历史关系。
