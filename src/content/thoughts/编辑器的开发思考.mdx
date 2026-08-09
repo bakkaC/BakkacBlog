@@ -67,7 +67,7 @@ currentState = serverState + pendingOperations
 
 那么 `serverState` 其实就是可推导状态。这种时候，我们只需要处理客户端和服务端的不一致，为什么还要徒增数据副本来处理客户端这里的不一致呢？
 
-## 一些场景不一定需要 diff
+## 增量不一定需要 diff
 
 直觉上的增量都是计算出来的：通过不同的状态去 diff，然后得出差异。但实际上并不只有这一个方法，为了增量而去增加状态也不一定合理。
 
@@ -79,46 +79,6 @@ currentState = serverState + pendingOperations
 
 所以有时比起复制状态或者设计复杂算法，可以考虑是否能使用额外字段来事半功倍。
 
-## 编辑器数据的复杂度演进参考
-
-| 场景 | 核心模型 | 为什么 |
-| --- | --- | --- |
-| Markdown 本地编辑 | 单 State | 没有同步问题 |
-| 自动保存编辑器 | State + Pending Operation | 操作本身就是变化 |
-| 离线编辑 | State + Durable Operation Log | 恢复未提交修改 |
-| 多端同步 | State + Version + Pending Operation | 判断基线 |
-| 多人协作 | State + Operation History + Version | 合并并发修改 |
-| Figma 级 | State + CRDT/OT + Version Vector | 解决分布式一致性 |
-
-这里的编辑器由于和消息流的特殊性，设计采用类似「单一事实源 + 增量日志」，保证修改路径都被捕获。
-
-```text
-local state
-    |
-    v
-change tracking
-    |
-    v
-mutation queue
-    |
-    v
-server
-```
-
-而这种设计其实就是偏向于数据冗余了：
-
-```text
-               server
-                  |
-                  v
-           syncedSnapshot
-                  |
-                  v
-clientFact ---------------- latestState
-    |
-    v
-local edits
-```
 
 ## 适配器和深模块
 
