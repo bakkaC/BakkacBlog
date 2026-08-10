@@ -20,23 +20,8 @@
               "icon": "lucide-file",
               "title": "实时通信策略—websocket-sse"
             }
-          },
-          {
-            "id": "92e25e423f0e24ab",
-            "type": "leaf",
-            "state": {
-              "type": "split-diff-view",
-              "state": {
-                "aFile": "src/content/.obsidian/workspace.json",
-                "bFile": "src/content/.obsidian/workspace.json",
-                "aRef": ""
-              },
-              "icon": "diff",
-              "title": "Diff: workspace.json"
-            }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -213,7 +198,7 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "92e25e423f0e24ab",
+  "active": "55fcc00d91339a11",
   "lastOpenFiles": [
     "thoughts/编辑器的开发思考.mdx",
     "thoughts/Adapter层的价值.mdx",
