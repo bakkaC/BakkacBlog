@@ -213,19 +213,19 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "92e25e423f0e24ab",
+  "active": "55fcc00d91339a11",
   "lastOpenFiles": [
+    "thoughts/编辑器的开发思考.mdx",
+    "thoughts/Adapter层的价值.mdx",
+    "notes/后端学习 from zero/权限控制.mdx",
     "thoughts/AI coding Best Practice.mdx",
     "thoughts/异步的价值.mdx",
-    "thoughts/Adapter层的价值.mdx",
     "thoughts/style system.mdx",
     "notes/后端学习 from zero/并发处理的基本想法.mdx",
     "notes/后端学习 from zero/后端架构演进.mdx",
     "notes/后端学习 from zero/Auth.mdx",
     "notes/后端学习 from zero/初识消息队列.mdx",
     "notes/后端学习 from zero/case-invite code.mdx",
-    "notes/后端学习 from zero/读与写：case-post-counter.mdx",
-    "notes/后端学习 from zero/数据建模steps.mdx",
     "thoughts/assets/事件溯源/image-1.png",
     "notes/工程化/assets/pnpm/image-9.png",
     "notes/工程化/assets/pnpm/image-8.png",
