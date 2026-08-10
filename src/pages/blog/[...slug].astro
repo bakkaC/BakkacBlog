@@ -4,6 +4,7 @@ import { getCollection, render } from 'astro:content';
 import EntryTags from '../../components/collection/EntryTags.astro';
 import { mdxComponents } from '../../components/content/mdx-components';
 import { formatContentDate } from '../../lib/content-date';
+import ArticleToc from '../../components/content/ArticleToc.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('blogs');
@@ -19,7 +20,7 @@ if (!entry) {
   throw new Error(`Blog post not found: ${slug}`);
 }
 
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
 const baseUrl = import.meta.env.BASE_URL;
 ---
 
@@ -30,22 +31,27 @@ const baseUrl = import.meta.env.BASE_URL;
   publishedTime={entry.data.date}
   tags={entry.data.tags}
 >
-  <article class="mx-auto w-full max-w-4xl px-6 py-12">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold">
-        {entry.data.title ?? entry.id}
-      </h1>
-      {entry.data.date ? (
-        <p class="mt-2 text-sm text-muted-foreground">
-          {formatContentDate(entry.data.date)}
-        </p>
-      ) : null}
-      {entry.data.tags?.length ? (
-        <EntryTags tags={entry.data.tags} className="mt-4" baseUrl={baseUrl} />
-      ) : null}
-    </div>
-    <div class="markdown">
-      <Content components={mdxComponents} />
-    </div>
-  </article>
+  <div class="mx-auto w-full max-w-[96rem] px-6 py-12 2xl:grid 2xl:grid-cols-[15rem_minmax(0,56rem)_15rem] 2xl:justify-center 2xl:gap-8">
+    <div class="hidden 2xl:block" aria-hidden="true"></div>
+    <article class="min-w-0 w-full max-w-4xl justify-self-center">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold">
+          {entry.data.title ?? entry.id}
+        </h1>
+        {entry.data.date ? (
+          <p class="mt-2 text-sm text-muted-foreground">
+            {formatContentDate(entry.data.date)}
+          </p>
+        ) : null}
+        {entry.data.tags?.length ? (
+          <EntryTags tags={entry.data.tags} className="mt-4" baseUrl={baseUrl} />
+        ) : null}
+      </div>
+      <ArticleToc headings={headings} variant="mobile" />
+      <div class="markdown">
+        <Content components={mdxComponents} />
+      </div>
+    </article>
+    <ArticleToc headings={headings} variant="desktop" />
+  </div>
 </BaseLayout>

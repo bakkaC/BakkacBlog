@@ -1,0 +1,267 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: readonly MarkdownHeading[];
+  variant?: 'mobile' | 'desktop';
+}
+
+const { headings, variant = 'desktop' } = Astro.props;
+const visibleHeadings = headings.filter(({ depth }) => depth <= 4);
+---
+
+{
+  visibleHeadings.length > 0 && (
+    <article-toc class:list={['article-toc', `article-toc--${variant}`]}>
+      {
+        variant === 'mobile' ? (
+          <details class="toc-disclosure">
+            <summary>本文目录</summary>
+            <nav aria-label="本文目录" class="toc-nav">
+              <ol class="toc-list">
+                {visibleHeadings.map(({ depth, slug, text }) => (
+                  <li class="toc-entry" style={`--toc-depth: ${Math.max(0, depth - 2)}`}>
+                    <span class="toc-track" aria-hidden="true">
+                      <span class="toc-progress" />
+                    </span>
+                    <a class="toc-link" href={`#${slug}`}>
+                      {text.endsWith('#') ? text.slice(0, -1) : text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </details>
+        ) : (
+          <aside class="toc-aside" aria-label="本文目录">
+            <p class="toc-title">TABLE OF CONTENTS</p>
+            <nav class="toc-nav">
+              <ol class="toc-list">
+                {visibleHeadings.map(({ depth, slug, text }) => (
+                  <li class="toc-entry" style={`--toc-depth: ${Math.max(0, depth - 2)}`}>
+                    <span class="toc-track" aria-hidden="true">
+                      <span class="toc-progress" />
+                    </span>
+                    <a class="toc-link" href={`#${slug}`}>
+                      {text.endsWith('#') ? text.slice(0, -1) : text}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </aside>
+        )
+      }
+    </article-toc>
+  )
+}
+
+<script>
+  class ArticleToc extends HTMLElement {
+    private frameId = 0;
+    private links: HTMLAnchorElement[] = [];
+    private headings: HTMLElement[] = [];
+
+    connectedCallback() {
+      this.links = Array.from(this.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'));
+      this.headings = this.links
+        .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+        .filter((heading): heading is HTMLElement => heading !== null);
+
+      if (this.headings.length === 0) return;
+
+      this.links.forEach((link) => {
+        link.addEventListener('click', this.closeMobileToc);
+      });
+      window.addEventListener('scroll', this.scheduleUpdate, { passive: true });
+      window.addEventListener('resize', this.scheduleUpdate, { passive: true });
+      this.update();
+    }
+
+    disconnectedCallback() {
+      this.links.forEach((link) => {
+        link.removeEventListener('click', this.closeMobileToc);
+      });
+      window.removeEventListener('scroll', this.scheduleUpdate);
+      window.removeEventListener('resize', this.scheduleUpdate);
+      cancelAnimationFrame(this.frameId);
+    }
+
+    private closeMobileToc = () => {
+      this.querySelector('details')?.removeAttribute('open');
+    };
+
+    private scheduleUpdate = () => {
+      if (this.frameId) return;
+      this.frameId = requestAnimationFrame(() => {
+        this.frameId = 0;
+        this.update();
+      });
+    };
+
+    private update = () => {
+      const readingLine = window.scrollY + 128;
+      const positions = this.headings.map(
+        (heading) => heading.getBoundingClientRect().top + window.scrollY,
+      );
+      let activeIndex = positions.findLastIndex((position) => position <= readingLine);
+      activeIndex = Math.max(0, activeIndex);
+
+      const currentTop = positions[activeIndex];
+      const nextTop = positions[activeIndex + 1] ?? document.documentElement.scrollHeight;
+      const progress = Math.min(
+        1,
+        Math.max(0.08, (readingLine - currentTop) / Math.max(1, nextTop - currentTop)),
+      );
+
+      this.links.forEach((link, index) => {
+        const isActive = index === activeIndex;
+        link.classList.toggle('is-active', isActive);
+        if (isActive) {
+          link.setAttribute('aria-current', 'location');
+        } else {
+          link.removeAttribute('aria-current');
+        }
+
+        const progressBar = link.previousElementSibling?.firstElementChild as HTMLElement | null;
+        progressBar?.style.setProperty(
+          '--toc-progress', index < activeIndex ? '1' : index === activeIndex ? String(progress) : '0',
+        );
+      });
+    };
+  }
+
+  if (!customElements.get('article-toc')) {
+    customElements.define('article-toc', ArticleToc);
+  }
+</script>
+
+<style>
+  .article-toc--mobile {
+    display: block;
+    margin-bottom: 2rem;
+  }
+
+  .article-toc--desktop {
+    display: none;
+  }
+
+  .toc-disclosure {
+    border-block: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  }
+
+  .toc-disclosure summary {
+    padding: 0.8rem 0;
+    color: var(--color-muted-foreground);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    list-style-position: inside;
+  }
+
+  .toc-disclosure .toc-nav {
+    max-height: min(22rem, 50vh);
+    padding-bottom: 0.8rem;
+  }
+
+  .toc-aside {
+    position: sticky;
+    top: 6rem;
+    max-height: calc(100vh - 8rem);
+  }
+
+  .toc-title {
+    margin: 0 0 0.75rem;
+    color: var(--color-foreground);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0;
+  }
+
+  .toc-nav {
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+
+  .toc-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .toc-entry {
+    position: relative;
+    padding-left: calc(var(--toc-depth) * 0.75rem);
+  }
+
+  .toc-track {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--toc-depth) * 0.75rem);
+    width: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--color-border);
+  }
+
+  .toc-progress {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-foreground);
+    transform: scaleY(var(--toc-progress, 0));
+    transform-origin: top;
+    transition: transform 160ms ease;
+  }
+
+  .toc-link {
+    display: -webkit-box;
+    margin-left: 0.5rem;
+    padding: 0.38rem 0.7rem;
+    overflow: hidden;
+    border-radius: 0.25rem;
+    color: var(--color-muted-foreground);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    text-decoration: none;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .toc-link:hover,
+  .toc-link:focus-visible {
+    color: var(--color-foreground);
+  }
+
+  .toc-link.is-active {
+    background: var(--color-muted);
+    color: var(--color-foreground);
+    font-weight: 600;
+  }
+
+  :global(.markdown :is(h1, h2, h3, h4)[id]) {
+    scroll-margin-top: 7rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html) {
+      scroll-behavior: smooth;
+    }
+  }
+
+  @media (min-width: 96rem) {
+    .article-toc--mobile {
+      display: none;
+    }
+
+    .article-toc--desktop {
+      display: block;
+      min-width: 0;
+    }
+  }
+</style>
