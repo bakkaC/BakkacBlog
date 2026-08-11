@@ -85,11 +85,120 @@ OIDC 构建在 OAuth2 之上，通过额外的 `ID Token` 表达用户身份。I
 
 SSO 是用户体验模式，不是底层协议：用户在中央身份提供商 IdP 登录一次，之后访问生态内其他应用时，由 IdP 的全局 Session 帮助完成登录。
 
-## Authorization 模型
+实现 SSO 常用两类协议：
+
+- SAML：较早的企业级标准，使用 XML 格式的 Assertion 声明用户身份。
+- OIDC：基于 JSON 和 JWT，更轻量，更适合现代 Web 和移动端。
+
+### 登录状态如何持久化
+
+HTTP 是无状态的，但客户端可以在每次请求中重新携带凭据，从而保持登录状态。不同认证方式的差异，在于携带什么、由谁携带，以及服务端如何验真。
+
+| 认证方式 | 每次请求携带的凭据 | 载体 | 谁负责携带 |
+| --- | --- | --- | --- |
+| Basic Auth | 账号密码的 Base64 编码 | `Authorization` Header | 浏览器或客户端 |
+| API Key | 长随机字符串 | Header 或 URL 参数 | 调用方代码 |
+| Session | Session ID | Cookie | 浏览器自动发送 |
+| JWT | 签名后的 Token | `Authorization: Bearer` | 客户端代码 |
+
+客户端侧的演进，是从重复发送真实密码，转向发送可过期、可轮换、可吊销的临时凭据。服务端侧的演进，则是从每次查询 Session 或 API Key，转向在适合的场景中通过 JWT 签名直接验真。
+
+这不意味着 JWT 永远优于 Session。JWT 降低了认证查询成本，却让即时撤销和权限实时变化更复杂；Session 需要共享状态，但撤销直接、控制力更强。选择时要看客户端类型、撤销要求和扩展规模。
+
+## Authorization
+
+### 朴素权限判断的问题
+
+最直接的授权方式，是把角色、资源所有者和部门判断写进每一个业务接口：
+
+```typescript
+async function getOrder(req: Request, orderId: string) {
+  const order = await db.getOrder(orderId)
+
+  if (
+    req.user.role !== "admin" &&
+    req.user.id !== order.ownerId &&
+    req.user.dept !== order.dept
+  ) {
+    throw new Error("no permission")
+  }
+
+  return order
+}
+
+async function updateOrder(req: Request, orderId: string, data: OrderInput) {
+  const order = await db.getOrder(orderId)
+
+  if (req.user.role !== "admin" && req.user.id !== order.ownerId) {
+    throw new Error("no permission")
+  }
+
+  return db.updateOrder(orderId, data)
+}
+```
+
+这种写法会逐渐产生四类问题：
+
+1. 相似接口的规则开始分叉，形成隐蔽的权限漏洞。
+2. 规则变化时，需要全局搜索并修改所有判断。
+3. 部门、时间、账号状态、资源状态等条件会让判断指数膨胀。
+4. 权限逻辑和业务逻辑耦合，难以复用、测试和审计。
 
 ### RBAC
 
 RBAC 是“你是什么角色，所以你能做什么”。`admin`、`member`、`guest` 都是角色。它简单直观，但很难表达“这个用户只能访问这三篇文章”之类的例外。
+
+最基础的 RBAC 会直接为角色编写判断函数：
+
+```typescript
+type Role = "admin" | "editor" | "viewer"
+
+type User = {
+  id: string
+  name: string
+  role: Role
+}
+
+function canDeleteArticles(user: User) {
+  return user.role === "admin"
+}
+
+function canEditArticles(user: User) {
+  return user.role === "admin" || user.role === "editor"
+}
+```
+
+当角色和权限增多时，更好的做法是显式维护“角色拥有的权限集合”，让业务只检查权限，不关心角色名称：
+
+```typescript
+const ROLES = {
+  admin: [
+    "view:comments",
+    "create:comments",
+    "update:comments",
+    "delete:comments",
+  ],
+  moderator: ["view:comments", "create:comments", "delete:comments"],
+  user: ["view:comments", "create:comments"],
+} as const
+
+type Role = keyof typeof ROLES
+type Permission = (typeof ROLES)[Role][number]
+
+function hasPermission(user: { role: Role }, permission: Permission) {
+  return ROLES[user.role].includes(permission)
+}
+
+function deleteComment(user: { role: Role }, comment: Comment) {
+  if (!hasPermission(user, "delete:comments")) {
+    throw new Error("no permission")
+  }
+
+  return db.deleteComment(comment.id)
+}
+```
+
+集中映射让新增角色和权限更容易，但 RBAC 仍然不擅长处理“只能删除自己的评论”“只能编辑特定组织内的文档”等资源级条件。用户、组织和角色本身可能是多对多关系；一旦角色还要绑定任意实体，权限表会快速膨胀。
 
 ### ABAC
 
@@ -101,30 +210,237 @@ ABAC 根据四类属性综合判断：
 4. Environment：时间、IP、设备安全状态。
 
 ```typescript
-type PermissionCheck<T> =
-  | boolean
-  | ((user: User, data: T) => boolean)
+type Comment = {
+  id: string
+  body: string
+  authorId: string
+  createdAt: Date
+}
 
-// 规则不只存 true/false，也可以根据资源属性计算
-const canUpdateTodo = (user: User, todo: Todo) =>
-  todo.userId === user.id || todo.invitedUsers.includes(user.id)
+type Todo = {
+  id: string
+  title: string
+  userId: string
+  completed: boolean
+  invitedUsers: string[]
+}
+
+type Role = "admin" | "moderator" | "user"
+
+type User = {
+  id: string
+  roles: Role[]
+  blockedBy: string[]
+}
+
+type Permissions = {
+  comments: {
+    dataType: Comment
+    action: "view" | "create" | "update"
+  }
+  todos: {
+    dataType: Todo
+    action: "view" | "create" | "update" | "delete"
+  }
+}
+
+type PermissionCheck<Key extends keyof Permissions> =
+  | boolean
+  | ((user: User, data: Permissions[Key]["dataType"]) => boolean)
+
+type RolesWithPermissions = {
+  [R in Role]: Partial<{
+    [Key in keyof Permissions]: Partial<{
+      [Action in Permissions[Key]["action"]]: PermissionCheck<Key>
+    }>
+  }>
+}
+
+const ROLE_RULES = {
+  admin: {
+    comments: { view: true, create: true, update: true },
+    todos: { view: true, create: true, update: true, delete: true },
+  },
+  moderator: {
+    comments: { view: true, create: true, update: true },
+    todos: {
+      view: true,
+      create: true,
+      update: true,
+      delete: (_user, todo) => todo.completed,
+    },
+  },
+  user: {
+    comments: {
+      view: (user, comment) => !user.blockedBy.includes(comment.authorId),
+      create: true,
+      update: (user, comment) => comment.authorId === user.id,
+    },
+    todos: {
+      view: (user, todo) => !user.blockedBy.includes(todo.userId),
+      create: true,
+      update: (user, todo) =>
+        todo.userId === user.id || todo.invitedUsers.includes(user.id),
+      delete: (user, todo) =>
+        (todo.userId === user.id || todo.invitedUsers.includes(user.id)) &&
+        todo.completed,
+    },
+  },
+} as const satisfies RolesWithPermissions
+
+export function hasPermission<Resource extends keyof Permissions>(
+  user: User,
+  resource: Resource,
+  action: Permissions[Resource]["action"],
+  data?: Permissions[Resource]["dataType"]
+) {
+  return user.roles.some((role) => {
+    const permission = (ROLE_RULES as RolesWithPermissions)[role][resource]?.[
+      action
+    ]
+
+    if (permission == null) return false
+    if (typeof permission === "boolean") return permission
+    return data != null && permission(user, data)
+  })
+}
+
+const user: User = { id: "1", roles: ["user"], blockedBy: ["2"] }
+const todo: Todo = {
+  id: "3",
+  title: "Test Todo",
+  userId: "1",
+  completed: false,
+  invitedUsers: [],
+}
+
+hasPermission(user, "comments", "create")
+hasPermission(user, "todos", "view", todo)
 ```
 
-ABAC 适合把业务条件写成策略，避免每增加一个模块就复制一套权限表；但策略本身需要测试、审计和明确的 deny 优先级。
+规则不只存 `true` 或 `false`，也能根据资源属性动态计算。比如“用户只能在评论发布后 24 小时内修改自己的评论”，只需要把时间条件加入 `update` 规则，而不必新增一张权限关系表。
 
-### ReBAC
+ABAC 适合把业务条件写成策略，避免每增加一个模块就复制一套权限表；但上面的实现仍然把规则挂在角色下面，并且需要明确多角色冲突时的优先级。
 
-ReBAC 关注“你和资源是什么关系”。文档系统里，用户可能是文档 owner、editor、viewer，文档还可能属于某个文件夹并继承父级关系。
+### PBAC
+
+PBAC（Policy-Based Access Control）进一步把角色与权限规则解耦。每条 Policy 独立描述资源、操作、效果和适用条件，由统一的 Policy Engine 求值：
 
 ```typescript
-type RelationTuple = {
-  object: { type: "document" | "folder"; id: string }
-  relation: "owner" | "editor" | "viewer" | "parent"
-  subject: { type: "user" | "folder"; id: string }
+type Policy<Resource extends keyof Permissions = keyof Permissions> = {
+  resource: Resource
+  action: Permissions[Resource]["action"]
+  effect: "allow" | "deny"
+  condition?: (
+    user: User,
+    data: Permissions[Resource]["dataType"]
+  ) => boolean
+}
+
+const POLICIES: Policy[] = [
+  {
+    resource: "comments",
+    action: "update",
+    effect: "allow",
+    condition: (user, comment) => comment.authorId === user.id,
+  },
+  {
+    resource: "todos",
+    action: "delete",
+    effect: "allow",
+    condition: (user, todo) =>
+      user.roles.includes("moderator") && todo.completed,
+  },
+  {
+    resource: "todos",
+    action: "delete",
+    effect: "allow",
+    condition: (user, todo) =>
+      (todo.userId === user.id || todo.invitedUsers.includes(user.id)) &&
+      todo.completed,
+  },
+]
+
+export function evaluatePolicies<Resource extends keyof Permissions>(
+  user: User,
+  resource: Resource,
+  action: Permissions[Resource]["action"],
+  data?: Permissions[Resource]["dataType"]
+): boolean {
+  const matchedPolicies = POLICIES.filter(
+    (policy) => policy.resource === resource && policy.action === action
+  )
+
+  if (matchedPolicies.length === 0) return false
+
+  for (const policy of matchedPolicies) {
+    const conditionPassed =
+      !policy.condition || (data != null && policy.condition(user, data))
+
+    if (!conditionPassed) continue
+    if (policy.effect === "deny") return false
+    if (policy.effect === "allow") return true
+  }
+
+  return false
 }
 ```
 
-页面共享、团队空间、页面树继承和外部访客访问，都更接近 ReBAC。
+Policy 可以来自代码、配置或专门的策略服务。实现时通常采用默认拒绝，并明确 `deny` 是否覆盖 `allow`，否则不同策略的组合很容易产生安全歧义。
+
+### ReBAC
+
+ReBAC 关注“你和资源是什么关系”。在 Google Drive 一类系统中，文档可能嵌套在文件夹里，并继承祖先文件夹的权限。若把所有祖先 ID 都存成文档属性，每次移动文档都要重新计算；若在 ABAC 判断中递归加载父节点，策略求值又会变成维护噩梦。
+
+```typescript
+type ObjectType = "document" | "folder" | "organization"
+type Relation = "owner" | "editor" | "viewer" | "member" | "parent"
+
+type RelationTuple = {
+  object: { type: ObjectType; id: string }
+  relation: Relation
+  subject: { type: "user" | ObjectType; id: string }
+}
+
+const relationTuples: RelationTuple[] = [
+  {
+    object: { type: "folder", id: "eng-folder" },
+    relation: "owner",
+    subject: { type: "user", id: "alice" },
+  },
+  {
+    object: { type: "folder", id: "eng-folder" },
+    relation: "editor",
+    subject: { type: "user", id: "bob" },
+  },
+  {
+    object: { type: "document", id: "doc-1" },
+    relation: "parent",
+    subject: { type: "folder", id: "eng-folder" },
+  },
+  {
+    object: { type: "document", id: "doc-1" },
+    relation: "editor",
+    subject: { type: "user", id: "david" },
+  },
+]
+```
+
+ReBAC 通常定义三种东西：
+
+- Object：被保护的对象，例如文档、文件夹、组织。
+- Relation：用户与对象的关系，例如 owner、editor、viewer。
+- Rule：如何从已有关系推导出新关系，例如“父文件夹的 editor 也是子文档的 editor”。
+
+#### 以 Notion 为例
+
+Notion 的权限系统实际上会组合多种模型：
+
+- RBAC 处理 workspace owner、admin、member、guest 等工作区角色。
+- ABAC 处理公司邮箱域、页面是否公开、内容是否敏感、是否允许外部分享等属性和环境条件。
+- ReBAC 处理页面直接邀请、Group 授权、父子页面权限继承、Teamspace 成员关系和公开链接访问。
+
+其中页面共享、数据库共享、团队空间协作、页面树继承和外部访客访问，最接近 ReBAC。比如“你在这个团队里，而团队对文档有编辑权限，所以你能编辑”，就是从关系推导权限，而不是只查看用户角色。
 
 ## 选择时的顺序
 
