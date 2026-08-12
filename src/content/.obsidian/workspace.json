@@ -34,9 +34,21 @@
               "icon": "lucide-file",
               "title": "编辑器的开发思考"
             }
+          },
+          {
+            "id": "d57b2cd8d2569b22",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.13.6"
+              },
+              "icon": "lucide-book-up",
+              "title": "版本说明 1.13.6"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -213,7 +225,7 @@
       "templater-obsidian:Templater": false
     }
   },
-  "active": "55fcc00d91339a11",
+  "active": "d57b2cd8d2569b22",
   "lastOpenFiles": [
     "thoughts/Adapter层的价值.mdx",
     "notes/后端学习 from zero/权限控制.mdx",
