@@ -1,6 +1,6 @@
 # Bakka's Blog
 
-Bakka's Blog 是我的个人博客，记录前端开发、工程实践与随想杂记。
+Bakka's Blog 是我的个人博客，记录学习笔记、开发思考与生活随想杂记。
 
 ## Tech Stack
 
