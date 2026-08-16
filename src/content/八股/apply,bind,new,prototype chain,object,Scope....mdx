@@ -22,29 +22,34 @@ this默认是函数的调用者，通过A.B()调用，this是A，没有.直接�
 返回这个函数，我们就有了bind
 
 ---
+
 ## prototype chain
 
 JavaScript如何不通过类来解决数据的共享和私有？
 
 - 万物皆对象
+
 - 所有对象都有prototype属性，都可以视作被Function obj创建的instance obj
-	- 所有对象都有`__proto__`（或 `[[Prototype]]`）指向这个 prototype obj
-	- 任何对象的都能够共享访问到`__proto__`（或 `[[Prototype]]`）链上的首层key
-	- 本质是通过指针指向其原型，让原型充当类，可以直接访问一些共有的方法
+  - 所有对象都有`__proto__`（或 `[[Prototype]]`）指向这个 prototype obj
+  - 任何对象的都能够共享访问到`__proto__`（或 `[[Prototype]]`）链上的首层key
+  - 本质是通过指针指向其原型，让原型充当类，可以直接访问一些共有的方法
 
 - 逻辑上对象分为函数对象和普通对象
+
 - 函数对象声明时会创建prototype属性，也会创建prototype obj
-	- 函数对象通过prototype属性访问他创建的prototype obj
-	- 普通对象通过`__proto__`访问创建他的prototype obj
-	- 函数对象也是普通对象，通过`__proto__`访问创建他的prototype obj，默认是`Obect.prototype`
+  - 函数对象通过prototype属性访问他创建的prototype obj
+  - 普通对象通过`__proto__`访问创建他的prototype obj
+  - 函数对象也是普通对象，通过`__proto__`访问创建他的prototype obj，默认是`Obect.prototype`
+
 - 普通对象分prototype obj和instance obj
-	- prototype obj至少有这两个属性：
-		- constructor，它应该始终指向 prototype 对应的声明函数
-	- prototype obj是被函数对象声明（创建）时创建的对象
-	- prototype obj不被构造函数创建，他的prototype是Object.prototype
-	- instance obj是被函数对象对象调用时创建的对象，他的prototype obj是constructor.prototype
+  - prototype obj至少有这两个属性：
+    - constructor，它应该始终指向 prototype 对应的声明函数
+  - prototype obj是被函数对象声明（创建）时创建的对象
+  - prototype obj不被构造函数创建，他的prototype是Object.prototype
+  - instance obj是被函数对象对象调用时创建的对象，他的prototype obj是constructor.prototype
 
 - 逻辑上，我们可以认为instance obj继承自prototype obj，一切是源于一个function obj,我们可以认为他是constructor
+
 - 这样我们就能够认为prototype chain实现了类相似的功能，解决了数据的共享问题
 
 一个原型对象，往往有子实例和构造函数两个对象与他链接
@@ -57,6 +62,7 @@ JavaScript如何不通过类来解决数据的共享和私有？
 ![](assets/apply,bind,new,prototype%20chain,object,Scope/file-20260214162224346.png)
 
 ---
+
 ## new
 
 使用new调用的Function称为constructor
@@ -66,12 +72,14 @@ JavaScript如何不通过类来解决数据的共享和私有？
 new的行为是，让function成为constructor，constructor的定义是能返回一个对象，且能使用function的原型对象function.prototype的任意属性方法的对象
 
 原型链中已知的事实：
+
 - 任何函数声明的同时会创建一个原型对象`Function/Constructor.prototype`继承自`Obect.prototype`
 - 对象访问到原型对象的方法是`obj.__proto__`，直接创建的`{}`的`__proto__`，默认指向`Obect.prototype`
 - 函数访问到原型对象的方法是`constructor.prototype`
 - `obj.__proto__ === constructor.prototype`都为原型对象
 
 那么就是这几步
+
 1. 为了返回对象，必须要创建对象obj
 2. 为了让对象访问function.prototype的任意属性方法，对象要能访问原型对象`function.prototype`，那么就要修改默认的`obj.__proto__`指向的`Obect.prototype`到`function.prototype`
 3. 让obj作为this执行function，因为function是未知的，可能对this进行初始化，也可能自己已经承担了function的责任进行返回obj
@@ -96,33 +104,40 @@ new的行为是，让function成为constructor，constructor的定义是能返�
 3. 让子类实例共享父类的属性和方法。
 
 在JS中类就是原型对象，而原型对象的创建是通过函数的声明
+
 - 任何函数声明的同时会创建一个原型对象`Function/Constructor.prototype`继承自`Obect.prototype`
+
 - 任何prototype对象 本身至少有两个属性
-	- constructor，它应该始终指向 prototype 对应的声明函数
-	- `__proto__`，之前说了这是对象用于访问prototype的属性，而prototype本身也是对象，所以这是用来访问prototype自身的prototype的属性，默认就是`Obect.prototype`
+- constructor，它应该始终指向 prototype 对应的声明函数
+  - `__proto__`，之前说了这是对象用于访问prototype的属性，而prototype本身也是对象，所以这是用来访问prototype自身的prototype的属性，默认就是`Obect.prototype`
+
 - 所以创建类，就是声明构造函数，定义属性和初始值
+
 - 而类的另一个构成是方法，给类添加方法，就是给原型对象添加方法
-	- 动态语言对象中直接给没声明的属性赋值，就能为对象添加属性
+  - 动态语言对象中直接给没声明的属性赋值，就能为对象添加属性
+
 - 子类可以以相同的方式创建，建立继承关系，就是希望子类构造函数得出的实例可以使用父类的方法和属性
+
 - 原型链中已知的事实：
-	- prototype没有的方法会利用`__proto__`从上级prototype继续寻找
-	- prototype原型对象中不会有任何属性，除非显式写入，属性是在实例中的
+  - prototype没有的方法会利用`__proto__`从上级prototype继续寻找
+  - prototype原型对象中不会有任何属性，除非显式写入，属性是在实例中的
+
 - trick：
-	- 直接改`Child.prototype.__proto__` = Parent.prototype，只能共享方法，一些constructor创建的属性不在prototype中，是访问不到的，只在实例中存在
+  - 直接改`Child.prototype.__proto__` = Parent.prototype，只能共享方法，一些constructor创建的属性不在prototype中，是访问不到的，只在实例中存在
+
 - 为了实现方法和属性的的共同继承，方式如下：
 
 - 符合直觉的做法：
-	- 在子类构造函数内调用父类的constructor（别忘了绑定this），实现属性继承
-	- `Child.prototype.__proto__ = Parent.prototype;`，实现方法继承
-	- 上述似乎是最符合原型链想法的做法，但是`__proto__`在ES6前是非标准做法， 但是ES6考虑性能问题，其语法糖class的实现也不是这种做法
-
+  - 在子类构造函数内调用父类的constructor（别忘了绑定this），实现属性继承
+  - `Child.prototype.__proto__ = Parent.prototype;`，实现方法继承
+  - 上述似乎是最符合原型链想法的做法，但是`__proto__`在ES6前是非标准做法， 但是ES6考虑性能问题，其语法糖class的实现也不是这种做法
 
 - 寄生组合式做法：
-	- Object.create(o)，创建一个空的对象，继承自传入的对象，可以访问传入对象的所有方法，效果相当于创建了一个newObj，然后`newObj.__proto__ = o;`
-	- 不让直接改`__proto__`的情况下，我们可以让对象初始化的`__proto__`就符合预期，只接从对象层面赋值，而不是修改对象的属性
-	- 我们可以使用Object.create(o)，创建一个中间对象，把他直接赋值`Child.prototype = Object.create(Parent)`，可以达到同样的效果，共享方法
-	- 直接修改`__proto__`的做法是直接修改原本prototype的指向，而这种做法是创建一个我们想要的prototype，再整个赋值给`Child.prototype`，这其实也就是new和Object.create的区别
-	- 还有一个微妙的不同，prototype原型对象都是自带两个属性的，一个是`__proto__`，还有一个是`constructor`，直接修改constructor自然是正确的，但是如果是对象赋值的话，中间对象的`constructor`属性需修正为Child，让效果和直接修改等价
+  - Object.create(o)，创建一个空的对象，继承自传入的对象，可以访问传入对象的所有方法，效果相当于创建了一个newObj，然后`newObj.__proto__ = o;`
+  - 不让直接改`__proto__`的情况下，我们可以让对象初始化的`__proto__`就符合预期，只接从对象层面赋值，而不是修改对象的属性
+  - 我们可以使用Object.create(o)，创建一个中间对象，把他直接赋值`Child.prototype = Object.create(Parent)`，可以达到同样的效果，共享方法
+  - 直接修改`__proto__`的做法是直接修改原本prototype的指向，而这种做法是创建一个我们想要的prototype，再整个赋值给`Child.prototype`，这其实也就是new和Object.create的区别
+  - 还有一个微妙的不同，prototype原型对象都是自带两个属性的，一个是`__proto__`，还有一个是`constructor`，直接修改constructor自然是正确的，但是如果是对象赋值的话，中间对象的`constructor`属性需修正为Child，让效果和直接修改等价
 
 ---
 
@@ -136,12 +151,13 @@ ES6 & ES6+: Symbol、BigInt
 除了原始类型剩下全是引用类型，而且他们都继承于 Object；在内存处理上，原始类型直接存储于栈内存，而引用类型是存了一个指针在栈里，实际的数据存在堆内存
 
 如何复制对象，
-创建一个新的对象直接赋值对于引用对象不可行， 
+创建一个新的对象直接赋值对于引用对象不可行，
 因为赋值的行为是在栈中操作变量，而引用对象内容存储在堆中，在栈中只是指针
 
 浅拷贝是创建对象，遍历一层原对象，依个属性创建新的相同值的内容，这样第一层的行为是正确的，但是更深的嵌套依然会有公共修改的问题
 
 现有的浅拷贝方法有
+
 ```
 let objB = { ...objA };
 Object.assign({}, objA)
@@ -275,12 +291,13 @@ Proxy
 好比说 Promise 是专门盯着一个「函数」的观察者，那么 Proxy 就是专门盯着一个「对象」的观察者，虽然观察对象的观察者应该叫「代理器」
 Proxy 接收一个 target 对象，和一个具体要监控什么事件的设置对象，返回一个和 target 一模一样但是被监控了的对象，每当被监控的 target 触发了监控的事件，proxy 就能够捕获并且执行编写者分发给他的函数。
 Proxy 支持的触发器有：
+
 - get、set
 - definePropoty、delete
 - etc... 基本凡是能对对象进行的操作都可以监控
-使用时要注意，Proxy 是返回了一个被监控的 target，改变这个 target 是可以同步改变源 target 并且触发触发器的；但是如果这个时候你去改源 target，是不会触发触发器的，也不会改变被监控的那个 target。因此处于 proxy 的语义，在一个对象被 proxy 代理后，就应该只用 proxy 返回的对象，而不是原对象，以免语义混乱。
-41(3-). Reflect 对象
-简化 Proxy 语法的，没啥可说的，看看 MDN
+  使用时要注意，Proxy 是返回了一个被监控的 target，改变这个 target 是可以同步改变源 target 并且触发触发器的；但是如果这个时候你去改源 target，是不会触发触发器的，也不会改变被监控的那个 target。因此处于 proxy 的语义，在一个对象被 proxy 代理后，就应该只用 proxy 返回的对象，而不是原对象，以免语义混乱。
+  41(3-). Reflect 对象
+  简化 Proxy 语法的，没啥可说的，看看 MDN
 
 ## Event Loop、Promise、Async/Await
 
@@ -288,6 +305,7 @@ Proxy 支持的触发器有：
 ## browser
 
 DOM常见的操作方式
+
 - document.querySelector 这个方法支持绝大多数的 CSS 选择器
 - document.getElementById 或者 document.getElementsByClassName
 - document.remove
@@ -301,3 +319,4 @@ addEventListener 和 onClick() 的区别
 
 - addEventListener 是「添加一个事件」如果不用了要手动 remove 掉，也就是增加。
 - 直接设置 onClick 是相当于清空当前所有的事件，再添加一个 click 事件，也就是覆盖。
+
