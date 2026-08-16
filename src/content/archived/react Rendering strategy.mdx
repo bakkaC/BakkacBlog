@@ -41,8 +41,6 @@ const MyApp = () => {
 
 * 于是就有了嵌套层级
 
-
-
 ```javascript
 JSX
  ↓ （Babel编译）
@@ -55,11 +53,7 @@ Fiber Tree
 真实 DOM Tree
 ```
 
-
-
 ## 大体流程抽象
-
-
 
 非常好，你想看到的是一个**从 JSX → React Element Tree → Fiber Tree** 的**完整对象演化过程（非递归）**，我会展示每一阶段 React 内部真实可能长什么样的对象结构。
 
@@ -274,15 +268,12 @@ const fiberTree = {
 }
 ```
 
-
-
 ## Render Phase
 
-### 首次渲染：
+### 首次渲染
 
 React 是**深度优先、按需创建** Fiber 节点的。
 即：**生成一个 Element → 立刻为它创建对应的 FiberNode → 递归到子元素继续创建。**
-
 
 * **一次执行组件函数 → 一次性得到所有 JSX 元素（Element Tree）**；
 
@@ -302,13 +293,11 @@ React 是**深度优先、按需创建** Fiber 节点的。
 
 * **Fiber Tree 的深度优先**是 **节点级（Tag 层，DOM/组件混合层）** 的。
 
-
 Fiber更细粒度，组件内可能还有没创建为Fiber的遇到Functionnal Component，就会立刻下探
 
 而Element一定会将组件内元素全部创建了才有可能到下一层
 
 是否向下探，是由Fiber决定的，取决于当前创建Fiber的类型
-
 
 **Fiber驱动element的创建， element是创建fiber的一个过程**，
 给到一个fiber创建的任务，先把它转成element，一个host类型的element对应一个fiber，
@@ -316,7 +305,7 @@ Fiber更细粒度，组件内可能还有没创建为Fiber的遇到Functionnal C
 
 ***
 
-### 后续渲染：
+### 后续渲染
 
 同样从根节点开始
 
@@ -326,6 +315,7 @@ React 并不会先把新树完全建好再 diff，
 使用**element**和上次构建的**fiber**对比
 
 决定：
+
 * 是否能**复用旧 Fiber**；
 * 是否需要**新建 Fiber 节点**；
 * 是否标记为 **Placement / Update / Deletion**。
@@ -343,13 +333,9 @@ React 并不会先把新树完全建好再 diff，
 
 > React 利用这两个字段作为“身份识别码”。
 
-
-
 遍历到这一层，转译JSX，创建Element Tree，然后dfs elementTree，
 
 对于每个element，和上次的fiber做对比，这里就是应用diff算法了
-
-
 
 React Fiber **Diff** 决策流程：
 
@@ -397,8 +383,6 @@ React Fiber **Diff** 决策流程：
 
   * 在 commit 阶段会卸载对应的 DOM 或组件。
 
-
-
 * 标记发生在旧fiber上
 
 * 每创建一个effect，都将其加入effect List中，维护一个effect flag链表，给commit Phase用
@@ -407,10 +391,7 @@ React Fiber **Diff** 决策流程：
 
   ![](assets/react%20Rendering%20strategy/file-20260401230911696%201.png)
 
-
 * 为了找到 DOM 节点的父节点，我们需要沿着 fiber 树向上遍历，直到找到一个Type为host的DOM 节点的 fiber。
-
-
 
 递归的走完整个新element Tree，**新的 WIP（workInProgress）Fiber 树逐渐被构建完成**
 
@@ -418,11 +399,7 @@ React Fiber **Diff** 决策流程：
 
 React 会**先完整构建完一棵新的 WIP（workInProgress）Fiber 树**，**再进入 commit 阶段**。
 
-
-
 ## Commit phase
-
-
 
 **Before Mutation Phase（提交前）**
 
@@ -435,8 +412,6 @@ React 会**先完整构建完一棵新的 WIP（workInProgress）Fiber 树**，*
 **Mutation Phase（DOM变更阶段）**
 
 * 真正执行 DOM 的插入、删除、更新操作
-
-
 
 * `PLACEMENT` ，我们执行与之前相同操作，将 DOM 节点链到父 fiber 的节点上。
 
@@ -452,8 +427,6 @@ React 会**先完整构建完一棵新的 WIP（workInProgress）Fiber 树**，*
 
   * 然后将新的Props和事件进行添加
 
-
-
 对于DOM操作，我们不能使用FunctionalComponent，必须找到最近的DOM Fiber，跳过functional Fiber
 
 这时会使用创建fiber时，标识的parent
@@ -462,19 +435,13 @@ React 会**先完整构建完一棵新的 WIP（workInProgress）Fiber 树**，*
 
 * `DELETION`，要把下一个子DOM的fiber链接到最近的父fiber上
 
-
-
 ***
 
 **Layout Phase（布局阶段）**
 
 * 运行生命周期钩子、执行 layout effect
 
-
-
 ## Rerender 时机
-
-
 
 什么时候会重新执行整个过程
 
@@ -488,11 +455,7 @@ React 会**先完整构建完一棵新的 WIP（workInProgress）Fiber 树**，*
 | 🔹 **Strict Mode / Dev 重新校验**      | React 开发模式双渲染                                     |
 | 🔹 **Suspense / ErrorBoundary 恢复** | 异步数据 resolve 或捕获错误恢复                              |
 
-
-
 与时间点的关系：
-
-
 
 React 并不会“每 16ms 一定执行一次 Render”，
 
@@ -510,14 +473,10 @@ React 的调度逻辑是这样的：
 
    requestIdleCallback(workLoopConcurrent)或MessageChannel(workLoopSync)来继续 render。
 
-
-
 > React 不会“每16ms强制执行”，而是**尽可能利用空闲帧时间**。
 > 有更新，才有时间点上的问题，如果没有更新，就不会重新 render。
 >
 > 没有副作用，就不会触发commit
-
-
 
 流程如下：
 
@@ -529,8 +488,6 @@ Render Phase（构建 WIP Fiber Tree + diff） →
 如有副作用 →
 进入 Commit Phase（DOM 操作 + 生命周期执行）
 ```
-
-
 
 ## UI = f(state)
 
@@ -600,11 +557,7 @@ function useState(initial) {
 
 ## 中断调度
 
-
-
 为什么说这个设计是可以调度的
-
-
 
 Fiber：循环+链表（可中断），for循环是原子操作不可中断，但链表组成的树可以中断
 
@@ -620,8 +573,6 @@ while (workInProgress !== null && shouldYield() === false) {
 > &#x20;React 会询问调度器（scheduler）“现在还有时间吗？”
 > &#x20;没时间了就暂停渲染，下次浏览器空闲再继续。
 
-
-
 * Fiber = 一帧一帧地构建虚拟工作单元；
 
 * Scheduler = 调度器决定哪些 Fiber 先执行；
@@ -632,7 +583,4 @@ while (workInProgress !== null && shouldYield() === false) {
 
 * Commit 阶段一次性执行副作用。
 
-
-
 这里就不细谈调度机制了
-

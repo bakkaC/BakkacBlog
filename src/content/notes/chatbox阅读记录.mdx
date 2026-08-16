@@ -13,10 +13,9 @@ tags: [架构设计, IndexedDB, 消息系统, 缓存]
 - 局部隔离与性能
 - 会话列表和每个 session 分别使用独立队列：避免全局锁竞争、降低单一队列的延时和冲突，同时让不同 session 的写入互不干扰。
 
-
 - 两类队列的职责分离  
-	- sessionListUpdateQueue（全局一份）：只序列化会话列表（ChatSessionsList）的修改（updateSessionList），保证列表修改按顺序、原子地写入 storage。  
-	- sessionUpdateQueues[sessionId]（每个 session 一份）：只序列化某个会话（含 messages）的修改（updateSessionWithMessages、insertMessage、updateMessage 等），保证该会话内的所有更新有序、不互相覆盖。
+ 	- sessionListUpdateQueue（全局一份）：只序列化会话列表（ChatSessionsList）的修改（updateSessionList），保证列表修改按顺序、原子地写入 storage。  
+ 	- sessionUpdateQueues[sessionId]（每个 session 一份）：只序列化某个会话（含 messages）的修改（updateSessionWithMessages、insertMessage、updateMessage 等），保证该会话内的所有更新有序、不互相覆盖。
 
 - 为什么能提升性能/并发性
 
@@ -30,19 +29,17 @@ tags: [架构设计, IndexedDB, 消息系统, 缓存]
     3. flush 成功后，updateSessionWithMessages 会（若需要）调用 updateSessionList 更新会话 meta（这又走 sessionListUpdateQueue）。最后用 _setSessionCache 更新 queryClient 缓存。  
   - 会话列表修改（createSession/deleteSession/updateSessionList）走 sessionListUpdateQueue，持久化到 StorageKey.ChatSessionsList，然后通过 queryClient.setQueryData 更新缓存。
 
-
 - 举例对比说明效果  
   - 情况 A（并发写不同 session）：两个请求并发修改 sessionA 和 sessionB，分别走不同的 sessionUpdateQueues，能同时进行各自的持久化，不互相等待。  
   - 情况 B（并发写同一 session）：两个并发修改同一个 session 会被串行化（按入队顺序执行），不会出现最后写入覆盖前一次的竞态。  
   - 情况 C（频繁小更新）：短时间内多次对同一 session 调用 set，会被合并到一次 flush，从而只触发一次 storage.setItemNow，降低 I/O。
-
 
 ## 更新队列
 
 这段代码实现了一个**具有“批处理”、“原子性事务”和“持久化回滚”特性的状态管理队列**。
 
 1. **高频更新的性能问题**：如果一瞬间调用 10 次 set，不需要写 10 次数据库（或触发 10 次副作用），而是合并成 1 次。
-    
+
 2. **数据一致性（原子性）**：内存中的状态更新必须和外部存储（onChange）保持一致。如果写入外部存储失败，内存状态必须回滚。
 
 ```ts
@@ -116,7 +113,6 @@ await Promise.all([
 // 3. 保存一次到 storage
 ```
 
-
 - **总体**: `UpdateQueue<T>` 用来把对某个共享对象状态的更新串行化并原子性地应用，避免并发竞态。
 - **入队**: 调用 `set(updater)` 将一个更新函数入队并返回一个 `Promise`，该 promise 在该更新被实际应用后 resolve（或在失败时 reject）。
 - **合并与调度**: 多次 `set` 会在同一个微任务（`queueMicrotask`）周期内合并处理，减少重复持久化/通知。
@@ -159,7 +155,7 @@ if (this.state === null) {
 
 - **逻辑**：如果是第一次运行，this.state 还是空的，需要先加载初始状态。
 
-2. 预计算
+1. 预计算
 
 ```ts
 let s = this.state // 拿到当前状态的快照
@@ -180,14 +176,13 @@ this.q.length = 0 // 清空物理队列，因为我们已经把任务都取出�
 ```
 
 - **逻辑**：
-    
+
     1. 建立一个临时变量 s，它在循环中不断演变（Mutate）。
     2. 如果某个 updater 报错（比如代码写错了 s.prop.undefined），我们**捕获它**，记录为“计算失败”，但**不打断整个循环**。后续的任务会基于**上一个成功的 s** 继续运行。
 - **关键点**：**为什么不立刻 Resolve/Reject？**
-    - 因为虽然内存里算出来了，但能不能**保存成功**（持久化）还不知道。如果现在告诉用户“成功了”，结果下一行代码写文件失败了，那就是数据欺诈。所以这里只是“预计算”。
+  - 因为虽然内存里算出来了，但能不能**保存成功**（持久化）还不知道。如果现在告诉用户“成功了”，结果下一行代码写文件失败了，那就是数据欺诈。所以这里只是“预计算”。
 
-
-3. 提交与持久化
+1. 提交与持久化
 
 ```ts
 const prevState = this.state // 保存旧状态，为了“回滚”做准备
@@ -211,7 +206,7 @@ if (s !== this.state) { // 只有状态真的变了，才需要写库
 }
 ```
 
-4. 事务回滚
+1. 事务回滚
 
 ```ts
 } catch (e) {
@@ -225,17 +220,16 @@ if (s !== this.state) { // 只有状态真的变了，才需要写库
 }
 ```
 
-
 - `resolved.map((r) => ({ u: r.u, e }))` 是对 resolved 做映射，返回一个新数组。
-    - `(r) => ...` 是箭头函数，r 是当前元素。
-    - `({ u: r.u, e })` 用圆括号包裹对象字面量，表示把这个对象作为表达式返回（否则会被解析为函数体）。
-    - 对象有两项：`u: r.u`（把原元素的 u 字段复制过来）和 e（简写属性，相当于 e: e）。
-    - 这里的 e 来自外层 catch (e) 的异常变量，被闭包捕获并复用。
+  - `(r) => ...` 是箭头函数，r 是当前元素。
+  - `({ u: r.u, e })` 用圆括号包裹对象字面量，表示把这个对象作为表达式返回（否则会被解析为函数体）。
+  - 对象有两项：`u: r.u`（把原元素的 u 字段复制过来）和 e（简写属性，相当于 e: e）。
+  - 这里的 e 来自外层 catch (e) 的异常变量，被闭包捕获并复用。
 - 最终结果是一个形如 `{ u: QueueItem<T>, e: unknown }[]` 的数组，正好与 settleQueue 的 rejected 参数类型匹配。
 
 - settleQueue负责简单的结束队列中promise的pending状态，调用他们的resolved和rejected方法
 
-5. 递归调度
+1. 递归调度
 
 ```ts
 if (this.q.length > 0) {
@@ -251,7 +245,8 @@ if (this.q.length > 0) {
 - 如果有，**再次调度**自己。
 - 如果没有，把 scheduled 标记设为 false，表示机器停机，等待下一次唤醒。
 
-6. 总结
+1. 总结
+
 - 批量窗口：set 会把更新入队并通过 queueMicrotask 安排一次微任务触发 flush；同一微任务周期内的多次 set 会被合并到同一个批次，从而避免每次都持久化。
 - 串行应用：flush 按队列顺序把每个 updater 串行应用到局部变量 s，得到最终的新状态（避免竞态）。
 - 单次持久化：只有当最终 s 与当前 state 不同时才调用 onChange（可能是异步持久化），因此一次批处理只做一次保存。
@@ -284,24 +279,23 @@ sessionAction.ts中message相关
 3. removeMessage：删除消息
 
 `submitNewUserMessage`：
-* 首先读取会话和设置，若缺失则直接返回；然后把用户消息插入当前会话，同时让 `insertMessage` 额外计算并存储 `wordCount`/`tokenCount`。
-* 根据新消息是否带文件或网页链接，给即将出现的助手占位消息附加状态（`sending_file`/`loading_webpage`），如果需要立即生成，先插入一个 `generating=true` 的空助手消息。
-* 在 try 块里构建模型依赖并确认（仅在 Web 端）所选模型是否支持当前的 webBrowsing 模式，同时验证所有附件的 storageKey 是否存在（缺失会在控制台警告）。
-* 如果上述检查抛出错误，或出现网络/API 失败，catch 会构造带错误信息的助手消息，记录错误并更新/插入该消息，最后提前返回不再调用模型生成。
-* 如果一切正常且 `needGenerating` 为真，就调用 `generate(sessionId, newAssistantMsg, { operationType: 'send_message' })` 让模型开始生成回复。
-
+- 首先读取会话和设置，若缺失则直接返回；然后把用户消息插入当前会话，同时让 `insertMessage` 额外计算并存储 `wordCount`/`tokenCount`。
+- 根据新消息是否带文件或网页链接，给即将出现的助手占位消息附加状态（`sending_file`/`loading_webpage`），如果需要立即生成，先插入一个 `generating=true` 的空助手消息。
+- 在 try 块里构建模型依赖并确认（仅在 Web 端）所选模型是否支持当前的 webBrowsing 模式，同时验证所有附件的 storageKey 是否存在（缺失会在控制台警告）。
+- 如果上述检查抛出错误，或出现网络/API 失败，catch 会构造带错误信息的助手消息，记录错误并更新/插入该消息，最后提前返回不再调用模型生成。
+- 如果一切正常且 `needGenerating` 为真，就调用 `generate(sessionId, newAssistantMsg, { operationType: 'send_message' })` 让模型开始生成回复。
 
 **`generate 流程`：**
 
-* 先拉最新的会话/设置/平台配置，埋点 `trackGenerateEvent`，然后把目标助手消息重置成初始状态（清错、置 `generating`，设置 `aiProvider`/model/`style`，标记流式模式、清空状态等）
-* 并通过 `modifyMessage` 将这条消息写入indexedDB，更新cache，反应至UI（generating属性为true，显示loading UI）
-* 找到目标消息在当前会话（或者历史线程）里的位置，拿出它之前的上下文（调用 `genMessageContext` 会按配置选出不会超量的历史消息，还会把文件/链接内容拼进 prompt）。
-* 根据会话类型分支：
-  * **chat**：构建 `streamText` 所需参数（包含知识库、web browsing 标记），流式接收模型输出，每次 chunk 都更新缓存、记录首次 token latency、定期落盘。生成完成后计算 `tokensUsed`、设置 `finishReason/usage` 等再一次 `modifyMessage`。
+- 先拉最新的会话/设置/平台配置，埋点 `trackGenerateEvent`，然后把目标助手消息重置成初始状态（清错、置 `generating`，设置 `aiProvider`/model/`style`，标记流式模式、清空状态等）
+- 并通过 `modifyMessage` 将这条消息写入indexedDB，更新cache，反应至UI（generating属性为true，显示loading UI）
+- 找到目标消息在当前会话（或者历史线程）里的位置，拿出它之前的上下文（调用 `genMessageContext` 会按配置选出不会超量的历史消息，还会把文件/链接内容拼进 prompt）。
+- 根据会话类型分支：
+  - **chat**：构建 `streamText` 所需参数（包含知识库、web browsing 标记），流式接收模型输出，每次 chunk 都更新缓存、记录首次 token latency、定期落盘。生成完成后计算 `tokensUsed`、设置 `finishReason/usage` 等再一次 `modifyMessage`。
 
-  * **picture**：寻找最近的用户输入作为 prompt，调用 `generateImage`，每收到 base64 就存到 indexedDB 并插入到 message contentParts，最后标记非生成状态。
+  - **picture**：寻找最近的用户输入作为 prompt，调用 `generateImage`，每收到 base64 就存到 indexedDB 并插入到 message contentParts，最后标记非生成状态。
 
-* 过程中的异常会统一捕获并 report（Sentry + 判断类），然后把目标消息设为失败状态（含 `errorCode/error/errorExtra`，显示 `aiProvider`/host/responseBody）。
+- 过程中的异常会统一捕获并 report（Sentry + 判断类），然后把目标消息设为失败状态（含 `errorCode/error/errorExtra`，显示 `aiProvider`/host/responseBody）。
 
 ### chat类型消息的流程
 
@@ -314,10 +308,10 @@ const persistInterval = 2000
 let lastPersistTimestamp = Date.now()
 ```
 
-* `startTime`：记录生成开始时间，用于后续计算首 token 延迟。
-* `firstTokenLatency`：首 token 延迟（首次收到内容的耗时）。
-* `persistInterval`：持久化间隔，2秒。
-* `lastPersistTimestamp`：上次持久化的时间戳。
+- `startTime`：记录生成开始时间，用于后续计算首 token 延迟。
+- `firstTokenLatency`：首 token 延迟（首次收到内容的耗时）。
+- `persistInterval`：持久化间隔，2秒。
+- `lastPersistTimestamp`：上次持久化的时间戳。
 
 #### 2. 构造 prompt 上下文
 
@@ -325,8 +319,7 @@ let lastPersistTimestamp = Date.now()
 const promptMsgs = await genMessageContext(settings, messages.slice(0, targetMsgIx), model.isSupportToolUse())
 ```
 
-* 生成用于模型推理的消息上下文（如历史消息、附件等），保证 prompt 完整性。
-
+- 生成用于模型推理的消息上下文（如历史消息、附件等），保证 prompt 完整性。
 
 #### 3. 定义流式回调 modifyMessageCache
 
@@ -351,15 +344,16 @@ const modifyMessageCache: OnResultChangeWithCancel = async (updated) => {
 }
 ```
 
-* 每次模型返回新内容（如流式 token）时被调用。
+- 每次模型返回新内容（如流式 token）时被调用。
 
-* 统计首 token 延迟（只记录第一次有内容的耗时）。
+- 统计首 token 延迟（只记录第一次有内容的耗时）。
 
-* 合并新内容到 targetMsg，清理 status。
+- 合并新内容到 targetMsg，清理 status。
 
-* **低频持久化**：每 2 秒才真正持久化到存储，其余时间只更新缓存（`updateOnlyCache`）。
+- **低频持久化**：每 2 秒才真正持久化到存储，其余时间只更新缓存（`updateOnlyCache`）。
 
-* 通过计算Persist的时间戳实现，结合modifyMessage的OnlyCache参数，验证当前的时间戳是否应该持久化
+- 通过计算Persist的时间戳实现，结合modifyMessage的OnlyCache参数，验证当前的时间戳是否应该持久化
+
 #### 4. 发起流式生成
 
 ```typescript
@@ -373,11 +367,11 @@ const result = await streamText(model, {
 })
 ```
 
-* 调用模型的流式接口，生成消息内容。
+- 调用模型的流式接口，生成消息内容。
 
-* 每收到一块内容就触发 `modifyMessageCache`，实现“边生成边展示”。
+- 每收到一块内容就触发 `modifyMessageCache`，实现“边生成边展示”。
 
-* 在 streamText 源码中，模型每生成一块内容就会调用一次 params.onResultChangeWithCancel，也就是modifyMessageCache的函数
+- 在 streamText 源码中，模型每生成一块内容就会调用一次 params.onResultChangeWithCancel，也就是modifyMessageCache的函数
 
 #### 5. 生成结束，写入最终状态
 
@@ -394,19 +388,19 @@ targetMsg = {
 await modifyMessage(sessionId, targetMsg, true)
 ```
 
-* 标记生成结束，补充 token 统计、finishReason、usage 等信息。
+- 标记生成结束，补充 token 统计、finishReason、usage 等信息。
 
-* 持久化最终消息状态。
+- 持久化最终消息状态。
 
 **这段代码的作用：**
 
-* 实现了消息内容的流式生成与实时展示。
-* 通过 2 秒节流，降低持久化频率，提升性能。
-* 统计首 token 延迟，便于性能分析。
-* 保证每次内容变更都能被 UI 及时感知，最终状态可靠落盘。
+- 实现了消息内容的流式生成与实时展示。
+- 通过 2 秒节流，降低持久化频率，提升性能。
+- 统计首 token 延迟，便于性能分析。
+- 保证每次内容变更都能被 UI 及时感知，最终状态可靠落盘。
 
 **核心优化点：**
 
-* **流式回调 + 低频持久化**（高频 UI 响应，低频存储写入）
-* **首 token 延迟统计**
-* **状态合并与错误处理**
+- **流式回调 + 低频持久化**（高频 UI 响应，低频存储写入）
+- **首 token 延迟统计**
+- **状态合并与错误处理**

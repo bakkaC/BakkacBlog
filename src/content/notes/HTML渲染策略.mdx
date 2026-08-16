@@ -7,25 +7,21 @@ toc_max_heading_level: 4
 
 ## **现代混合页面**
 
-
 随着技术发展，静态与动态的界限逐渐模糊：
 
 1. **静态页面的动态化**
-	1. 通过 JavaScript（如 React/Vue）实现客户端动态交互。
-	2. 结合 API 调用（如 RESTful API、GraphQL）从后端获取数据（如 JAMstack 架构）。
+1. 通过 JavaScript（如 React/Vue）实现客户端动态交互。
+1. 结合 API 调用（如 RESTful API、GraphQL）从后端获取数据（如 JAMstack 架构）。
 
-2. **动态页面的静态化**
-	1. 使用服务端渲染（SSR）或静态站点生成器预渲染动态内容（如 Next.js、Nuxt.js）。
-	2. 通过增量静态生成（ISR）实现内容按需更新（如 Vercel 的 Next.js 方案）。
+1. **动态页面的静态化**
+1. 使用服务端渲染（SSR）或静态站点生成器预渲染动态内容（如 Next.js、Nuxt.js）。
+1. 通过增量静态生成（ISR）实现内容按需更新（如 Vercel 的 Next.js 方案）。
 
 ## theo的视频
 
-https://www.youtube.com/watch?v=Cifkb-ZVps4
-
-
+<https://www.youtube.com/watch?v=Cifkb-ZVps4>
 
 ![](assets/HTML渲染策略/file-20251208155153967.png)
-
 
 # Classic MPA
 
@@ -76,7 +72,6 @@ https://www.youtube.com/watch?v=Cifkb-ZVps4
 
 ![](assets/HTML渲染策略/file-20251208155850070.png)
 
-
 用户点击的下半部分确实对MPA的体验进行很多优化
 而问题在于上半部分，除非做完上半部分的工作，用户是不能看到正确的HTML内容的
 
@@ -86,9 +81,7 @@ https://www.youtube.com/watch?v=Cifkb-ZVps4
 
 * **导航更快**：一旦JavaScript加载完毕，用户在SPA内部点击链接时，浏览器可以直接生成新的UI，而无需等待服务器发送完整的HTML页面，这使得内部导航感觉更即时、流畅
 
-
 # SSR's SPA
-
 
 ![](assets/HTML渲染策略/file-20251208155916536.png)
 
@@ -184,8 +177,6 @@ SPA-influenced Isomorphic 同构SSR
 
   * **基础设施复杂性**：为了实现快速的静态部分响应和动态部分的流式传输，可能需要复杂的边缘工作者（Edge Worker）基础设施来实现部分预渲染（Partial Pre-rendering）。这可能需要专门的平台（如Vercel）支持，或者需要前端开发人员具备深厚的DevOps/基础设施知识。
 
-
-
 # MPA-influenced split-excution(Islands/Server Components)
 
 ![](assets/HTML渲染策略/file-20251208160457434.png)
@@ -238,10 +229,7 @@ MPA-influenced split-execution（多页应用影响下的分割执行）模型�
 
 总之，MPA-influenced split-execution 模型提供了一种**折衷方案**，它在保持即时首屏加载速度的同时，允许服务器按需渲染动态内容，从而优化了用户体验和开发效率。
 
-
-
 # 期待的效果
-
 
 ## **三个主要目标**
 

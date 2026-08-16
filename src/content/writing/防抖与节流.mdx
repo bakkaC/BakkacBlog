@@ -1,26 +1,28 @@
 
 防抖目标：
+
 - 得到一个防抖执行的原函数
 - 使得这个函数在规定时间内连续触发 → 只执行最后一次
-	- 连续触发=>则要杀死旧的 setTimeout，需要使用 clearTimeout()，然后创建新 timer
-	- 如何跨越多次调用拿到 timer，使用闭包，timer 在 debounce 里声明而不是返回函数里
-		-  timer 引用在 debounce 的作用域，而不是返回的 Function
-		- 因为多次调用 Function 内部的私有变量是独立的，重新创建的，无法跨调用获取
-		- 这使得多次调用共享同一个私有状态
+ 	- 连续触发=>则要杀死旧的 setTimeout，需要使用 clearTimeout()，然后创建新 timer
+ 	- 如何跨越多次调用拿到 timer，使用闭包，timer 在 debounce 里声明而不是返回函数里
+  		- timer 引用在 debounce 的作用域，而不是返回的 Function
+  		- 因为多次调用 Function 内部的私有变量是独立的，重新创建的，无法跨调用获取
+  		- 这使得多次调用共享同一个私有状态
 
 `function (...args)` 本质是收集未来的参数到一个数组中
 `cleartimeout`，只是取消任务执行，而不会清空 timer
 
 立即执行版本防抖目标：
+
 - **“立即执行”就是：触发 → 执行 → 冷却 → 再触发才执行**
 - 一个操作停止后 delay 再执行，一个是立即执行，delay后才能下次执行
 - 共同点是如果不断触发，之前的计时器一直被清空，永远无法执行
 - 立即执行版本，只有 timer 计时结束后才能执行，而这没法通过简单的布尔值判断，因为计时结束 clear 后 timer 依然是存在的，所以我们在 timer 结束后手动将其设置为 null，这样就能代表冷却结束
-- 
+-
 
-| 类型                     | 执行时机        |
+| 类型 | 执行时机 |
 | ---------------------- | ----------- |
-| 普通防抖（immediate=false）  | **最后一次才执行** |
+| 普通防抖（immediate=false） | **最后一次才执行** |
 | 立即执行防抖（immediate=true） | **第一次立刻执行** |
 
 ```js
@@ -92,7 +94,6 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 ```
 
-
 简单的节流实现：
 
 ```js
@@ -102,9 +103,9 @@ function throttle(fn, wait) {
   let timer = null;
 
   return function (...args) {
-	
+ 
     if (timer) return;  // 关键：如果有计时器在运行，则直接忽略本次触发
-	
+ 
     timer = setTimeout(() => {
       fn.apply(this, args);
       timer = null;    // 关键：计时器结束，才允许下一次执行

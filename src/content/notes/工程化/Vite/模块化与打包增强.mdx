@@ -8,18 +8,18 @@ parent: vite
 现代前端项目中，文件是一个个模块组织的，代码相互导入的方式依赖于 esm 的模块化机制，而原始的模块化机制，对于现代的前端项目而言，又是能力不足的。
 
 - **原生 ESM 的 import 很朴素**
-    
+
     浏览器只认标准模块 URL，像 ./foo.js、/bar.js。它不知道 npm 包、资源文件、glob、worker 查询参数这些工程化语义。
-    
+
 - **bundler 会给 import 赋予额外语义**
-    
+
     比如看到一条 import，不只是去加载模块，还可能：
-    
-    - 把 npm 包解析出来
-    - 把图片拷贝到产物目录并返回最终 URL
-    - 把一组文件展开成多个导入
-    - 给 worker 单独产出 chunk
-    - 根据动态导入关系做 code splitting
+
+  - 把 npm 包解析出来
+  - 把图片拷贝到产物目录并返回最终 URL
+  - 把一组文件展开成多个导入
+  - 给 worker 单独产出 chunk
+  - 根据动态导入关系做 code splitting
 
 **Vite 在开发时就某种程度上定义了 bundler 行为，**所以你一边享受原生 ESM 的快速按需加载，一边还能写 **写面向打包器优化的代码** 。
 
@@ -53,13 +53,12 @@ parent: vite
     - 没有这些信息，优化能力会弱很多。
 
 - **模块化**解决的是开发层的问题
-    
+
     把代码拆成有边界的单元，每个模块只暴露需要暴露的东西，用 import/export 建立依赖关系。
-    
+
 - **打包**解决的是运行和部署层的问题
-    
+
     读取这些模块之间的依赖图，然后把它们转换、重组、优化，产出浏览器或运行时更适合加载的文件。
-    
 
 ESM 增强，增强了什么？
 
@@ -94,21 +93,20 @@ ESM 增强，增强了什么？
 仔细观察会发现，一般项目内的导入分为两类
 
 1. 项目内的源码文件，通常是相对路径或别名导入：
-    
+
     ```sql
     import axios from 'axios'
     import { ref } from 'vue'
     import clsx from 'clsx'
     ```
-    
+
 2. 通过包管理器安装的第三方依赖，通常是裸模块导入：
-    
+
     ```sql
     import axios from 'axios'
     import { ref } from 'vue'
     import clsx from 'clsx'
     ```
-    
 
 浏览器原生 ES 导入不支持下面这样的裸模块导入：`import { someMethod } from 'my-dep'` 上面的代码会在浏览器中抛出一个错误。
 
@@ -162,14 +160,13 @@ Vite 通过 HTTP 头来缓存请求得到的依赖，所以如果你想要编辑
 - 很多包内部文件很多，浏览器会发出大量小请求，开发体验变慢
 
 1. **CommonJS 和 UMD 兼容性：** 在开发阶段中，Vite 的开发服务器将所有代码视为原生 ES 模块。因此，Vite 必须先将以 CommonJS 或 UMD 形式提供的依赖项转换为 ES 模块。
-    
+
     在转换 CommonJS 依赖项时，Vite 会进行智能导入分析，这样即使模块的导出是动态分配的（例如 React），具名导入（named imports）也能正常工作：
     `import React, { useState } from 'react'`
-    
+
 2. **性能：** 为了提高后续页面的加载性能，Vite 将那些具有许多内部模块的 ESM 依赖项转换为单个模块。
-    
+
     有些包将它们的 ES 模块构建为许多单独的文件，彼此导入。例如，[**`lodash-es` 有超过 600 个内置模块**](https://unpkg.com/browse/lodash-es/)！当我们执行 `import { debounce } from 'lodash-es'` 时，浏览器同时发出 600 多个 HTTP 请求！即使服务器能够轻松处理它们，但大量请求会导致浏览器端的网络拥塞，使页面加载变得明显缓慢。通过将 `lodash-es` 预构建成单个模块，现在我们只需要一个HTTP请求！
-    
 
 依赖搜寻是自动的过程，如上文所说，会扫描代码库，通常在 node module 里获取，使用 rolldown进行打包
 
@@ -217,9 +214,9 @@ Vite 将预构建的依赖项缓存到 `node_modules/.vite` 中。它会基于
 
 ### Monorepo的本地包处理
 
-1.  monorepo 里本地包会被当成“源码依赖”，Vite 会尝试直接分析它，而不是打包
+1. monorepo 里本地包会被当成“源码依赖”，Vite 会尝试直接分析它，而不是打包
 
-2.  但前提是：它必须是 ESM，否则 Vite 不好处理
+2. 但前提是：它必须是 ESM，否则 Vite 不好处理
 
 3. 如果不是 ESM，就必须手动加入优化列表，optimizeDeps.include
 
@@ -230,6 +227,7 @@ Vite 将预构建的依赖项缓存到 `node_modules/.vite` 中。它会基于
 [https://app.eraser.io/workspace/W1ZOWqpCPrv4Vz2vcytS](https://app.eraser.io/workspace/W1ZOWqpCPrv4Vz2vcytS)
 
 ![image.png](assets/模块化与打包增强/image.png)
+
 ## Typescript
 
 Vite 天然支持引入 `.ts` 文件，不同于过去的 webpack 是零配置支持 ts能力的
@@ -262,22 +260,22 @@ Vite 会参考 `tsconfig.json` 中的一些配置项，并设置相应的 Oxc 
 `tsconfig.json` 中 `compilerOptions` 下的一些配置项需要特别注意。
 
 - **`isolatedModules` ，**应该设置为 `true`。**你写的每个 TS 文件，都应该能单独安全地转译。**
-    - tsc会做全局分析再转译，Vite 转译：像“单科速改”，只看当前文件
-    - isolatedModules: true 就是在提前约束你，不要写那些“只有全局分析才成立”的代码。
+  - tsc会做全局分析再转译，Vite 转译：像“单科速改”，只看当前文件
+  - isolatedModules: true 就是在提前约束你，不要写那些“只有全局分析才成立”的代码。
 - **`target` ，tsconfig.target 不等于 Vite 的最终运行目标。**
-    - Vite 开发模式更倾向于少做转换，默认接近 esnext。
-    - 生产构建则看 build.target 之类的 Vite 配置。
+  - Vite 开发模式更倾向于少做转换，默认接近 esnext。
+  - 生产构建则看 build.target 之类的 Vite 配置。
 - `path` ,写了路径别名`"@/*": ["src/*"]`，这表示 TypeScript 类型系统认识 @/xxx 这种写法。
-    - 但 **Vite 不一定自动按这个跑**。你需要显式告诉 Vite 去读 tsconfig.path
-    - 可以指定 `resolve.tsconfigPaths: true` 来告诉 Vite 使用 `tsconfig.json` 中的 `paths` 选项来解析导入。
-    - 但这个功能有性能损耗，所以不建议这么设置
+  - 但 **Vite 不一定自动按这个跑**。你需要显式告诉 Vite 去读 tsconfig.path
+  - 可以指定 `resolve.tsconfigPaths: true` 来告诉 Vite 使用 `tsconfig.json` 中的 `paths` 选项来解析导入。
+  - 但这个功能有性能损耗，所以不建议这么设置
 - **`useDefineForClassFields`** ，应该设置为 true，
-    - 如果 TypeScript 的 target 是 `ES2022` 或更高版本，包括 `ESNext`，那么默认值将为 `true`。这与 [**TypeScript 4.3.2 及以后版本的行为**](https://github.com/microsoft/TypeScript/pull/42663) 保持一致。 若设了其他 TypeScript target，则本项会默认为 `false`.
-    - 如果你正在使用一个严重依赖 class fields 的库，请注意该库对此选项的预期设置。 虽然大多数库期望 `"useDefineForClassFields": true`，但如果你的库不支持它，你可以明确地将 `useDefineForClassFields` 设置为 `false`。
+  - 如果 TypeScript 的 target 是 `ES2022` 或更高版本，包括 `ESNext`，那么默认值将为 `true`。这与 [**TypeScript 4.3.2 及以后版本的行为**](https://github.com/microsoft/TypeScript/pull/42663) 保持一致。 若设了其他 TypeScript target，则本项会默认为 `false`.
+  - 如果你正在使用一个严重依赖 class fields 的库，请注意该库对此选项的预期设置。 虽然大多数库期望 `"useDefineForClassFields": true`，但如果你的库不支持它，你可以明确地将 `useDefineForClassFields` 设置为 `false`。
 - **`types: ["vite/client"]` ,作用是让 TypeScript 认识 Vite 客户端环境里的额外能力**
-    - 导入图片、svg、css 之类资源
-    - 用 import.meta.env
-    - 用 import.meta.hot
+  - 导入图片、svg、css 之类资源
+  - 用 import.meta.env
+  - 用 import.meta.hot
 
 Vite 默认的类型定义是写给它的 Node.js API 的。要将其补充到一个 Vite 应用的客户端代码环境中，你可以在 `tsconfig.json` 中的 `compilerOptions.types` 添加 `vite/client`
 

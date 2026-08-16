@@ -9,7 +9,7 @@ date: 2026-04-01T15:22:00
 
 ---
 
-## 新的开发方式：
+## 新的开发方式
 
 对开发方式变迁的整理好文：[The 8 Levels of Agentic Engineering](https://www.bassimeledath.com/blog/levels-of-agentic-engineering)
 
@@ -32,34 +32,35 @@ date: 2026-04-01T15:22:00
  Harness主张通过一个系统化建设的 Harness，包括文档，测试，约束，规范，可观测工程等等的一层壳，使 AI 自动化完成的全流程，实现自反馈并长时间的工作迭代
 
 这个概念发起者，openAI 做了以下几件事：
+
 - Chrome DevTools MCP + skill：用于处理 DOM 快照、屏幕截图和导航
 - 日志、指标和追踪记录会通过一个本地可观测性堆栈展示给 Codex，对任何给定的工作树来说，该堆栈都是临时的。Codex 在该应用程序的一个完全独立的版本上运行，一旦任务完成，该版本的所有内容，包括日志和指标，都会被删除。
-    - **智能体 LogQL 查日志、PromQL 查指标、TraceQL 查追踪**。
-    - 有了这些信息，像“确保服务启动在 800ms 内完成”或“这四个关键用户旅程中的任何跨度都不得超过两秒”这样的提示
+  - **智能体 LogQL 查日志、PromQL 查指标、TraceQL 查追踪**。
+  - 有了这些信息，像“确保服务启动在 800ms 内完成”或“这四个关键用户旅程中的任何跨度都不得超过两秒”这样的提示
 - 代码仓库的知识库位于一个结构化了的 `docs/` 目录中，此目录被当作记录系统来使用。将 `AGENTS.md` 视为**内容目录**
-    - 设计文档已被编目和索引，其中包括验证状态和一套核心理念，定义了AGENT优先的操作原则。
-    - `architecture.md` 提供域和包分层的顶层地图。
-    - 对每个产品领域和架构层进行评分，并随着时间的推移追踪差距。
+  - 设计文档已被编目和索引，其中包括验证状态和一套核心理念，定义了AGENT优先的操作原则。
+  - `architecture.md` 提供域和包分层的顶层地图。
+  - 对每个产品领域和架构层进行评分，并随着时间的推移追踪差距。
 - 把所有关键知识、逻辑和能力都“收回到 repo 内部”，而不是依赖外部信息或黑盒依赖。
-    - 简单、稳定、常见的技术：更容易被模型理解，更可预测
-        
-    - 复杂 / 黑盒库：agent 很难推理内部行为
-        
-    - 在某些情况下，让智能体重新实现部分功能子集比绕过黑盒库缺失上下文更合理
-        
+  - 简单、稳定、常见的技术：更容易被模型理解，更可预测
+
+  - 复杂 / 黑盒库：agent 很难推理内部行为
+
+  - 在某些情况下，让智能体重新实现部分功能子集比绕过黑盒库缺失上下文更合理
+
         > 我们没有引入通用的 `p-limit` 风格包，而是投入使用了我们自己的带并发的 map 辅助函数：它与我们的 OpenTelemetry 仪表紧密集成，具备 100% 的测试覆盖率，并且其行为完全符合我们的运行时预期。
-        
+
 - 对好的实践规则不通过文档进行软约束，而是倾向于通过自定义 linter，类型提示等等会报错的方式做硬约束
-    - 人 review / 发现问题
-    - → 更新文档
-    - → 或直接写成 lint 规则
+  - 人 review / 发现问题
+  - → 更新文档
+  - → 或直接写成 lint 规则
 - 把系统设计成**严格分层 + 固定依赖方向，比如：**`Types → Config → Repo → Service → Runtime → UI` ，跨领域只能通过统一入口（Providers），架构严格控制，而**实现细节放开让 agent 自己选**
 - 速度 >> 完美 → 先合并，再修正，agent 写代码很快，修 bug 成本很低，等待（review / gate）成本很高
 - 人的角色是当代理遇到困难时，识别缺失的内容——工具、护栏、文档——并将其反馈到仓库中，始终由 Codex 本身编写修复方案。而代码库中的一切由 Agent 生成
 - AI 自动化会不可避免的留下技术债，所以必须用“规则（把人的审美积累成约束） + 自动化 refactor”持续清理，把技术债变成像垃圾回收一样的后台过程。
 
-
 总结成行动指南就是：
+
 1. 给 AGENT 补充调试所需的上下文，给他更多解决问题的线索和标准，用于自我反馈
 2. 文档也要结构化，按严格的规则组织， 使 AGENT 获取所需上下文路径和行为都清晰化，并且持续维护同步，积累关键知识
 3. 硬约束优先：linter/typecheck/zod .... > 在AGNETS.md里加一句话
@@ -70,6 +71,7 @@ date: 2026-04-01T15:22:00
 OpenAI 的 [harness engineering](https://openai.com/index/harness-engineering/) 讲的是环境设计：文档体系、架构约束、可观测性基础设施，让 agent 在一个被精心设计过的工作环境里可靠地生产代码。Cursor 的 [self-driving codebases](https://cursor.com/blog/self-driving-codebases) 和 [scaling agents](https://cursor.com/blog/scaling-agents) 讲的是协调架构：几百个 agent 同时工作，怎么分工、怎么并行、怎么收敛。Anthropic 的 [harness design for long-running apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) 讲的是运行时纠偏：一个 agent 连续跑几个小时，怎么在过程中保持方向和质量。
 
 但是整体来说，还是有很多共识的
+
 1. **人类的核心工作从写代码转向了设计 agent 的工作环境。**
 2. **知识必须版本化、可发现、存在于 repo 中。**
 3. **约束比指令有效。**
@@ -81,11 +83,12 @@ OpenAI 的 [harness engineering](https://openai.com/index/harness-engineering/)
 
 关于 Agent 工程实践的好文：[你不知道的 Agent：原理、架构与工程实践](https://x.com/HiTw93/status/2034627967926825175)
 不错的教程：
-- https://learn.shareai.run/zh/timeline/
-- https://github.com/shareAI-lab/claw0
+
+- <https://learn.shareai.run/zh/timeline/>
+- <https://github.com/shareAI-lab/claw0>
 值得参考的项目：
-- https://github.com/badlogic/pi-mono
-- https://github.com/shipany-ai/open-agent-sdk
+- <https://github.com/badlogic/pi-mono>
+- <https://github.com/shipany-ai/open-agent-sdk>
 - CC 泄露的源码，顺带一提，CC 源码泄露或许没想象中那么泄露天机，事实上很多架构上的想法都是通用的之前就已经被逆向公开过了，而 cc的 Harness 事实上也不是银弹，不是套在别的 Agent 上就会出现什么飞跃，我有看到 Harness 的 benchmark，学习目的的话 cc 或者 Codex 的源码仓库事实上太过于庞大了，一些类似 pi的仓库反而更有价值，只有一些模块级的设计可能存在特定的参考价值
 
 现在的 AGENT 的类型其实比较有限，架构上也有和很多共通之处，把 openclaw 和 Claude Code两种产品研究清楚，事实上应该就差不多了，shareai的教程就很不错

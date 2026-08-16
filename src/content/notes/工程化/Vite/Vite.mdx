@@ -11,9 +11,10 @@ description: "Vite 笔记，概览 Vite 的定位、开发阶段能力、HMR 机
 
 - 浏览器只能理解原生的代码，无法理解各类现代前端框架的语法
 - 随着现代应用体积的增大，老一代构建工具webpack/Rollup/Parcel
-    - 开发服务器启动非常缓慢，vite采用了现代语言工具打破JS性能瓶颈，不再处理ESM打包将工作流简化
-    - HMR非常缓慢，vite在ESM上执行HMR，同时配合浏览器对结果进行缓存，让HMR速度飞快
-    - 生产环境为了应用最终加载性能，仍然采用Rollup进行打包
+  - 开发服务器启动非常缓慢，vite采用了现代语言工具打破JS性能瓶颈，不再处理ESM打包将工作流简化
+  - HMR非常缓慢，vite在ESM上执行HMR，同时配合浏览器对结果进行缓存，让HMR速度飞快
+  - 生产环境为了应用最终加载性能，仍然采用Rollup进行打包
+
 1. 作为构建工具，从源代码得出，浏览器可理解，高性能的代码
 2. 开发时体验优化，修改文件时热更新，快，SourceMap
 3. 部署时体验优化，打包结果要很小，删掉没用的代码，类型检查
@@ -24,8 +25,8 @@ Vite就是法语中快的意思，发明出来就是为了性能优化
 
 - 开发服务器的架构设计，主要就是考虑大规模的项目依旧可以快速的HMR
 - 为了保持快速和灵活性的平衡
-    - 对CPU重依赖的部分如转译，压缩，依赖解析等工作采用esbuild和SWC这样的，采用Go和Rust现代高性能语言的，现成的原生工具，自定义能力较差
-    - 而其他对速度影响小的操作，如插件系统，热更新机制，配置逻辑，由Vite自身决定，使用JavaScript编写，自定义程度高
+  - 对CPU重依赖的部分如转译，压缩，依赖解析等工作采用esbuild和SWC这样的，采用Go和Rust现代高性能语言的，现成的原生工具，自定义能力较差
+  - 而其他对速度影响小的操作，如插件系统，热更新机制，配置逻辑，由Vite自身决定，使用JavaScript编写，自定义程度高
 - 部分esbuild无法编译的语法，Vite会选择性的使用babel补充
 - 构建阶段，vite不使用esbuild而是采用Rollup进行打包，因为Build时速度不那么重要，而打包产物的体积大小更重要，这一点上Rollup做的更好
 
@@ -41,20 +42,18 @@ Vite 主要由两部分组成：
 项目开发阶段优化开发体验的功能，大概可以总结为两点：
 
 - ESM 增强（import 的增强）
-    
+
     [[模块化与打包增强]]
-    
+
 - dev server 和 HMR
-    
+
     [[HMR 如何工作]]
-    
 
 另一个功能维度是文件的转译构建，而构建阶段，就是把开发者友好的代码，转译为浏览器友好的代码的过程，但这里其实开发服务器也显然需要经过转译，只不过，不同的阶段开发/生产工作负载是不同的，对于浏览器友好的标准也是不同的
 
 - 文件的转译（服务对象：开发者⇒浏览器）
-    
+
     [[Vite 的构建流程]]
-    
 
 ## Vite 的常见配置
 
@@ -70,20 +69,20 @@ Vite 主要由两部分组成：
 
 ```jsx
 export default defineConfig(() => {
-	return {
-		plugins: [...],
-		base:"/",
-		resolve: {
-			extensions: [...],
-			dedupe: [...],
-			alias: [...],
-		},
-		cacheDir: "node_modules/.vite-xxxx",
-		
-		build: {
+ return {
+  plugins: [...],
+  base:"/",
+  resolve: {
+   extensions: [...],
+   dedupe: [...],
+   alias: [...],
+  },
+  cacheDir: "node_modules/.vite-xxxx",
+  
+  build: {
       rollupOptions: {...},
-		},
-		server: {
+  },
+  server: {
       port: 5177,
       strictPort: true,
       host: "0.0.0.0",
@@ -93,7 +92,7 @@ export default defineConfig(() => {
     optimizeDeps: {
       include: [...],
     },
-	}
+ }
 }
 ```
 
@@ -114,8 +113,8 @@ export default defineConfig(() => {
 - server.strictPort：端口被占用时直接失败，不自动换下一个端口。
 - server.host：监听地址；0.0.0.0 表示监听所有网卡，方便局域网/容器/WSL 访问。
 - server.preTransformRequests：它是让 dev 时更积极地预转译被请求的模块，减少冷启动瀑布。
-    - 为何要用：在大型 monorepo、含较大第三方包（如 pixi、ffmpeg.wasm）或按需加载场景，默认按需优化有时会导致第一次请求超时、504 或卡顿；开启此项可改善开发体验（更快拿到可执行模块）。
-    - 让 dev server 在响应模块请求前先把模块做一次预处理（transform），避免每次按需加载时触发较慢的按需优化路径。
+  - 为何要用：在大型 monorepo、含较大第三方包（如 pixi、ffmpeg.wasm）或按需加载场景，默认按需优化有时会导致第一次请求超时、504 或卡顿；开启此项可改善开发体验（更快拿到可执行模块）。
+  - 让 dev server 在响应模块请求前先把模块做一次预处理（transform），避免每次按需加载时触发较慢的按需优化路径。
 
 ## 如何编写插件
 
@@ -133,13 +132,13 @@ Vite 插件的生命周期钩子（Hooks）可以分为两类：**Vite 专属钩
 - **`options(options)`** (通用)：获取 Rollup 的基础配置。
 - **`buildStart(options)`** (通用)：构建真正开始。通常在这里做一些初始化任务（比如启动一个子进程、预处理某些文件）。
 
-2. 开发服务器专属阶段（仅在 `vite dev` 模式下）
+1. 开发服务器专属阶段（仅在 `vite dev` 模式下）
 
 - **`configureServer(server)`** (Vite 专属)：**非常核心**。配置开发服务器，你可以拿到 Vite 内部的 Connect 服务器实例，用于添加自定义的后端中间件（比如写 Mock 接口、代理请求等）。
 - **`configurePreviewServer(server)`** (Vite 专属)：类似于上一个，但是作用于 `vite preview` 启动的预览服务器。
 - **`handleHotUpdate(ctx)`** (Vite 专属)：当监控的文件发生变化时触发。你可以获取到变化的模块，并自定义热更新（HMR）逻辑。比如，如果是某个特殊的 JSON 变了，你不想让整个页面刷新，而是只派发一个自定义事件给客户端。
 
-3. 文件请求与处理阶段（核心流水线，每个文件都会经历）
+1. 文件请求与处理阶段（核心流水线，每个文件都会经历）
 
 当浏览器发起一个请求，或者打包工具解析到一个模块依赖时执行：
 
@@ -148,13 +147,13 @@ Vite 插件的生命周期钩子（Hooks）可以分为两类：**Vite 专属钩
 - **`load(id)`** (通用)：加载文件。根据上一步解析出的真实路径，读取并返回文件的内容（代码字符串）。
 - **`transform(code, id)`** (通用)：**最频繁使用的钩子**。接收上一步返回的源码，进行转换处理（比如把 TypeScript 转成 JavaScript，把 Sass 转成 CSS）。
 
-4. 构建结束与生成产物阶段（主要在 `vite build` 模式下）
+1. 构建结束与生成产物阶段（主要在 `vite build` 模式下）
 
 - **`buildEnd(error)`** (通用)：Vite/Rollup 完成了所有模块的解析和构建。
 - *(以下为 Rollup 专属的输出阶段钩子，Vite 打包时也会执行)*：
-    - **`renderChunk`**：处理每个单独生成的 chunk（代码块）。
-    - **`generateBundle`**：在把最终代码写入磁盘前调用，可以在这里删除某些输出文件，或者修改文件名。
-    - **`writeBundle`**：文件已经完全写入磁盘。
+  - **`renderChunk`**：处理每个单独生成的 chunk（代码块）。
+  - **`generateBundle`**：在把最终代码写入磁盘前调用，可以在这里删除某些输出文件，或者修改文件名。
+  - **`writeBundle`**：文件已经完全写入磁盘。
 - **`closeBundle`** (通用)：整个构建进程结束。
 
 ### 二、 Vite 插件的常见用途
@@ -169,42 +168,42 @@ Vite 插件的生命周期钩子（Hooks）可以分为两类：**Vite 专属钩
 - **代表插件**：`@vitejs/plugin-vue`, `@vitejs/plugin-react`。
 - **使用钩子**：主要使用 `transform`。
 
-2. 创建“虚拟模块” (Virtual Modules)
+1. 创建“虚拟模块” (Virtual Modules)
 
 你可以在代码里 `import` 一个根本不存在的文件，由插件在构建时动态生成内容。
 
 - **用途**：
-    - 自动收集文件系统目录，生成路由（如 `vite-plugin-pages`）。
-    - 将构建时间、Git Commit Hash 等环境变量注入到代码中。
-    - 提取所有的 SVG 图标，合并成一个雪碧图注入到应用中（如 `vite-plugin-svg-icons`）。
+  - 自动收集文件系统目录，生成路由（如 `vite-plugin-pages`）。
+  - 将构建时间、Git Commit Hash 等环境变量注入到代码中。
+  - 提取所有的 SVG 图标，合并成一个雪碧图注入到应用中（如 `vite-plugin-svg-icons`）。
 - **使用钩子**：结合使用 `resolveId`（拦截不存在的路径名）和 `load`（返回动态生成的代码）。
 
-3. 开发服务器拦截与 Mock API (Mock & Dev Proxy)
+1. 开发服务器拦截与 Mock API (Mock & Dev Proxy)
 
 - **用途**：在前端开发阶段，后端接口还没准备好，前端需要模拟数据。可以通过插件直接在 Vite 开发服务器上拦截指定的请求，返回 JSON 假数据。
 - **使用钩子**：`configureServer`。
 
-4. HTML 动态注入 (HTML Manipulation)
+1. HTML 动态注入 (HTML Manipulation)
 
 - **用途**：
-    - 根据环境变量（开发/生产），在 `<head>` 里注入不同的统计代码（如 Google Analytics、百度统计）。
-    - 做 SEO 优化，动态生成 `<meta>` 标签。
-    - 压缩 HTML 缩小体积。
+  - 根据环境变量（开发/生产），在 `<head>` 里注入不同的统计代码（如 Google Analytics、百度统计）。
+  - 做 SEO 优化，动态生成 `<meta>` 标签。
+  - 压缩 HTML 缩小体积。
 - **代表插件**：`vite-plugin-html`。
 - **使用钩子**：`transformIndexHtml`。
 
-5. 自动化构建增强 (Automated Workflow)
+1. 自动化构建增强 (Automated Workflow)
 
 - **用途**：
-    - **按需自动导入**：再也不用手动写 `import { ref, reactive } from 'vue'`，由插件在代码编译前自动帮你加上。
-    - **组件自动注册**：UI 库组件按需引入。
+  - **按需自动导入**：再也不用手动写 `import { ref, reactive } from 'vue'`，由插件在代码编译前自动帮你加上。
+  - **组件自动注册**：UI 库组件按需引入。
 - **代表插件**：`unplugin-auto-import`, `unplugin-vue-components`。
 - **使用钩子**：`transform`。
 
-6. 代码压缩与清理 (Optimization & Cleanup)
+1. 代码压缩与清理 (Optimization & Cleanup)
 
 - **用途**：
-    - 在生产环境打包时，自动清除代码里的 `console.log` 或 `debugger`。
-    - 对打包生成的图片进行无损压缩。
-    - 分析打包产物大小（生成包体可视化报告）。
+  - 在生产环境打包时，自动清除代码里的 `console.log` 或 `debugger`。
+  - 对打包生成的图片进行无损压缩。
+  - 分析打包产物大小（生成包体可视化报告）。
 - **使用钩子**：`transform` (清理代码)，`generateBundle` 或 `closeBundle` (产物分析和图片压缩)。

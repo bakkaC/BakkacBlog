@@ -8,8 +8,9 @@ tags: [Vite, 工程化, "Code Splitting", 性能优化]
 
 包部分：
 
-- https://www.developerway.com/posts/bundle-size-investigation
-- 以及文章作者的书：https://oceanofpdf.com/category/authors/nadia-makarevich/
+- <https://www.developerway.com/posts/bundle-size-investigation>
+- 以及文章作者的书：<https://oceanofpdf.com/category/authors/nadia-makarevich/>
+
 ## 从包体积角度性能优化
 
 首先更系统的了解一下浏览器的流程
@@ -54,7 +55,7 @@ Vite的打包器（rollup）的默认行为
 可以把 Rollup 的默认行为概括为一句话：
 
 > Rollup 会尝试“尽量少生成 chunk，同时避免明显的重复代码”。
-> 
+>
 - **减少请求（少生成 Chunk）：** 浏览器发起 HTTP 请求是有开销的（尤其是建立连接的时间）。如果一个页面要下载 100 个 1KB 的小文件，速度远慢于下载 1 个 100KB 的大文件。所以 Rollup **倾向于合包**。
 - **避免重复（去重）：** 如果组件 A 和组件 B 都引用了 lodash，把 lodash 分别打包进 A 和 B 会导致重复下载。所以 Rollup **倾向于把共享代码提取出来**。
 - **首屏纯净（按需）：** 我只访问首页，你不能把后台管理页的代码也发给我。所以 Rollup **倾向于把动态导入（lazy）的部分拆出去**。
@@ -62,17 +63,17 @@ Vite的打包器（rollup）的默认行为
 **这三点是互相冲突的。** 比如，为了“去重”，必然会增加“Chunk 数量”；为了“减少请求”，必然会牺牲“首屏纯净度”。
 
 - **启发式算法（Heuristic）：** Rollup 会分析你的整个**依赖图（Dependency Graph）**。它会观察：
-    - 这个模块被多少个地方引用了？
-    - 它是被静态导入（import）还是动态导入（import()）的？
-    - 如果我把它拆出来，会不会导致这个页面多出 10 个请求？
-    - 如果我不拆出来，这个包会膨胀多少？
+  - 这个模块被多少个地方引用了？
+  - 它是被静态导入（import）还是动态导入（import()）的？
+  - 如果我把它拆出来，会不会导致这个页面多出 10 个请求？
+  - 如果我不拆出来，这个包会膨胀多少？
 
 **Rollup 的逻辑是：** 它没有绝对的对错，它在寻找一个它认为的“最优解”。如果你不手动干预（manualChunks），它会根据依赖关系的复杂程度，自动决定是“合”还是“拆”。
 
 ### 如何观测
 
 > Bundle 的分析，必须基于“生产构建产物”，而不是开发模式。 因为 dev 和 build 的产物，在“体积、结构、执行方式”上几乎是两套系统。
-> 
+>
 
 我们最终在意的是生产环境下的性能，所以当然应该build后分析
 
@@ -85,9 +86,9 @@ Vite的打包器（rollup）的默认行为
 ![](../../thoughts/assets/性能优化：包体积 并发模式视角/imagesimage-3.png)
 
 - **Rendered**
-    - 打包后所有 JS 模块的原始体积之和（开发视角）
+  - 打包后所有 JS 模块的原始体积之和（开发视角）
 - **Gzip / Brotli**
-    - 浏览器真实下载成本的近似上限（生产视角）
+  - 浏览器真实下载成本的近似上限（生产视角）
 
 点击也可以进入具体的包进行分析
 
@@ -240,18 +241,18 @@ function manualChunks(id) {
 - value = **入口模块列表**
 - 把模块 id 交给你
 - Rollup 会：
-    - 把这些模块
-    - 以及它们在模块图里的依赖
-    - 全部合并进这个 chunk
-    - 前提是这些依赖没有已经被分到别的 manual chunk
+  - 把这些模块
+  - 以及它们在模块图里的依赖
+  - 全部合并进这个 chunk
+  - 前提是这些依赖没有已经被分到别的 manual chunk
 - 你决定：
-    - 返回字符串 → 放进对应 chunk
-    - 不返回 → Rollup 自己处理
+  - 返回字符串 → 放进对应 chunk
+  - 不返回 → Rollup 自己处理
 
 ⚠️ 关键点：
 
 > 即使你只 import ‘lodash/get’，也会把 整个 lodash 合并进来
-> 
+>
 
 本质是一个 **模块分类器**。
 
@@ -280,8 +281,8 @@ manualChunks: (id) => {
 
 - **构建工具的行为**：它发现 `MessageEditor` 是懒加载的，而它依赖的 `Tiptap` 被指派到了 `editor-vendor` 块中。
 - **结果**：
-    - `vendor.js`（首屏）变小了，因为它不再包含编辑器库。
-    - `editor-vendor.js` 变成了懒加载块。只有当你渲染 `MessageEditorLazy` 时，浏览器才会同时去下载这个 `editor-vendor.js`。
+  - `vendor.js`（首屏）变小了，因为它不再包含编辑器库。
+  - `editor-vendor.js` 变成了懒加载块。只有当你渲染 `MessageEditorLazy` 时，浏览器才会同时去下载这个 `editor-vendor.js`。
 
 ### 路由懒加载与缓存命中率
 
@@ -397,6 +398,7 @@ constDashboardPageLazy =lazy(
 
 - 不再是“并行下载 → 一次渲染”
 - 而是“下载一部分 → 初始化 → 再下载 → 再渲染”
+
 1. bundler 在模块图中看到 **一个“异步边界”**
 2. 它**不能**在首包里展开 `./Page` 的依赖
 3. 于是形成：
@@ -539,9 +541,9 @@ useEffect(() => {
 
 - **优点：** 使用框架后，我们不再需要手动写 lazy() 或配置 manualChunks。框架自动完成了代码分割，且效果非常好，首次访问的 LCP（726ms）与我们极致优化的手动结果（695ms）非常接近（微弱的差距源于框架自身的代码开销）。
 - **缺点：** 框架默认不会像我们之前那样把 vendor（第三方库）和业务代码彻底分开。
-    - 这导致在“重复访问”场景下，由于业务代码和库代码混在一个包里，当业务代码改变时，整个包的缓存都会失效。
-    - 结果：框架在重复访问时的 LCP（628ms）明显慢于我们手动优化的结果（545ms）。
-    - **对策：** 如果对这个数字不满意，你依然可以手动修改框架底层的 Vite 配置来精细化分包。
+  - 这导致在“重复访问”场景下，由于业务代码和库代码混在一个包里，当业务代码改变时，整个包的缓存都会失效。
+  - 结果：框架在重复访问时的 LCP（628ms）明显慢于我们手动优化的结果（545ms）。
+  - **对策：** 如果对这个数字不满意，你依然可以手动修改框架底层的 Vite 配置来精细化分包。
 
 框架的预加载策略 (Preloading Strategy)
 
@@ -573,6 +575,7 @@ export default [
 
 - **框架行为**：React Router 会自动将 `routes/settings.tsx` 及其依赖拆分成独立的 Chunk。
 - **对比**：你不需要自己写 `React.lazy`，框架在构建阶段利用 Vite 插件自动完成了这一切。
+
 1. 完美的“关键路径”控制 (Nested Routing & Layouts)
 
 文章中提到，为了优化 LCP，需要手动把 `AppLayout` 移到 `Suspense` 之外。 React Router v7 的**嵌套路由（Nested Routing）**天生就解决了这个问题：
@@ -590,6 +593,7 @@ export default function Root() {
 
 - **框架行为**：`root.tsx` 是主入口的一部分，它的代码会被包含在初始加载的 Bundle 中。而 `Outlet` 里的内容（具体的页面）是延迟加载的。
 - **性能效果**：这正好达成了文章中“把 LCP 元素（标题/框架）留在关键路径，把沉重内容（页面）留给懒加载”的策略，且不需要手动调整组件结构。
+
 1. 智能预加载策略 (Prefetching)
 
 React Router v7 提供了非常强大的 `<Link>` 预加载功能，类似于 TanStack 的实现：
@@ -605,6 +609,7 @@ React Router v7 提供了非常强大的 `<Link>` 预加载功能，类似于 Ta
 - **`none`** (默认): 不预加载。
 - **`intent`**: 当用户鼠标悬停（Hover）或聚焦（Focus）在链接上时，自动开始预加载该页面的 JS Chunk 和数据（loader）。
 - **`render`**: 只要链接出现在屏幕上（Render），就立即开始预加载。
+
 1. 解决“瀑布流”：Single Fetch (新特性)
 
 文章中提到，懒加载最大的问题是**瀑布流（Waterfall）**：下载完主包 -> 运行 -> 发现要下页面包 -> 下载页面包。
@@ -636,22 +641,22 @@ React Router v7 通过 **Single Fetch** 极大地优化了这一点：
 ### 2. 破坏 Tree Shaking 的常见行为
 
 - **命名空间导入与对象包装**：
-    - 使用 `import * as Buttons` 并将其放入一个大对象（如 `export const Ui = { Buttons }`）会使打包工具难以追踪具体哪个组件被使用，从而导致即使只用了一个小组件，整个库也会被打包进去。
+  - 使用 `import * as Buttons` 并将其放入一个大对象（如 `export const Ui = { Buttons }`）会使打包工具难以追踪具体哪个组件被使用，从而导致即使只用了一个小组件，整个库也会被打包进去。
 - **模块格式问题（ESM vs. CJS）**：
-    - Tree Shaking 主要依赖 **ESM (ES Modules)** 格式（即 `import/export`）。
-    - 旧的库（如 **Lodash**）如果使用的是 CommonJS 格式，打包工具往往无法对其进行有效的摇树优化。
+  - Tree Shaking 主要依赖 **ESM (ES Modules)** 格式（即 `import/export`）。
+  - 旧的库（如 **Lodash**）如果使用的是 CommonJS 格式，打包工具往往无法对其进行有效的摇树优化。
 
 ### 3. 优化手段与实战技巧
 
 为了减小 Bundle 体积，文章提出了几种具体的优化策略：
 
 - **精确导入（Cherry-picking）**：
-    - 不要导入整个库（如 `import _ from 'lodash'`），而应使用具体的子路径导入（如 `import trim from 'lodash/trim'`），这能绕过由于库本身不支持 ESM 导致的优化失效问题。
+  - 不要导入整个库（如 `import _ from 'lodash'`），而应使用具体的子路径导入（如 `import trim from 'lodash/trim'`），这能绕过由于库本身不支持 ESM 导致的优化失效问题。
 - **避免重复功能的库**：
-    - 开发中常会无意引入功能重叠的库。文章示例中发现项目中同时存在 `moment`、`luxon` 和 `date-fns` 三个日期库。
-    - **解决方案**：统一使用体积更小、支持 Tree Shaking 的库（如 `date-fns`），或直接使用现代原生的 JavaScript 方法（如 `.trim()`）。
+  - 开发中常会无意引入功能重叠的库。文章示例中发现项目中同时存在 `moment`、`luxon` 和 `date-fns` 三个日期库。
+  - **解决方案**：统一使用体积更小、支持 Tree Shaking 的库（如 `date-fns`），或直接使用现代原生的 JavaScript 方法（如 `.trim()`）。
 - **处理传递依赖（Transitive Dependencies）**：
-    - 有时即便删除了自己的代码，某些库依然存在。这是因为它们是其他库的依赖（例如 MUI 依赖于 Emotion）。
-    - **工具推荐**：使用 `npm-why` 等工具追踪库的来源，评估是否可以通过替换顶层库（如将 MUI 替换为更轻量或更原生的 Radix UI）来彻底移除一整条依赖链。
+  - 有时即便删除了自己的代码，某些库依然存在。这是因为它们是其他库的依赖（例如 MUI 依赖于 Emotion）。
+  - **工具推荐**：使用 `npm-why` 等工具追踪库的来源，评估是否可以通过替换顶层库（如将 MUI 替换为更轻量或更原生的 Radix UI）来彻底移除一整条依赖链。
 
 ---

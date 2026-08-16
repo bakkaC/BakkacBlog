@@ -15,48 +15,48 @@ toc_max_heading_level: 4
 事件中心自动执行相关回调。
 
 - 事件中心的想法是
-	- 一个events队列收集所有event
-	- 每个event是一个队列，存放需要执行的函数
-	- 订阅是为event队列和events添加数据或函数的过程
-	- 发布是执行一个event内部函数的过程
-	- 取消订阅是删除内部数据或函数的过程
-	- once 的本质：注册一个只执行一次的函数
-		- `点击一次执行 → 第二次就没了`
-		- 用一个包装函数包住原来的 fn
-		- 调用后马上 off 掉自身
+ 	- 一个events队列收集所有event
+ 	- 每个event是一个队列，存放需要执行的函数
+ 	- 订阅是为event队列和events添加数据或函数的过程
+ 	- 发布是执行一个event内部函数的过程
+ 	- 取消订阅是删除内部数据或函数的过程
+ 	- once 的本质：注册一个只执行一次的函数
+  		- `点击一次执行 → 第二次就没了`
+  		- 用一个包装函数包住原来的 fn
+  		- 调用后马上 off 掉自身
 
 ```js
 class EventEmitter{
-	
-	constructor(){
-		this.events = {}
-	}
-	
-	static on(event,cb){
-		if(evnets.event===null){
-			events[event]=cb
-		}else{
-			events.event.push(cb)
-		}
-	}
-	
-	static off(event,cb){
-		if(events.event === null)return
-		this.events = events.event.filter(callback => cb!==callback)
-	}
-	
-	static emit(event,...args){
-		if(events.event === null)return
-		events.event.foreach(fn => {fn.apply(this, args)})	
-	}
-	
-	static once(event,cb){
-		function wrapper(){
-			cb()
-			this.off(event,cb);
-		}
-		this.on(event,wrapper)
-	}
+ 
+ constructor(){
+  this.events = {}
+ }
+ 
+ static on(event,cb){
+  if(evnets.event===null){
+   events[event]=cb
+  }else{
+   events.event.push(cb)
+  }
+ }
+ 
+ static off(event,cb){
+  if(events.event === null)return
+  this.events = events.event.filter(callback => cb!==callback)
+ }
+ 
+ static emit(event,...args){
+  if(events.event === null)return
+  events.event.foreach(fn => {fn.apply(this, args)}) 
+ }
+ 
+ static once(event,cb){
+  function wrapper(){
+   cb()
+   this.off(event,cb);
+  }
+  this.on(event,wrapper)
+ }
 }
 ```
 
@@ -65,9 +65,9 @@ class EventEmitter{
 观察者模式
 
 - **被观察者（Subject）直接持有观察者（Observer）引用**
-    
+
 - 状态改变 → 主体直接调用每个观察者的方法
-    
+
 - 两者是 **一对多 + 耦合存在**
 
 ```
@@ -79,15 +79,14 @@ Subject → Observer C
 发布订阅模式
 
 - 有一个 **事件中心（Event Bus）**
-    
+
 - 订阅者注册事件
-    
+
 - 发布者发布事件
-    
+
 - 发布者不知道订阅者是谁，订阅者也不知道发布者是谁  
     → **完全解耦**
 
 ```
 Publisher → EventBus → Subscribers
 ```
-

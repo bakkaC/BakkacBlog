@@ -4,11 +4,7 @@ date: 2026-02-01T16:55:00
 
 ## BlockSuite渲染策略
 
-
-
 由于编辑器自带的全局CSS会破坏项目的样式，所以需要使用iframe隔离
-
-
 
 iframe可以理解为创建了一个子的浏览器实例，内部会创建一个小的浏览器环境
 
@@ -48,14 +44,11 @@ iframe通过src属性获取内容，这里使用前文提到的路由隔离设�
       
 ```
 
-
-
 而项目的prerender策略，会发生hydration，要求服务端执行，
 
 所以不能通过window对象区分是否使用iframe（服务端没有window），那么怎么区分环境？
 
 解决方案是使用路由隔离，设置一个路由渲染的组件是编辑器组件，保证这个组件在iframe内部渲染
-
 
 渲染编辑器的路径是
 
@@ -69,31 +62,19 @@ iframe通过src属性获取内容，这里使用前文提到的路由隔离设�
 * 其它路由：这里不直接渲染编辑器，而是渲染一个 iframe，把 /blocksuite-frame 当成子页面塞进去。这样可以把 Blocksuite 的全局样式/副作用隔离起来，避免污染主页面。
 * `\<BlocksuiteMentionProfilePopover ... />`：这是“@ 提及用户”的悬浮卡片，放在宿主页面外层，方便在 iframe 外显示（避免被 iframe 限制/裁剪），通过 postMessage 和 iframe 内的编辑器通信。
 
-
-
 ## 解决白屏闪烁
-
-
 
 每次进入文档，都会发生白屏（可能有HTML可能没有）的闪烁，然后再加载样式恢复正常
 
-
-
 ### iframe reload
 
-
-
 定位问题源：editor从白屏到无CSS到有CSS
-
-
 
 关键点：
 
 * 以前：src 里带 docId，切文档会 reload iframe → 白屏（下载CSS）
 
 * 现在：src 固定不变（首帧参数冻结），改成 postMessage 同步参数
-
-
 
 React 的 useMemo 只在依赖变化时更新，但你的 initParams 依赖里包含 docId 等会频繁变化的字段。
 
@@ -108,8 +89,6 @@ React 的 useMemo 只在依赖变化时更新，但你的 initParams 依赖里�
 
 ![](assets/文档bug相关记录/file-20260401161010584.png)
 
-
-
 **为什么不直接写常量或 useState**
 
 * 常量拿不到 props
@@ -117,8 +96,6 @@ React 的 useMemo 只在依赖变化时更新，但你的 initParams 依赖里�
 * useState(initParams) 也能冻结，但 useRef 更轻量、不会引发 rerender
 
 * useRef 是最适合“保存首帧值，不参与渲染”的用途
-
-
 
 src冻结后如何更新？
 
@@ -128,8 +105,6 @@ src冻结后如何更新？
 
 * postFrameParams() 就是专门发这份“运行时参数包”。
 
-
-
 **postFrameParams 何时触发**
 
 * useEffect 依赖 docId、mode、tcHeader 等变化 → 每次变动都会发送
@@ -138,15 +113,9 @@ src冻结后如何更新？
 
 * iframe 向宿主发送 ready 时，也会再发一次（兜底：确保 iframe 初始化晚于 onLoad 的场景也能同步）
 
-
-
 ### 为什么不再reload后失去文章样式？
 
-
-
 问题定位：除了第一个文章，后续文章都失去样式，显然和组件生命周期和显然是CSS没成功生效的有关，定位Style相关代码
-
-
 
 doc 切换时 startBlocksuiteStyleIsolation() 被反复启动/释放，释放会清掉 Blocksuite 模块级注入的样式，但这些样式在模块缓存后不会再次注入，所以后续文档就“没样式”。
 
@@ -154,19 +123,11 @@ doc 切换时 startBlocksuiteStyleIsolation() 被反复启动/释放，释放会
 
 事实上，这里没必要再用隔离器了，因为我们保证所有editor都在iframe内部了，删掉相关逻辑即可
 
-
-
 ### 为什么部分样式依然没生效
-
-
 
 之前的行为是所有样式都没用，连居中都没有，现在一看似乎有了居中，但是编辑器一些语法块样式依旧没用
 
-
-
 定位问题：显然还是CSS问题，但是本文件里以及没有影响CSS的因素了，那么围绕编辑器的生命周期找其他影响CSS的组件，Runtime之上我们已经了解了，关键在于runtime之下
-
-
 
 让ai定位和css/style相关的部分，发现还有一个installGlobalDomStyleGuard功能和startBlocksuiteStyleIsolation()是类似的&#x20;
 
@@ -236,27 +197,17 @@ BlocksuiteDescriptionEditorRuntime 初始化顺序（含职责）
 
 ```
 
-
-
 感觉“ViewExtension 全失效”的根因不是 spec，而是全局样式/host 注入被清掉。
 
 上次的 guard 仍会在 doc 切换时把 head/adoptedStyleSheets 复原，导致 widgets/toolbar 等样式失效。
 
 和星爷确认所有编辑器都在iframe内后，决定直接把guard相关代码删去
 
-
-
 文章闪烁问题解决，样式恢复正常，startBlocksuiteStyleIsolation() 和installGlobalDomStyleGuard大致都是尝试shadow DOM的隔离手段时的遗留产物
-
-
 
 在每次都reload iframe的旧版逻辑下，事实上不存在生命周期，每个文章都是从零开始的首次挂载，也不存在文章切换，这类清理的逻辑问题自然就不会暴露
 
-
-
 ### 为什么侧边栏出现闪烁了
-
-
 
 问题定位：表现为切换文章后，左侧选中的新文章短暂显示上一个文章的状态，标题栏和文章图标都出现，造成侧边栏闪烁，侧边栏的状态源是zustand的store，在editor又有和iframe通信等等复杂的逻辑，不好直接定位
 
@@ -264,13 +215,9 @@ BlocksuiteDescriptionEditorRuntime 初始化顺序（含职责）
 
 于是还是得分析这块复杂的逻辑，这里转化了视角，让ai帮忙分析数据流和通信时序相关的信息
 
-
-
 Q:
 
 梳理消息通信时序，包括doc切换，doc内header更新，以及与外部同步
-
-
 
 A:
 
@@ -294,7 +241,7 @@ A:
 
 * BlocksuiteDescriptionEditorRuntime 因 props 变更触发内部初始化/清理：中断旧加载、unsubscribe header、重建 store/editor、恢复远端 snapshot。[blocksuiteDescriptionEditor.tsx](https://file+.vscode-resource.vscode-cdn.net/Users/chxr/.vscode/extensions/openai.chatgpt-0.4.67-darwin-arm64/webview/#)
 
-- **Doc 内 header 更新时序（本地/远端变化 -> Host/外部）**
+* **Doc 内 header 更新时序（本地/远端变化 -> Host/外部）**
 
 * Frame 侧 runtime：
 
@@ -316,7 +263,7 @@ A:
 
   * 再调用 onTcHeaderChange 通知外部。[blocksuiteDescriptionEditor.tsx](https://file+.vscode-resource.vscode-cdn.net/Users/chxr/.vscode/extensions/openai.chatgpt-0.4.67-darwin-arm64/webview/#)
 
-- **与外部同步（主题/高度/模式/导航/mention/调试）**
+* **与外部同步（主题/高度/模式/导航/mention/调试）**
 
 * 主题同步（Host -> Frame）
 
@@ -367,13 +314,9 @@ A:
 * Frame mount 后会发 type: "ready"；Host 收到后再次推送 sync-params + theme + request-height，保证 iframe 真正 ready 后状态一致。
   [blocksuiteFrame.tsx](https://file+.vscode-resource.vscode-cdn.net/Users/chxr/.vscode/extensions/openai.chatgpt-0.4.67-darwin-arm64/webview/#) + [blocksuiteDescriptionEditor.tsx](https://file+.vscode-resource.vscode-cdn.net/Users/chxr/.vscode/extensions/openai.chatgpt-0.4.67-darwin-arm64/webview/#)
 
-
-
 Q:
 
 切换文档时上一个header会短暂占据新的文档的外部状态然后再恢复，出现闪烁，问题出在哪个链路
-
-
 
 A:
 
@@ -397,17 +340,11 @@ A:
 
 如果要彻底避免闪烁，思路是：doc 切换时先把 tcHeaderState 清空或标记失效，等新 doc header ready 再上报；或在 effect 中校验 header 来源 docId（需要在 store/header 里带 docId 或在 state 中携带 “header 对应的 docId”）。
 
-
-
 AI突然就会了，原本我给予清理状态的指示让他修复闪烁他都不能较好的修复，现在我没有指出清理状态和修复闪烁的要求，他就很简洁的分析出了解决方案
-
-
 
 这里说明主动思考怎么解决问题，给ai一个解题步骤，能让ai的能力更强，或许就是思维链？思维链是需要是自己想出来的，这是人在解决问题上起的作用
 
 而且他思考的时间比起我模糊的让他修复时，速度有了显著的提升，我认为是减少了无关的上下文的原因，增加了对解决问题有关键帮助的上下文，加上这里是一个新对话，也隔离了之前错误的尝试的无关上下文干扰
-
-
 
 改动要点
 
@@ -417,17 +354,11 @@ AI突然就会了，原本我给予清理状态的指示让他修复闪烁他都
 
 * 订阅/初始化 header 时都写入当前 docId。
 
-
-
 ![](assets/文档bug相关记录/file-20260401161010583%201.png)
 
 ![](assets/文档bug相关记录/file-20260401161010581.png)
 
-
-
 ### 如何解决首次加载的白屏
-
-
 
 现在解决了切换的白屏，但是首次加载还是存在白屏，如何解决？
 
@@ -435,29 +366,19 @@ AI突然就会了，原本我给予清理状态的指示让他修复闪烁他都
 
 所以应该尝试通过类似loading的样式进行视觉上的覆盖，或者在loading期间设置背景，总之是做视觉上的处理
 
-
-
 首先尝试了在iframe标签上加了内联的style设置背景色避免突兀的白屏，但是事实出现了先出现设置的背景色再白屏，再恢复正常的现象
-
-
 
 说明这个style是在iframe准备好之前的占位内容，而iframe准备好了，到里面内容准备好之间才是白屏发生的时间点
 
 iframe内部的组件是什么？就是runtime组件，所以应该分析runtime的本身的时序
 
-
-
 白屏的问题发生在文章的初始化，初始化逻辑往往在useEffect内部（因为文章的初始化可以视为docId等等状态变化的副作用），于是就可以让ai根据依赖和上下文定位到一个effect
-
-
 
 **这整个 useEffect 的职责**
 
 * 负责在 docId/workspaceId 等变化时**创建并挂载** blocksuite editor（含样式注入、workspace/doc 初始化、header 同步、editor 实例创建），并在 cleanup 时**释放**监听/引用，避免跨文档污染和内存泄漏。
 
 * 同时承担 theme 同步、portal 监听、Undo/Redo 快捷键兜底等“运行时周边配套”。
-
-
 
 核心异步函数的流程：
 
@@ -487,8 +408,6 @@ iframe内部的组件是什么？就是runtime组件，所以应该分析runtime
 
 13. cleanup 时断开监听、清 DOM、清引用。
 
-
-
 **render-ready 是怎么确定的**
 
 * 不是“iframe onLoad”或 “ready” 消息，而是 **在 editor 真正插入 DOM 之后的下一帧**。
@@ -496,8 +415,6 @@ iframe内部的组件是什么？就是runtime组件，所以应该分析runtime
 * 也就是上述的第十步之后，dom挂载发生在createEmbeddedAffineEditor()内部，把style相关内容设置完之后给外部发送render-ready的消息
 
   ![](assets/文档bug相关记录/file-20260401161010584%201.png)
-
-
 
 * 这样保证：
 
@@ -511,61 +428,37 @@ iframe内部的组件是什么？就是runtime组件，所以应该分析runtime
 
   ![](assets/文档bug相关记录/file-20260401161010582.png)
 
-
-
 ### 为什么其他入口还是存在白屏闪烁
 
-
-
 为什么行为不同
-
-
 
 ChatPageContextMenu → RoomSettingWindow&#x20;
 
 在 roomSettingWindow.tsx 中渲染 BlocksuiteDescriptionEditor，并带有 className="h-full"。
 
-
-
 这使得 BlocksuiteDescriptionEditorIframeHost 将其视为“显式高度”（hasExplicitHeightClass 变为 true），因此加载骨架不会添加 h-full。骨架只是其固有高度，而不是全屏覆盖。
-
-
 
 iframe 总是渲染（骨架不是绝对定位）。因此，当骨架在顶部显示时，其余区域会显示下面的 iframe 背景/内容，导致加载时的白色闪烁/部分文档内容。
 
-
-
 SidebarTreeOverlay → 在 chatPage.tsx 中打开文档使用 BlocksuiteDescriptionEditor，没有 className。hasExplicitHeightClass 为 false，因此骨架会添加 h-full 并在首次渲染时完全覆盖 iframe。因此没有闪烁，“正常加载”。
-
-
 
 这里简单的去掉外部传入的h-full就行，去掉一切闪烁了
 
-
-
 现在不同入口使用tcHeader的文档的loading全部正常了，但是个人主页即使用默认blocksuite标题的存在ready时序总是晚一小会儿，加载出下方标题再闪烁到上方
-
-
 
 解决方案是在收到ready消息前严格就让其透明
 
 ![](assets/文档bug相关记录/file-20260401161010586.png)
 
-
-
 ## 仅在生产环境无法粘贴？
 
-
-
 ![](assets/文档bug相关记录/file-20260401161010580.png)
-
-
 
 这通常只有两种原因（和“生产才出问题”完全吻合）：
 
 **生产不是安全上下文**
 navigator.clipboard 只在 **HTTPS 或 localhost** 生效。
-开发环境是 http://localhost（被浏览器当作安全上下文），所以能用；
+开发环境是 <http://localhost（被浏览器当作安全上下文），所以能用；>
 生产如果是 http://，就会直接变成“不支持”。
 
 **生产响应头禁止了剪贴板权限**

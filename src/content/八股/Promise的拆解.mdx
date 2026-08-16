@@ -16,6 +16,7 @@ catch 的职责：如果状态转向 reject ，抛出错误，使用错误处理
 将函数的执行状态机化，对于其的执行给于明确的状态语义，
 
 分为
+
 - 执行中
 - 顺利执行完
 - 执行失败
@@ -24,14 +25,16 @@ catch 的职责：如果状态转向 reject ，抛出错误，使用错误处理
 
 在此基础上发展出一系列针对函数执行的 API，也就是静态方法，即不用实例调用而是使用 Promise.xxx调用的方法
 
-resolve/reject : 
+resolve/reject :
+
 - 传入一个目标值，使用这个值，将当前 promise 状态确定
 - 注意链式调用的需求，若这个值不是 promise，将其再用一个 promise 包装
-	- 用 promise 包装其实意味着再把返回值给状态机化，对于普通值而言其实没意义，但是对于异步执行的函数或者 promise来说就是有意义的，因为我们没法预测 API 的使用场合所以自然应该将其 promise 化，使其支持进一步的调用
-	- resolve 是意味着得到成功值，规范限制了成功值必须是一个最终的结果，而不能得到一个 promise 容器所以对于 promise 是直接返回的，避免了 promise 的解析结果是一个 promise 的情况
-	- reject 是将执行失败化，规范不对失败原因限制，只是对失败原因做赋值
+ 	- 用 promise 包装其实意味着再把返回值给状态机化，对于普通值而言其实没意义，但是对于异步执行的函数或者 promise来说就是有意义的，因为我们没法预测 API 的使用场合所以自然应该将其 promise 化，使其支持进一步的调用
+ 	- resolve 是意味着得到成功值，规范限制了成功值必须是一个最终的结果，而不能得到一个 promise 容器所以对于 promise 是直接返回的，避免了 promise 的解析结果是一个 promise 的情况
+ 	- reject 是将执行失败化，规范不对失败原因限制，只是对失败原因做赋值
 
 promise 数组作为参数的 API：
+
 - all：要求全部完成才算完成，一个失败即集体失败
 - race：谁先fullfilled/reject，就采用它
 - allsettled：无论成功失败，等待全部完成
@@ -43,26 +46,27 @@ promise 数组作为参数的 API：
 
 ```js
 return new Promise((resolve, reject) => {
-	if (!Array.isArray(promises)) return new TypeError("...");
-	// ...
-	promises.foreach((p,i)=>{  // 或者只用到 p
-		// ...
-		Promise.resolve(p).then(
-			val =>{
-				// ...
-			}, err => {
-				// ...
-				rejected(err)
-			}
-		)
-	}
+ if (!Array.isArray(promises)) return new TypeError("...");
+ // ...
+ promises.foreach((p,i)=>{  // 或者只用到 p
+  // ...
+  Promise.resolve(p).then(
+   val =>{
+    // ...
+   }, err => {
+    // ...
+    rejected(err)
+   }
+  )
+ }
 ```
 
 1. 用 promise 包装promise 的批处理，将其状态机化
 2. 同步遍历注册启动
 3. 将数组项 promise 化，注册 promise 的回调
 
-tips: 
+tips:
+
 - promise 的启动是一创建就启动的，所以你调用任何 promises数组的情况，这里 promise 大概率都启动了，所以只用注册回调就行了
 - promise.all不能把 js执行并行化，但能把 js 等待并行化，因为任务队列依旧是串行执行的，但是依赖运行时环境和网络 IO 的等待是可以并行的
 
@@ -80,7 +84,6 @@ new Promise((resolve, reject) => {
 });
 ```
 
-
 区别只在“处理策略”：
 
 | 方法         | 成功处理             | 失败处理         |
@@ -91,6 +94,7 @@ new Promise((resolve, reject) => {
 | allSettled | 记录状态             | 记录状态         |
 
 可以进一步总结策略
+
 - 结束执行，使用参数的 resolve 或者 reject 方法，在回调中满足条件调用
 - 全部失败/成功，使用一个结果数组存储，比较这个数组的 length 和传入 promise 的 length
 - 规范要求 allsettled 存储状态使用 `{ status: xx, value: xxx }` 的形式，使用 `.finally` 校验全部结束后 resolve
@@ -99,6 +103,7 @@ new Promise((resolve, reject) => {
 race相当于模板直出， all 的 reject 和 resolve 思路互换即可，用变量计数，处理完了再 resolve/reject，allsettled 则把成功和失败的信息都记到数组里，使用 finally 进行统计计数，然后处理完了 resolve 就行
 
 ---
+
 ## 源码
 
 ```ts
@@ -137,7 +142,7 @@ class Promise {
   }
   
   then(onFulFilled, onRejected) {
-  	// 判断`then`传递的值是否缺省-特点1
+   // 判断`then`传递的值是否缺省-特点1
     onFulFilled = typeof onFulFilled === "function" ? onFulFilled : (v) => v;
     onRejected = typeof onRejected === "function" ? onRejected : (error) => { throw error }
     
@@ -190,7 +195,7 @@ class Promise {
   }
 
   #resolvePromise(newPromise, x, resolve, reject) {
-  	// 如果返回的新Promise和传递的值是同一个引用像会导致循环引用-特点6
+   // 如果返回的新Promise和传递的值是同一个引用像会导致循环引用-特点6
     if (newPromise === x) return reject(new TypeError("..."));
     // 防止多次调用-特点4
     let called;
@@ -225,7 +230,7 @@ class Promise {
         reject(error);
       }
     } else {
-	  // x 是一个普通值-特点3
+   // x 是一个普通值-特点3
       resolve(x);
     }
   }
@@ -335,7 +340,6 @@ Promise对象是一个状态机，他的一个状态值，绑定了他的一些�
 
 then中的函数放在队列中存储，等待状态满足时再调用队列内容，状态相当于一个锁，把action锁住了
 
-
 ### 对象类型的判断和控制
 
 ```js
@@ -364,7 +368,6 @@ function isThenable(value) {
 
 ### then的职责
 
-
 在 Promise 的设计中，`.then()` 方法远不止是一个简单的回调注册器。它承担了 Promise 规范中多个至关重要的职责，这些职责共同确保了 Promise 链的可靠性、可组合性和错误处理能力。
 
 以下是 `.then()` 在 Promise 规范中的核心职责总结：
@@ -373,9 +376,9 @@ function isThenable(value) {
 
 这是最基本的功能。`.then()` 接受最多两个参数：
 
-* `onFulfilled`：当前 Promise 解决 (Fulfilled) 时要执行的回调函数。
+- `onFulfilled`：当前 Promise 解决 (Fulfilled) 时要执行的回调函数。
 
-* `onRejected`：当前 Promise 拒绝 (Rejected) 时要执行的回调函数。
+- `onRejected`：当前 Promise 拒绝 (Rejected) 时要执行的回调函数。
 
 #### 2. 创建并返回新的 Promise (Chaining)
 
@@ -397,9 +400,9 @@ const promise1 = new Promise(resolve => resolve(1));
 
 如果 `.then()` 中省略了其中一个回调（例如，只提供了 `onFulfilled` 而没有提供 `onRejected`），`.then()` 必须确保值或错误能够**穿透**到链中的下一个 Promise。
 
-* **值穿透：** 如果 Promise 成功，但您没有提供 `onFulfilled`，则前一个 Promise 的成功值会直接作为 `promise2` 的成功值。
+- **值穿透：** 如果 Promise 成功，但您没有提供 `onFulfilled`，则前一个 Promise 的成功值会直接作为 `promise2` 的成功值。
 
-* **错误穿透：** 如果 Promise 失败，但您没有提供 `onRejected`（例如，您使用的是 `.then(onFulfilled)`），则前一个 Promise 的拒绝原因会直接作为 `promise2` 的拒绝原因。
+- **错误穿透：** 如果 Promise 失败，但您没有提供 `onRejected`（例如，您使用的是 `.then(onFulfilled)`），则前一个 Promise 的拒绝原因会直接作为 `promise2` 的拒绝原因。
 
 正是这个机制允许您在 Promise 链的**末尾**使用一个 `.catch()` (等价于 `.then(null, onRejected)`) 来捕获链中任何位置发生的错误。
 
@@ -409,10 +412,9 @@ const promise1 = new Promise(resolve => resolve(1));
 
 Promise 规范对回调函数 `onFulfilled` 的返回值 `x` 有严格的处理规则（称为 **Promise 解决过程 `[[Resolve]](promise2, x)`**）：
 
-* **返回普通值：** 如果 `onFulfilled` 返回一个普通值（非 Promise），则 `promise2` 将以这个值作为成功结果解决 (Fulfilled)。
+- **返回普通值：** 如果 `onFulfilled` 返回一个普通值（非 Promise），则 `promise2` 将以这个值作为成功结果解决 (Fulfilled)。
 
-* **返回 Promise：** 如果 `onFulfilled` 返回另一个 Promise 实例 `p`，则 `promise2` 将被锁定，其状态和结果会**与 `p` 的状态和结果保持一致**。这实现了异步操作的扁平化。
-
+- **返回 Promise：** 如果 `onFulfilled` 返回另一个 Promise 实例 `p`，则 `promise2` 将被锁定，其状态和结果会**与 `p` 的状态和结果保持一致**。这实现了异步操作的扁平化。
 
 **Promise Resolution Procedure**，是 Promise/A+ 规范中定义的核心算法。这个解决过程是一个递归、尝试性的过程，其目的是为了 **"拉平" (flatten) 任何深层嵌套的 Promise 或 Thenable**，直到找到一个普通值或一个真正的错误。
 
@@ -427,33 +429,29 @@ Promise 链始终是“一层一层的数据流”，而不会变成“嵌套的
 `p.then(() => Promise.resolve(42))
  .then(v => console.log(v));`
 
-
-
 ❌ 不扁平：
 
-* 第二个 `then` 拿到的是：
-* `v === Promise<42>`
-* 用户必须手动 `.then`
-* **每一步都变复杂，链式模型崩溃**
+- 第二个 `then` 拿到的是：
+- `v === Promise<42>`
+- 用户必须手动 `.then`
+- **每一步都变复杂，链式模型崩溃**
 
-| 步骤  | 条件                          | 对 Promise 的影响                          | 结果                                        |
+| 步骤 | 条件 | 对 Promise 的影响 | 结果 |
 | --- | --------------------------- | -------------------------------------- | ----------------------------------------- |
-| 1   | 循环检查：x === promise          | 如果成立，视为自我解析（self-resolution）错误         | Promise 被以 TypeError 拒绝                   |
-| 2   | Promise：x 是一个 Promise 实例    | Promise 进入“采纳”流程，锁定为 x 的状态             | 新 Promise 的状态与 x 同步，结果为 x 的结果或拒因          |
-| 3   | Thenable：x 是对象/函数且有 then 方法 | 尝试调用 x.then（可能异步），其行为决定新 Promise 的最终状态 | 新 Promise 的状态由 then 的回调（resolve/reject）决定 |
-| 4   | 基础值：x 为普通值（非对象或无 then）      | 视为普通值，立即完成解析                           | Promise 立即以 x 为值被 fulfilled               |
+| 1 | 循环检查：x === promise | 如果成立，视为自我解析（self-resolution）错误 | Promise 被以 TypeError 拒绝 |
+| 2 | Promise：x 是一个 Promise 实例 | Promise 进入“采纳”流程，锁定为 x 的状态 | 新 Promise 的状态与 x 同步，结果为 x 的结果或拒因 |
+| 3 | Thenable：x 是对象/函数且有 then 方法 | 尝试调用 x.then（可能异步），其行为决定新 Promise 的最终状态 | 新 Promise 的状态由 then 的回调（resolve/reject）决定 |
+| 4 | 基础值：x 为普通值（非对象或无 then） | 视为普通值，立即完成解析 | Promise 立即以 x 为值被 fulfilled |
 
 这个机制是 `async/await` 能够正常工作的底层支撑：当你在 `async` 函数中 `return new Promise(...)` 时，外部的 `async` 函数返回的 Promise 就会通过这个解决过程，采纳你返回的内部 Promise 的状态。
-
 
 #### 5. 错误捕获和转换 (Error Conversion)
 
 `.then()` 能够将同步世界中的错误，无缝地转换为异步世界的错误状态。
 
-* 如果 `onFulfilled` 或 `onRejected` 在执行过程中，使用 `throw new Error(...)` 抛出**同步异常**，那么 `.then()` 返回的**新 Promise (`promise2`) 将立即进入 `Rejected` 状态**，拒绝原因就是抛出的错误对象。
+- 如果 `onFulfilled` 或 `onRejected` 在执行过程中，使用 `throw new Error(...)` 抛出**同步异常**，那么 `.then()` 返回的**新 Promise (`promise2`) 将立即进入 `Rejected` 状态**，拒绝原因就是抛出的错误对象。
 
 这使得 `Promise` 链中的错误处理与同步 `try...catch` 一样自然，从而支持了 `async/await` 中 `try...catch` 的底层实现。
-
 
 异步错误处理的通用逻辑在于：
 
@@ -470,8 +468,6 @@ Promise 链始终是“一层一层的数据流”，而不会变成“嵌套的
 > 2. 利用 JavaScript **单线程模型**的优势，**避免**复杂的**数据竞争**和锁机制。
 >
 > 3. **正确地**与运行时环境进行交互，**生成准确的栈跟踪**并触发**全局错误报告**。
-
-
 
 因此，**Promise 的 `.catch()` 就是一个异步机制，它负责将异步世界中发生的错误（通过 `reject` 状态）转化为一个可供主线程安全、同步执行的错误处理回调（通过微任务）的 Trigger。**
 

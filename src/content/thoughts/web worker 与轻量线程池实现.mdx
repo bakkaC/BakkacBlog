@@ -20,8 +20,8 @@ toc_max_heading_level: 4
 **Web Workers** 就是为了解决这个问题的机制。
 
 1. 什么是 Web Worker？
-	
-	Web Worker 是浏览器提供的一种在 **后台线程** 中运行 JavaScript 的方法。 它允许你把耗时的任务丢到独立线程里执行，不会阻塞主线程，从而保持页面流畅。
+ 
+ Web Worker 是浏览器提供的一种在 **后台线程** 中运行 JavaScript 的方法。 它允许你把耗时的任务丢到独立线程里执行，不会阻塞主线程，从而保持页面流畅。
 
 2. 特点
 
@@ -42,7 +42,6 @@ toc_max_heading_level: 4
 - **主线程 → worker**：主线程用 `worker.postMessage(...)`，worker 用 `onmessage` 接收。
 - **worker → 主线程**：worker 用 `postMessage(...)`，主线程用 `worker.onmessage` 接收。
 
-
 ![](assets/web%20worker%20与轻量线程池实现/file-20260524171814449.png)
 
 message的引用是不同的，事实上是对数据进行复制
@@ -55,6 +54,7 @@ message的引用是不同的，事实上是对数据进行复制
 结构化克隆算法用于复制复杂的 JavaScript 对象。它在使用 `structuredClone()` 内部调用时，通过 `postMessage()` 在 Workers 之间传输数据，使用 IndexedDB 存储对象，或为其他 API 复制对象时被使用。
 
 如裁剪图片中用到的
+
 - `[ImageBitmap](https://developer.mozilla.org/en-US/docs/Web/API/ImageBitmap)`
 - `[ImageData](https://developer.mozilla.org/en-US/docs/Web/API/ImageData)`
 - ......
@@ -69,6 +69,7 @@ message的引用是不同的，事实上是对数据进行复制
 - 接收方直接拿到原始内存，效率极高。
 
 支持的主要类型：
+
 - `ArrayBuffer`
 - `MessagePort`
 - `ImageBitmap`
@@ -96,6 +97,7 @@ class WorkerPool {
 ```
 
 状态转换：
+
 ```
 任务请求
   ↓
@@ -210,13 +212,13 @@ private async executeOnWorker(worker: Worker, params: CropParams): Promise<Blob>
 ```
 
 - 和worker线程通信
-    
+
 - 直接控制执行任务，收集裁剪参数和图像参数，作为message发送给worker线程
-    
+
 - handleMessage：收到message后，处理结果
-    
+
 - 监听worker线程的message
-    
+
 - 向worker线程发送message
 
 ### 不同代码对应的layer
@@ -249,7 +251,6 @@ ImageBitmap 代表的是“已经解码好的静态图像”，主线程负责�
 **第三点：裁剪场景更适合“无状态输入”**
 
 你的裁剪任务是一次性的、可并行的、无连续状态需求的计算，因此用 ImageBitmap 这种“输入即快照、处理即结束”的 Transferrable 最符合模型；OffscreenCanvas 会引入状态管理和生命周期复杂度，在这个场景下属于过度设计。
-
 
 > **Transferrable Object 的输入设计，本质是在选择：  
 > 是把“图像结果”交给 Worker，还是把“工作台”交给 Worker。  
@@ -314,7 +315,6 @@ ImageBitmap 代表的是“已经解码好的静态图像”，主线程负责�
     });
 ```
 
-
 通过Promise包装把一个持久的事件通信连接，转换为了一个从调用到结果的过程（通过在拿到结果或者异常时将promise settled）
 
 这也意味着他能够使用promise的各种调度方式，允许加入数组中使用promise.all 并发，能够使用async，await，以及进行并发限制等等调度
@@ -378,7 +378,6 @@ await Promise.all(executing);  // 等待所有完成
 
 ## 主线程的实际调用方式
 
-
 将任务分为三个阶段
 
 ```plaintext
@@ -392,13 +391,14 @@ await Promise.all(executing);  // 等待所有完成
   **核心思想：****`Promise.all`** **负责“管理”和“同步”并发任务，而 Web Worker 负责“执行”真正的****并行计算****。**
 
 1. **并发模型概览**
+
 ```javascript
 主线程发起多个任务 → Promise.all 并行等待 → Worker 池调度执行 → 返回结果
          ↓                 ↓                      ↓
 创建 N 个 Promise    同时等待所有 Promise   最多 M 个 Worker 并行处理
 ```
 
-2. 去掉并发控制的源码
+1. 去掉并发控制的源码
 
 ```typescript
     try {
@@ -569,13 +569,11 @@ worker.postMessage({
 
 ### 抽象出的canvasPreview hooks的工作流
 
-
 这个 `useCropPreview` 本质上做了三件事：
 
 - **React State**：只描述「裁剪参数与结果引用」
 - **Refs**：持有真实的 DOM（img / canvas）
 - **命令式流程**：在正确的时机，把参数“灌”进 canvas 计算
-
 
 ```
 [用户选择图片]
@@ -617,7 +615,7 @@ canvas操作本身是命令式的，为了持久的持有同一个canvas，而�
 
 裁剪的本质是将图片的一部分绘制到 Canvas 上。在 HTML5 Canvas API 中，drawImage 方法**不接受图片 URL 字符串**，它必须接受一个**真实存在的 DOM 元素**（如 HTMLImageElement、HTMLCanvasElement 或 HTMLVideoElement）。
 
-2. 计算缩放比例（Scale）
+1. 计算缩放比例（Scale）
 
 这是裁剪中最容易出 Bug 的地方。
 
@@ -636,23 +634,23 @@ React 的 State 通常只存图片的 URL，不会实时去存这些 DOM 属性�
 图片加载阶段 (Image Loading)：
 
 1. **获取尺寸**：读取图片的**显示尺寸**（width, height）。注意这里特意注释了不使用 naturalWidth，是为了保证裁剪框能正确匹配 CSS 缩放后的图片。
-    
+
 2. **计算初始裁剪框**：
-    
+
     - 调用 getMode() 判断是头像模式（avatar）还是原图模式（sprite）。
-        
+
     - 如果是 avatar，调用 createCenteredSquareCrop 生成一个居中的正方形裁剪框。
-        
+
     - 如果是 sprite，调用 createFullImageCrop 覆盖全图。
-        
+
 3. **更新状态**：设置 crop 和 completedCrop，让裁剪框在 UI 上显示出来。
-    
+
 4. **生成首帧预览**：
-    
+
     - 为了防止图片刚加载时 Canvas 是空白的，这里**立即**调用了一次 canvasPreview。
-        
+
     - 利用 canvas.toBlob 生成预览 URL，并更新 previewDataUrl。
-        
+
 5. **扩展回调**：最后调用 onImageLoadExtend，允许外部插入额外的业务逻辑（比如记录日志、重置其他状态）。
 
 ### 核心设计决策
@@ -694,6 +692,7 @@ const imgRef = externalImgRef ?? internalImgRef;
 #### 3. 预览模式与全分辨率导出分离
 
 这是性能优化的关键：
+
 ```typescript
 // canvasPreview 支持预览模式
 export async function canvasPreview(

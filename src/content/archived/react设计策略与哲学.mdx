@@ -21,6 +21,7 @@ react的核心哲学：**UI 是状态的纯函数**
 这是一种react专属的声明式模型
 
 声明式编程的效果+函数式编程实现：就是UI = f(state)
+
 * React 选择了一条“函数式 + 不可变数据”的路来实现声明式。
 * Vue 选择了一条“响应式 + 可变数据”的路来实现声明式。
 
@@ -36,7 +37,7 @@ react的核心哲学：**UI 是状态的纯函数**
 React，直接控制了渲染的过程，直接让状态决定渲染的结果
 这样声明式的效果，避免了极大的复杂度和开发体验
 
-## UI = f(state)的实现蓝图：
+## UI = f(state)的实现蓝图
 
 函数式编程 (Functional Programming, FP)
 
@@ -53,6 +54,7 @@ React，直接控制了渲染的过程，直接让状态决定渲染的结果
     * 这里和react render函数的具体实现相关
 
 react中声明式（declarative）实现——函数式编程：
+
 * UI = 输出
 * state = 输入
 * render = 映射关系
@@ -83,6 +85,7 @@ react中声明式（declarative）实现——函数式编程：
 
 1. 他将浏览器端端dom操作转换为内存中的对象操作
 2. 这个中间的对象，允许在中间层做一系列性能优化措施，diff，reconcile，虚拟事件，批处理防抖
+
 * 组件被初次渲染时会自动创建v-dom
 * 数据更新
 * 创建新的v-dom
@@ -96,6 +99,7 @@ react中声明式（declarative）实现——函数式编程：
 另外它会有类似批处理的优化，会收集短时间的事件结果，再一次性创建vdom应用
 这背后也包含了一个类似虚拟的事件系统，真实的事件会被转换为虚拟的事件，反应到vdom上，脱离浏览器使得性能更快
 脱离浏览器意味着它能在更多的地方运行了，比如nodejs，然后可以脱离浏览器进行测试，svg，canvas等等的支持，在web worker中进行处理，等等有趣的特性
+
 #### 2. Just JS
 
 **为了rerender的性能优化空间，发明了react Element的这一对象**
@@ -116,11 +120,13 @@ Component is a function，就是一`React.createElement`函数的设计
 函数的嵌套不代表调用父函数，就会调用子函数
 
 `React.createElement`是会立刻执行的，
-- `<MyComponent />`=>`React.createElement(MyComponent)`
-- 没有发生过`MyComponent(); // ❌`，这句话才是真正的渲染语义
-- 在 **React 渲染阶段（Fiber）**，MyComponent(props); // 在 reconciliation/render 阶段
+
+* `<MyComponent />`=>`React.createElement(MyComponent)`
+* 没有发生过`MyComponent(); // ❌`，这句话才是真正的渲染语义
+* 在 **React 渲染阶段（Fiber）**，MyComponent(props); // 在 reconciliation/render 阶段
 
 他本身接受的是函数对象，返回的也是对象，全程不涉及函数调用
+
 * **它的输入**：一个组件函数（或字符串）、props。
 * **它的输出**：一个包含了这些输入的、结构化的JavaScript对象（React元素）。
 
@@ -154,6 +160,7 @@ React 团队认为：
 ### react的蓝图
 
 为了实现react的函数式特性，做了以下三个决策
+
 1. Components，not templates
 2. Rerender, don't mutate
 3. Virtual dom is simple and fast
@@ -165,6 +172,7 @@ React 团队认为：
 ## state ——渲染的数据源
 
 React 与 Vue 在状态管理上选择了截然不同的道路，这决定了 State 的根本属性：
+
 * **Vue**：走“响应式 + 可变数据”之路，依赖细粒度的依赖收集，允许直接修改数据。
 * **React**：走“函数式 + 不可变数据”之路，追求声明式与纯粹性。
 **结论**：在 React 中，State 必须被视为\*\*不可变值 (Immutable Values)\*\*。
@@ -183,8 +191,10 @@ React 将 UI 渲染视为随时间流动的“帧”。
 * **更新即替换**：`setState` 从未修改旧快照，而是请求 React 生成一张包含新数据的新快照，并触发整个组件函数的重新执行。
 
 从编程语言设计的角度审视 React State：
+
 * **数据所有权转移**：`setState` 本质上不是赋值，而是**Move 语义**（类似 Rust）。旧状态的所有权被废弃，控制权移交给新创建的状态。
 * **函数式语义**：State 的更新遵循 $UI = f(State)$，因为 $f$（组件）应当是纯函数，所以入参 State 必须不可变，以保证相同的输入永远产生相同的输出（UI）。
+
 ### Why Immutability？
 
 * **浅比较策略 (Shallow Compare)**：为了高性能地判断“是否需要更新”，React 仅对比对象的内存引用（`prev !== next`）。
@@ -208,7 +218,6 @@ React 将 UI 渲染视为随时间流动的“帧”。
 
 ### Render Phase
 
-
 前文提到react element可以使DOM操作脱离浏览器环境，从而进行一系列性能优化的措施
 那么这些措施，即渲染的模型，背后的逻辑具体是怎么样的
 
@@ -227,6 +236,7 @@ ReactElement 的嵌套 structure（深度嵌套的 JSON 树）直接导致了它
 这个过程完全不可中断，如果一棵树需要几十甚至几百毫秒才能 diff 完成，那么在这段时间里浏览器主线程会始终被 JavaScript 占用，依然会造成严重的性能问题
 
 允许中断意味着你要能：
+
 * 停下来
 * 保存当前执行上下文
 * 稍后恢复
@@ -266,8 +276,6 @@ fiber 从对象树改为链表树，遍历过程中修改指针，从而在内�
 
 ### Commit Phase——mutate
 
-
-
 React 组件函数原本是**纯函数**：
 
 但是 UI 不是完全静态的——它需要：
@@ -285,8 +293,6 @@ React 组件函数原本是**纯函数**：
 React rerender的最小化更新，依赖纯函数的不可变特性，这些都是为了react的性能优化而不可或缺的内容
 
 那这些副作用和操作怎么办，不能修改Element的结构
-
-
 
 在没有 Fiber 层的时候，React 只能依赖类组件，把副作用、状态、生命周期等复杂度都塞进组件实例里，导致 render 并不纯；生命周期方法在渲染过程中交织执行，也使得 React 无法严格贯彻“构建 UI 的过程与执行副作用的过程分离”的原则，更无法中断渲染、重新开始或做时间切片。
 
@@ -321,8 +327,6 @@ Fiber 的出现恰好解决了这个无法摈弃的复杂度：Fiber 本身是�
 现在可以将这些函数存在fiber中，延迟执行，这样就保证了render Phase的纯粹性
 
 这样 React 可以在 render phase 中只做纯计算、不触发副作用，也不产生 DOM 变动，让整个阶段可中断、可恢复；再在 commit phase 中一次性执行所有 Mutation（DOM 更新、effect、生命周期回调），把杂质集中处理。
-
-
 
 这样 React 内部就能做到：
 

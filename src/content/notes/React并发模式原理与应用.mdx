@@ -7,11 +7,10 @@ tags: [React, 并发, 性能优化, 渲染]
 
 React并发模式部分：
 
-- https://vercel.com/blog/how-react-18-improves-application-performance
-- https://7km.top/main/scheduler
-- https://jser.dev/react/2022/03/16/how-react-scheduler-works
-- https://jser.dev/react/2022/03/26/lanes-in-react
-
+- <https://vercel.com/blog/how-react-18-improves-application-performance>
+- <https://7km.top/main/scheduler>
+- <https://jser.dev/react/2022/03/16/how-react-scheduler-works>
+- <https://jser.dev/react/2022/03/26/lanes-in-react>
 
 ## 并发模式带来的优化
 
@@ -37,7 +36,7 @@ React并发模式部分：
 二者的共同敌人都是：
 
 > 长时间不可中断的 JS 执行。
-> 
+>
 
 **长时间不可中断的 JS 执行的来源于react的计算，这也是原本同步react的缺陷**
 
@@ -119,9 +118,9 @@ export default function SearchCities() {
 常见的两种方式是transition和suspense
 
 - transition 是：
-    - **“由优先级标记触发的并发 render 调度”**
+  - **“由优先级标记触发的并发 render 调度”**
 - Suspense 本质上是：
-    - **“由异步条件触发的并发 render 暂停 / 恢复”**
+  - **“由异步条件触发的并发 render 暂停 / 恢复”**
 
 两者共享同一套机制：
 
@@ -192,7 +191,7 @@ React 18 之后：
 这里主要讲react 18下suspense基于并发模式的特性，在包体积相关的优化时会展开讲前者的用法
 
 > Suspense 是一个声明式的“渲染是否可继续”边界。
-> 
+>
 
 使用 **`Suspense`** ，我们可以在满足特定条件（如从远程源加载数据）之前延迟组件的渲染。在此期间，我们可以渲染一个备用组件，以指示该组件仍在加载中。
 
@@ -203,8 +202,8 @@ if (!data)return<Loading />
 ```
 
 - 而是：
-    - 组件在 render 阶段 **直接等待（suspend）**
-    - 外层 Suspense 决定显示 fallback
+  - 组件在 render 阶段 **直接等待（suspend）**
+  - 外层 Suspense 决定显示 fallback
 
 好处是因果关系很清楚：
 
@@ -258,7 +257,7 @@ Suspense结合服务端能力，进行ssr时，还能结合并发模式有更强
 他利用空闲时间的方式是以帧为单位
 
 > 浏览器判断：在下一帧截止前，还有“用不完的时间”
-> 
+>
 
 这段时间：
 
@@ -411,20 +410,20 @@ useState 在 Render Phase 的计算逻辑
 
 - 同步模式：hook.queue 里的 update 只要有，就全量执行，算出新 state。
 - **并发模式：** useState 的内部逻辑变成了 **“优先级筛选器”**。
-    - **场景：** 假设有三个更新：A(Sync), B(Transition), C(Sync)。
-    - **Render Phase 内部逻辑：** 当 React 在渲染一个 Transition 优先级时，它会**跳过** A 和 C。
-    - **计算差异：** 它必须维护一个 baseState 和 baseQueue。当它渲染低优先级的 B 时，它会记录下哪些高优先级的更新被跳过了，以便在未来重新合并。
-    - **结论：** **Hooks 的内部代码完全变了。** 为了支持 Lane，Hooks 的状态更新函数需要处理复杂的数学逻辑，以保证在多次打断、重试后，状态依然正确。
+  - **场景：** 假设有三个更新：A(Sync), B(Transition), C(Sync)。
+  - **Render Phase 内部逻辑：** 当 React 在渲染一个 Transition 优先级时，它会**跳过** A 和 C。
+  - **计算差异：** 它必须维护一个 baseState 和 baseQueue。当它渲染低优先级的 B 时，它会记录下哪些高优先级的更新被跳过了，以便在未来重新合并。
+  - **结论：** **Hooks 的内部代码完全变了。** 为了支持 Lane，Hooks 的状态更新函数需要处理复杂的数学逻辑，以保证在多次打断、重试后，状态依然正确。
 
 Transition的工作方式：
 
 - **分配低优先级 Lane：** startTransition 会将其包裹的状态更新标记为 TransitionLane（这是一个比用户输入、点击优先级低很多的等级）。
 - **渲染决策：**
-    - 当渲染进入 workLoopConcurrent 时，React 发现当前处理的是 TransitionLane。
-    - 在每一轮 Fiber 单元处理后，shouldYield() 会检查：**“是否有更高优先级的任务（比如 SyncLane 的点击事件）进来了？”**
+  - 当渲染进入 workLoopConcurrent 时，React 发现当前处理的是 TransitionLane。
+  - 在每一轮 Fiber 单元处理后，shouldYield() 会检查：**“是否有更高优先级的任务（比如 SyncLane 的点击事件）进来了？”**
 - **打断（Interruption）：**
-    - 如果有，React 会**立即中断**当前的 Transition 渲染。
-    - **关键点：** 此时 WIP 树被丢弃或搁置，React 先去处理高优先级的点击事件，渲染完成后，再重新启动刚才被中断的 Transition 任务。
+  - 如果有，React 会**立即中断**当前的 Transition 渲染。
+  - **关键点：** 此时 WIP 树被丢弃或搁置，React 先去处理高优先级的点击事件，渲染完成后，再重新启动刚才被中断的 Transition 任务。
 - **感知：** 这就是为什么你在搜索框输入时，输入框不会卡顿（SyncLane），而下方的搜索列表可以“慢吞吞”地渲染（TransitionLane）。
 
 这个过程是基本不影响fiber构建过程的，在影响fiber的选择上
@@ -468,11 +467,10 @@ Offscreen = 既不卸载，又不阻塞，还可被延后调度的隐藏子树�
 
 Suspense 的恢复 = Promise 触发一次低成本的重渲染，React 通过 Offscreen 复用旧 Fiber，把隐藏的主内容重新变为可见
 
-
 # What’s next
 
 懒加载和并发模式结合，在ssr中的性能优化，可以看这两个资料的相关部分
 
-https://vercel.com/blog/how-react-18-improves-application-performance
+<https://vercel.com/blog/how-react-18-improves-application-performance>
 
-https://oceanofpdf.com/category/authors/nadia-makarevich/
+<https://oceanofpdf.com/category/authors/nadia-makarevich/>

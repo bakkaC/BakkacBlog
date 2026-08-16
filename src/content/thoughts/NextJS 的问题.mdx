@@ -17,23 +17,21 @@ toc_max_heading_level: 4
 
 这两种思路在复杂 Web App 里很容易打架
 
-## Terrible DX——文件拆分 
-
+## Terrible DX——文件拆分
 
 在使用 Next.js App Router（基于 React Server Components）时，当页面需要 **可变交互（mutations）或实时数据（WebSocket）** 时，RSC 架构会让代码拆分得非常零碎，维护困难。
 
 **React Server Components 模型**中：
 
-* **Server Components** 是 **纯静态**的，不能在渲染后再被修改。
-* 所以 **所有可能变化的内容**（即交互）必须放到 **Client Component** 中。
-* 可是 Client Component 又 **不能直接进行数据获取**（fetch、数据库操作）。
+- **Server Components** 是 **纯静态**的，不能在渲染后再被修改。
+- 所以 **所有可能变化的内容**（即交互）必须放到 **Client Component** 中。
+- 可是 Client Component 又 **不能直接进行数据获取**（fetch、数据库操作）。
 
 于是就出现了一个矛盾：
 
->  数据要在 Server Component 里取，
->  但交互逻辑要在 Client Component 里做。
->  因此你被迫拆成多个文件。
-
+> 数据要在 Server Component 里取，
+> 但交互逻辑要在 Client Component 里做。
+> 因此你被迫拆成多个文件。
 
 ## 无法得到的性能收益
 
@@ -45,12 +43,12 @@ RSC 的好处是既能加速首屏渲染，又能提前可交互时间，而这�
 
 这就意味着：
 
-* 几乎所有组件都有状态变化；
-* 所以几乎所有组件都得 `"use client"`；
-* 因此整个页面都变成 **Client-Side 渲染**；
-* 这就丢失了 RSC 的性能优势。
+- 几乎所有组件都有状态变化；
+- 所以几乎所有组件都得 `"use client"`；
+- 因此整个页面都变成 **Client-Side 渲染**；
+- 这就丢失了 RSC 的性能优势。
 
->  最终“App Router 项目”，几乎等价于传统的 CSR。
+> 最终“App Router 项目”，几乎等价于传统的 CSR。
 
 这使得**RSC 在真实业务里经常退化成“只负责预取数据”**，那么为什么不直接使用 fetch Data 的 SSR 模型，而使用 RSC 呢
 
@@ -69,9 +67,9 @@ export default async function Page() {
 }
 ```
 
-* 这是一个 **Server Component**。
-* 它 **在服务器上请求数据**（`fetchUserInfo`），然后把结果传给 `<UserProfile />`。
-* 但 `UserProfile` 必须是 `"use client"` 的，因为它有交互。
+- 这是一个 **Server Component**。
+- 它 **在服务器上请求数据**（`fetchUserInfo`），然后把结果传给 `<UserProfile />`。
+- 但 `UserProfile` 必须是 `"use client"` 的，因为它有交互。
 
 客户端组件：`UserProfile.tsx`
 
@@ -91,32 +89,30 @@ export function UserProfile({ user: initialUser }) {
 }
 ```
 
-* 这是一个 **Client Component**。只能运行在浏览器中。
-* 拿到从服务器传来的初始数据。
-* 在本地维护副本（`useState`）。
-* 提交修改时先本地更新 → 再发请求 → 再处理错误。
+- 这是一个 **Client Component**。只能运行在浏览器中。
+- 拿到从服务器传来的初始数据。
+- 在本地维护副本（`useState`）。
+- 提交修改时先本地更新 → 再发请求 → 再处理错误。
 
 问题是：
 > 这导致 **页面的静态部分**（比如布局、导航栏）和 **动态部分** 被强行拆开。
 
-
 ## 其他问题
-
 
 1. **每次导航都会重新获取数据 (Every Navigation is Another Fetch)**
 
-   * **问题**: App Router 的模型规定，每次页面导航都会向服务器发起请求以获取 RSC 载荷，**即使客户端已经拥有所需的数据**。
+   - **问题**: App Router 的模型规定，每次页面导航都会向服务器发起请求以获取 RSC 载荷，**即使客户端已经拥有所需的数据**。
 
-   * **后果**: 这导致了不必要的网络请求和加载状态。例如，从首页跳转到其他页再返回首页，会重新显示加载动画，而不是像单页应用 (SPA) 那样瞬间渲染。作者认为这对于动态应用是“令人恼火的”，因为客户端明明有能力立即渲染页面。
+   - **后果**: 这导致了不必要的网络请求和加载状态。例如，从首页跳转到其他页再返回首页，会重新显示加载动画，而不是像单页应用 (SPA) 那样瞬间渲染。作者认为这对于动态应用是“令人恼火的”，因为客户端明明有能力立即渲染页面。
 
-   * **延伸问题**: 这种模式也无法实现精细的加载体验（比如先展示部分已有数据，再加载剩余数据），因为 `loading.tsx` 会将整个页面替换为骨架屏。
-3. **双重数据载荷，浪费带宽 (You Still Download All the Content Twice)**
+   - **延伸问题**: 这种模式也无法实现精细的加载体验（比如先展示部分已有数据，再加载剩余数据），因为 `loading.tsx` 会将整个页面替换为骨架屏。
+2. **双重数据载荷，浪费带宽 (You Still Download All the Content Twice)**
 
-   * **问题**: 在页面首次加载时，服务器会发送一份用于快速显示的 HTML，但紧接着又会在 `<script>` 标签里嵌入一份几乎相同内容的 RSC 载荷 (一种特殊的 JSON 格式)。
+   - **问题**: 在页面首次加载时，服务器会发送一份用于快速显示的 HTML，但紧接着又会在 `<script>` 标签里嵌入一份几乎相同内容的 RSC 载荷 (一种特殊的 JSON 格式)。
 
-   * **后果**: 这使得初始页面的下载体积几乎翻倍。作者指出，RSC 载荷的格式效率低于 HTML，并且这种重复是 RSC 架构的固有问题，无法避免。他以 Next.js 官网为例，指出页面内容被下载了两次，并质问这种设计是否在浪费带宽。
-4. **Layout (布局) 被人为地限制 (Layouts are Artificially Restricted)**
+   - **后果**: 这使得初始页面的下载体积几乎翻倍。作者指出，RSC 载荷的格式效率低于 HTML，并且这种重复是 RSC 架构的固有问题，无法避免。他以 Next.js 官网为例，指出页面内容被下载了两次，并质问这种设计是否在浪费带宽。
+3. **Layout (布局) 被人为地限制 (Layouts are Artificially Restricted)**
 
-   * **问题**: Layout 组件无法访问请求的详细信息，这使得在不同层级的组件间共享数据（如共享 `QueryClient` 实例）变得不可能。
+   - **问题**: Layout 组件无法访问请求的详细信息，这使得在不同层级的组件间共享数据（如共享 `QueryClient` 实例）变得不可能。
 
-   * **后果**: 开发者必须在每个 Layout 中重复获取数据，或者只能依赖 Next.js 内置的 `fetch` 缓存机制。作者认为这些规则过于复杂，难以理解和向团队成员解释。
+   - **后果**: 开发者必须在每个 Layout 中重复获取数据，或者只能依赖 Next.js 内置的 `fetch` 缓存机制。作者认为这些规则过于复杂，难以理解和向团队成员解释。

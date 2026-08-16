@@ -41,5 +41,6 @@ Node 有两种“微任务”：
 
 优先级：`process.nextTick > Promise.then`
 每个阶段结束后都会：
--  **先清空 nextTick 队列**  
+
+- **先清空 nextTick 队列**  
 - **再清空 Promise 微任务队列**

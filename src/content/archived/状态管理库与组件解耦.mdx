@@ -7,17 +7,11 @@ toc_max_heading_level: 4
 
 ## Action.ts
 
-
-
 我之前在解耦Cropper组件的时候，思维是这两个组件有好多重复逻辑，但是局部又各不相同，有什么办法把他们提取出来，然后就想到创建一个自定义hooks，导出各种可以共用的函数，创建共用的状态
-
-
 
 之所以看到Action会觉得很疑惑就是，这一套想法好像和之前解耦Cropper的时候完全是通用的，但他们明显是不同的东西，那么他们的区别本质到底是什么呢，以及Action层和状态管理库的关系又是什么
 
 ![](assets/状态管理库与组件解耦/file-20260401152042743.png)
-
-
 
 什么是UI逻辑？什么是业务逻辑？
 
@@ -31,14 +25,10 @@ toc_max_heading_level: 4
 >
 > 这里是没有什么规律的
 
-
-
 * **从实现能力上看：本质都是 JS/TS 代码，都是逻辑。**
 
 * **从设计上看：我们刻意“逻辑分层”——**
   **相同的底层能力，被组织进不同职责的文件里。**
-
-
 
 Action 的语义定义
 
@@ -58,9 +48,7 @@ Action 的语义定义
 
 * 它回答的是：
 
-> - 当用户/系统想完成 X 这件事时，**系统内部要按什么顺序去操作各种状态和服务**？
-
-
+> * 当用户/系统想完成 X 这件事时，**系统内部要按什么顺序去操作各种状态和服务**？
 
 Hook 的语义定义:
 
@@ -77,8 +65,6 @@ Hook 的语义定义:
 * 它回答的是：
 
 > 某个组件，为了在屏幕上表现得“好用”，**需要管理哪些本地 state、订阅哪些全局状态、暴露哪些 handler**？
-
-
 
 他们的位置也反应了他们各自的语义，hooks往往是根目录下一级和components同级的，而Action是和Store一起定义的，因为Action本身是脱离UI的，是纯粹的数据处理，借助API和state就应该可以完成的，而hooks是依赖Component的
 
@@ -103,14 +89,10 @@ chatbox的架构：
 
 ### zustand & jotai
 
-
-
 状态管理库的混用和历史是有关的：
 原本他们是只采用jotai的，但是遇到了一些jotai无法处理的需求
 
 然后进行了一次重构：
-
-
 
 1. 当时重构（`Refactor/settings store`）的核心需求
 
@@ -142,7 +124,7 @@ chatbox的架构：
 
   * 最近使用模型（`lastUsedModelStore`：持久化 + `skipHydration` + `initLastUsedModelStore`）。
 
-- Jotai 在这些场景下的局限（相对 Zustand）
+* Jotai 在这些场景下的局限（相对 Zustand）
 
 * 虽然有 `atomWithStorage` / `createJSONStorage`，但：
 
@@ -160,15 +142,13 @@ chatbox的架构：
 
   * 需要自己封装大量 hooks / action 层；而 Zustand 直接用 `createStore((set, get) => ({ state, actions }))` 即可。
 
-- 为什么当时选 Zustand 的 `createStore/persist/subscribeWithSelector`
+* 为什么当时选 Zustand 的 `createStore/persist/subscribeWithSelector`
 
 * `createStore`（vanilla）：
 
   * 完全独立于 React，可在任何模块 `getState/setState/subscribe`。
 
   * 再配合 `useStore` 暴露给 React 使用，一处定义，双端可用。
-
-
 
 * `persist`：
 
@@ -184,15 +164,13 @@ chatbox的架构：
 
   * 非常契合「复杂配置持久化 + 版本迁移 + 校验」的需求。
 
-
-
 * `subscribeWithSelector` / `store.subscribe`：
 
   * 可以在 React 外、按字段精确订阅：`settings → platform` 副作用就集中在一处管理。
 
   * 不依赖组件挂载，启动流程更可控。
 
-- 当前整体图景
+* 当前整体图景
 
 * 这次重构的结果：引入了一套「以 Zustand 为核心的全局配置/UI 服务层」：
 
@@ -213,6 +191,3 @@ chatbox的架构：
   * **Jotai**：业务/配置的细粒度原子状态，和 React 组件深度结合。
 
 ***
-
-
-
