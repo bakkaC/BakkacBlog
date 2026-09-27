@@ -34,8 +34,8 @@ Vite就是法语中快的意思，发明出来就是为了性能优化
 
 Vite 主要由两部分组成：
 
-- 一个开发服务器，它基于 [**原生 ES 模块**](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) 提供了 [**丰富的内建功能**](https://cn.vite.dev/guide/features)，如速度快到惊人的 [**模块热替换（HMR）**](https://cn.vite.dev/guide/features#hot-module-replacement)。
-- 一套构建指令，它使用 [**Rolldown**](https://rolldown.rs/) 打包你的代码，并且它是预配置的，可输出用于生产环境的高度优化过的静态资源。
+- 一个开发服务器，它基于 **[原生 ES 模块](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules)** 提供了 **[丰富的内建功能](https://cn.vite.dev/guide/features)**，如速度快到惊人的 **[模块热替换（HMR）](https://cn.vite.dev/guide/features#hot-module-replacement)**。
+- 一套构建指令，它使用 **[Rolldown](https://rolldown.rs/)** 打包你的代码，并且它是预配置的，可输出用于生产环境的高度优化过的静态资源。
 
 也就是开发和构建两个大的阶段，开发阶段为开发体验服务，构建阶段打包源码为浏览器可直接消费的代码，并进行一系列性能优化
 
@@ -43,17 +43,17 @@ Vite 主要由两部分组成：
 
 - ESM 增强（import 的增强）
 
-    [[模块化与打包增强]]
+  [[模块化与打包增强]]
 
 - dev server 和 HMR
 
-    [[HMR 如何工作]]
+  [[HMR 如何工作]]
 
 另一个功能维度是文件的转译构建，而构建阶段，就是把开发者友好的代码，转译为浏览器友好的代码的过程，但这里其实开发服务器也显然需要经过转译，只不过，不同的阶段开发/生产工作负载是不同的，对于浏览器友好的标准也是不同的
 
 - 文件的转译（服务对象：开发者⇒浏览器）
 
-    [[Vite 的构建流程]]
+  [[Vite 的构建流程]]
 
 ## Vite 的常见配置
 
@@ -99,19 +99,25 @@ export default defineConfig(() => {
 “作用域”先分清：plugins / resolve / cacheDir 是共享项，server 只管开发，build 只管生产构建，optimizeDeps 只管开发期依赖预打包。
 
 - defineConfig(() => ...)：函数式配置，方便按环境/命令动态返回配置。
+
 - plugins：Vite 插件链，负责代码转换、解析、HMR、开发服务器中间件等，顺序有影响。
 
 - resolve.extensions：导入时不写扩展名，Vite 按这个顺序去试。你们这里把 .ts/.tsx 放前面，是为了让“表面上像 .js 的导入”优先落到源码实现。
+
 - resolve.dedupe：强制这些依赖只解析到同一份实例，避免 monorepo/linked package 里出现两份 React 之类导致的上下文或 hook 问题。
-- resolve.alias：路径别名替换。@、app、api 这类是源码路径映射；@ffmpeg/* 那种是把包强行指到指定入口。
+
+- resolve.alias：路径别名替换。@、app、api 这类是源码路径映射；@ffmpeg/\* 那种是把包强行指到指定入口。
 
 - cacheDir：Vite 缓存目录，主要放依赖预构建结果。自定义目录通常是为了隔离不同配置/分支的缓存。
 
 - build.rollupOptions：构建时底层打包器参数。Vite 8 里它是 build.rolldownOptions 的别名/旧名，作用还是自定义输出、分包、外部依赖等。
 
 - server.port：开发服务器端口。
+
 - server.strictPort：端口被占用时直接失败，不自动换下一个端口。
+
 - server.host：监听地址；0.0.0.0 表示监听所有网卡，方便局域网/容器/WSL 访问。
+
 - server.preTransformRequests：它是让 dev 时更积极地预转译被请求的模块，减少冷启动瀑布。
   - 为何要用：在大型 monorepo、含较大第三方包（如 pixi、ffmpeg.wasm）或按需加载场景，默认按需优化有时会导致第一次请求超时、504 或卡顿；开启此项可改善开发体验（更快拿到可执行模块）。
   - 让 dev server 在响应模块请求前先把模块做一次预处理（transform），避免每次按需加载时触发较慢的按需优化路径。
@@ -120,7 +126,7 @@ export default defineConfig(() => {
 
 插件的生命周期：
 
-![image.png](assets/Vite/image.png)
+![image.png](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/Vite/image.png)
 Vite 插件的生命周期钩子（Hooks）可以分为两类：**Vite 专属钩子**和**Rollup/Rolldown 通用构建钩子**。
 
 ### 一、 Vite 插件的生命周期（执行顺序）

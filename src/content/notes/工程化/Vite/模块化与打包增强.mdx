@@ -3,7 +3,7 @@ title: "模块化与打包增强"
 description: "模块化与打包增强笔记，说明原生 ESM 的能力边界，以及 bundler 如何扩展 import 语义支撑前端工程化。"
 parent: vite
 ---
-> 上级：[[Vite]]
+> 上级：[[../../../Vite]]
 
 现代前端项目中，文件是一个个模块组织的，代码相互导入的方式依赖于 esm 的模块化机制，而原始的模块化机制，对于现代的前端项目而言，又是能力不足的。
 
@@ -21,7 +21,7 @@ parent: vite
   - 给 worker 单独产出 chunk
   - 根据动态导入关系做 code splitting
 
-**Vite 在开发时就某种程度上定义了 bundler 行为，**所以你一边享受原生 ESM 的快速按需加载，一边还能写 **写面向打包器优化的代码** 。
+\*\*Vite 在开发时就某种程度上定义了 bundler 行为，\*\*所以你一边享受原生 ESM 的快速按需加载，一边还能写 **写面向打包器优化的代码** 。
 
 **Vite 在 import 这一层定义和扩展了一些工程化语义；这些语义会在开发阶段被 dev server 解释，在生产阶段被 bundler 利用来完成解析、拆分、资源产出等行为。**
 
@@ -54,20 +54,20 @@ parent: vite
 
 - **模块化**解决的是开发层的问题
 
-    把代码拆成有边界的单元，每个模块只暴露需要暴露的东西，用 import/export 建立依赖关系。
+  把代码拆成有边界的单元，每个模块只暴露需要暴露的东西，用 import/export 建立依赖关系。
 
 - **打包**解决的是运行和部署层的问题
 
-    读取这些模块之间的依赖图，然后把它们转换、重组、优化，产出浏览器或运行时更适合加载的文件。
+  读取这些模块之间的依赖图，然后把它们转换、重组、优化，产出浏览器或运行时更适合加载的文件。
 
 ESM 增强，增强了什么？
 
-- **模块解析增强，**浏览器原生 import 只认识相对/绝对 URL，不认识 `import React from 'react'` 这种裸模块导入。Vite 会解析它、重写成浏览器可访问的 URL，并在开发时做依赖预构建。
-- **模块兼容增强，**很多 npm 包不是原生 ESM，而是 CommonJS / UMD。Vite 会在开发阶段把这类依赖转成 ESM，让它们能进入浏览器模块体系。
-- **模块热更新增强，**改一个组件，不需要整页刷新。Vite 基于模块边界做 HMR，只替换变更的模块，状态尽量不丢。
-- **“万物皆模块”增强，**不只是 `.js`。`ts、jsx、css、json、图片资源`等，都可以通过 import 接进模块图里。例如：`import data from './data.json'` ，`import './style.css'`
-- **模块组织能力增强，**Vite 提供像 import.meta.glob 这种能力，能按文件系统 **批量导入** 模块。这对插件系统、路由自动收集、文章目录加载这类场景很有用。
-- **构建期模块优化增强，**到生产构建时，Vite 还会继续利用模块关系做代码分割、动态导入 chunk、预加载等优化。所以它不只是开发阶段“看起来更模块化”，而是**开发和构建都围绕模块图工作**。
+- \*\*模块解析增强，\*\*浏览器原生 import 只认识相对/绝对 URL，不认识 `import React from 'react'` 这种裸模块导入。Vite 会解析它、重写成浏览器可访问的 URL，并在开发时做依赖预构建。
+- \*\*模块兼容增强，\*\*很多 npm 包不是原生 ESM，而是 CommonJS / UMD。Vite 会在开发阶段把这类依赖转成 ESM，让它们能进入浏览器模块体系。
+- \*\*模块热更新增强，\*\*改一个组件，不需要整页刷新。Vite 基于模块边界做 HMR，只替换变更的模块，状态尽量不丢。
+- \*\*“万物皆模块”增强，\*\*不只是 `.js`。`ts、jsx、css、json、图片资源`等，都可以通过 import 接进模块图里。例如：`import data from './data.json'` ，`import './style.css'`
+- \*\*模块组织能力增强，\*\*Vite 提供像 import.meta.glob 这种能力，能按文件系统 **批量导入** 模块。这对插件系统、路由自动收集、文章目录加载这类场景很有用。
+- **构建期模块优化增强，到生产构建时，Vite 还会继续利用模块关系做代码分割、动态导入 chunk、预加载等优化。所以它不只是开发阶段“看起来更模块化”，而是开发和构建都围绕模块图工作**。
 
 以下是更细节的feature 和意图：
 
@@ -94,19 +94,19 @@ ESM 增强，增强了什么？
 
 1. 项目内的源码文件，通常是相对路径或别名导入：
 
-    ```sql
-    import axios from 'axios'
-    import { ref } from 'vue'
-    import clsx from 'clsx'
-    ```
+   ```sql
+   import axios from 'axios'
+   import { ref } from 'vue'
+   import clsx from 'clsx'
+   ```
 
 2. 通过包管理器安装的第三方依赖，通常是裸模块导入：
 
-    ```sql
-    import axios from 'axios'
-    import { ref } from 'vue'
-    import clsx from 'clsx'
-    ```
+   ```sql
+   import axios from 'axios'
+   import { ref } from 'vue'
+   import clsx from 'clsx'
+   ```
 
 浏览器原生 ES 导入不支持下面这样的裸模块导入：`import { someMethod } from 'my-dep'` 上面的代码会在浏览器中抛出一个错误。
 
@@ -133,19 +133,19 @@ ESM 增强，增强了什么？
 
 Vite 将会检测到所有被加载的源文件中的裸模块导入，并执行以下操作:
 
-1. [**预构建**](https://cn.vite.dev/guide/dep-pre-bundling) 它们可以提高页面加载速度，并将 CommonJS / UMD 转换为 ESM 格式。预构建这一步由 [**Rolldown**](https://rolldown.rs/) 执行，这使得 Vite 的冷启动时间比任何基于 JavaScript 的打包器都要快得多。
+1. **[预构建](https://cn.vite.dev/guide/dep-pre-bundling)** 它们可以提高页面加载速度，并将 CommonJS / UMD 转换为 ESM 格式。预构建这一步由 **[Rolldown](https://rolldown.rs/)** 执行，这使得 Vite 的冷启动时间比任何基于 JavaScript 的打包器都要快得多。
 2. 重写导入为合法的 URL，例如 `/node_modules/.vite/deps/my-dep.js?v=f3sf2ebd` 以便浏览器能够正确导入它们。
 
 **依赖是强缓存的**
 
-Vite 通过 HTTP 头来缓存请求得到的依赖，所以如果你想要编辑或调试一个依赖，请按照 [**这里**](https://cn.vite.dev/guide/dep-pre-bundling#%E6%B5%8F%E8%A7%88%E5%99%A8%E7%BC%93%E5%AD%98) 的步骤操作。
+Vite 通过 HTTP 头来缓存请求得到的依赖，所以如果你想要编辑或调试一个依赖，请按照 **[这里](https://cn.vite.dev/guide/dep-pre-bundling#%E6%B5%8F%E8%A7%88%E5%99%A8%E7%BC%93%E5%AD%98)** 的步骤操作。
 
 和包管理器协作：Vite 主要从这几类信息里完成“找到包 + 决定怎么优化”的工作：
 
 - package.json 的 dependencies/devDependencies 告诉它：项目依赖了哪些包；
 - node_modules 告诉它：这些包在本地实际落在哪。Vite 扫到裸导入（如 import 'vue'）后，会去这里找对应包。
 - 锁文件（package-lock.json / pnpm-lock.yaml / yarn.lock）告诉它：**当前安装的是哪一批确定版本**，所以 Vite 可以把 .vite 里的预构建缓存和当前依赖版本绑定，版本变了就重算。
-- vite.config.* 告诉它：哪些包要 include/exclude，别名怎么映射，条件导出用哪些 conditions，重复依赖怎么 dedupe。
+- vite.config.\* 告诉它：哪些包要 include/exclude，别名怎么映射，条件导出用哪些 conditions，重复依赖怎么 dedupe。
 - 额外信息如 symlink/monorepo 结构告诉它：某个依赖是不是本地联动包。不是从 node_modules 解析到的，Vite 往往会把它当源码处理，而不是当第三方依赖预构建。
 
 ### 依赖预构建过程
@@ -161,12 +161,12 @@ Vite 通过 HTTP 头来缓存请求得到的依赖，所以如果你想要编辑
 
 1. **CommonJS 和 UMD 兼容性：** 在开发阶段中，Vite 的开发服务器将所有代码视为原生 ES 模块。因此，Vite 必须先将以 CommonJS 或 UMD 形式提供的依赖项转换为 ES 模块。
 
-    在转换 CommonJS 依赖项时，Vite 会进行智能导入分析，这样即使模块的导出是动态分配的（例如 React），具名导入（named imports）也能正常工作：
-    `import React, { useState } from 'react'`
+   在转换 CommonJS 依赖项时，Vite 会进行智能导入分析，这样即使模块的导出是动态分配的（例如 React），具名导入（named imports）也能正常工作：
+   `import React, { useState } from 'react'`
 
 2. **性能：** 为了提高后续页面的加载性能，Vite 将那些具有许多内部模块的 ESM 依赖项转换为单个模块。
 
-    有些包将它们的 ES 模块构建为许多单独的文件，彼此导入。例如，[**`lodash-es` 有超过 600 个内置模块**](https://unpkg.com/browse/lodash-es/)！当我们执行 `import { debounce } from 'lodash-es'` 时，浏览器同时发出 600 多个 HTTP 请求！即使服务器能够轻松处理它们，但大量请求会导致浏览器端的网络拥塞，使页面加载变得明显缓慢。通过将 `lodash-es` 预构建成单个模块，现在我们只需要一个HTTP请求！
+   有些包将它们的 ES 模块构建为许多单独的文件，彼此导入。例如，**[`lodash-es` 有超过 600 个内置模块](https://unpkg.com/browse/lodash-es/)**！当我们执行 `import { debounce } from 'lodash-es'` 时，浏览器同时发出 600 多个 HTTP 请求！即使服务器能够轻松处理它们，但大量请求会导致浏览器端的网络拥塞，使页面加载变得明显缓慢。通过将 `lodash-es` 预构建成单个模块，现在我们只需要一个HTTP请求！
 
 依赖搜寻是自动的过程，如上文所说，会扫描代码库，通常在 node module 里获取，使用 rolldown进行打包
 
@@ -181,13 +181,13 @@ optimizeDeps 主要解决的是 dev server 启动和页面首次加载时，第
 - 处理 CJS、深层子路径导入、monorepo 联动包等特殊情况
 - 减少冷启动和首次加载时的卡顿或重复扫描
 
-有时候默认的依赖启发式算法（discovery heuristics）可能并不总是理想的。如果您想要明确地包含或排除依赖项，可以使用 [**`optimizeDeps` 配置项**](https://cn.vite.dev/config/dep-optimization-options) 来进行设置。
+有时候默认的依赖启发式算法（discovery heuristics）可能并不总是理想的。如果您想要明确地包含或排除依赖项，可以使用 **[`optimizeDeps` 配置项](https://cn.vite.dev/config/dep-optimization-options)** 来进行设置。
 
 `optimizeDeps.include` 或 `optimizeDeps.exclude` 的一个典型使用场景，是当 Vite 在源码中无法直接发现 import 的时候。例如，import 可能是插件转换的结果。这意味着 Vite 无法在初始扫描时发现 import —— 只能在文件被浏览器请求并转换后才能发现。这将导致服务器在启动后立即重新打包。
 
 如果依赖项很大（包含很多内部模块）或者是 CommonJS，那么你应该包含它；如果依赖项很小，并且已经是有效的 ESM，则可以排除它，让浏览器直接加载它。
 
-你还可以使用 [**`optimizeDeps.rolldownOptions` 选项**](https://cn.vite.dev/config/dep-optimization-options#optimizedeps-rolldownoptions) 进一步自定义 Rolldown。例如，添加 Rolldown 插件来处理依赖项中的特殊文件，或者更改 [**构建 `target`**](https://rolldown.rs/reference/InputOptions.transform#target)。
+你还可以使用 **[`optimizeDeps.rolldownOptions` 选项](https://cn.vite.dev/config/dep-optimization-options#optimizedeps-rolldownoptions)** 进一步自定义 Rolldown。例如，添加 Rolldown 插件来处理依赖项中的特殊文件，或者更改 **[构建 `target`](https://rolldown.rs/reference/InputOptions.transform#target)**。
 
 ### 依赖预构建缓存
 
@@ -226,7 +226,7 @@ Vite 将预构建的依赖项缓存到 `node_modules/.vite` 中。它会基于
 
 [https://app.eraser.io/workspace/W1ZOWqpCPrv4Vz2vcytS](https://app.eraser.io/workspace/W1ZOWqpCPrv4Vz2vcytS)
 
-![image.png](assets/模块化与打包增强/image.png)
+![image.png](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/%E6%A8%A1%E5%9D%97%E5%8C%96%E4%B8%8E%E6%89%93%E5%8C%85%E5%A2%9E%E5%BC%BA/image.png)
 
 ## Typescript
 
@@ -236,7 +236,7 @@ Vite 仅执行 `.ts` 文件的转译工作，**并不执行** 任何类型检
 
 也就是说它会把 TS 很快转成 JS 让项目跑起来，但不会默认替你做严格的类型报错拦截。
 
-Vite 使用 [**Oxc 转换器**](https://oxc.rs/docs/guide/usage/transformer.html) 将 TypeScript 转译到 JavaScript，其速度比原生 `tsc` 更快
+Vite 使用 **[Oxc 转换器](https://oxc.rs/docs/guide/usage/transformer.html)** 将 TypeScript 转译到 JavaScript，其速度比原生 `tsc` 更快
 
 类型检查通常还是靠：`tsc --noEmit` 或者配合编辑器、插件来做。
 
@@ -253,13 +253,13 @@ Vite 的工作是尽可能快地将源模块转化为可以在浏览器中运行
 
 ### tsconfig
 
-Vite 会参考 `tsconfig.json` 中的一些配置项，并设置相应的 Oxc 转换器选项。对于每个文件，Vite 会使用距离最近的父级目录中的 `tsconfig.json`。如果该 `tsconfig.json` 包含 [**`references`**](https://www.typescriptlang.org/tsconfig/#references) 字段，Vite 将使用满足 [**`include`**](https://www.typescriptlang.org/tsconfig/#include) 和 [**`exclude`**](https://www.typescriptlang.org/tsconfig/#exclude) 字段的被引用配置文件。
+Vite 会参考 `tsconfig.json` 中的一些配置项，并设置相应的 Oxc 转换器选项。对于每个文件，Vite 会使用距离最近的父级目录中的 `tsconfig.json`。如果该 `tsconfig.json` 包含 **[`references`](https://www.typescriptlang.org/tsconfig/#references)** 字段，Vite 将使用满足 **[`include`](https://www.typescriptlang.org/tsconfig/#include)** 和 **[`exclude`](https://www.typescriptlang.org/tsconfig/#exclude)** 字段的被引用配置文件。
 
 当选项同时在 Vite 配置和 `tsconfig.json` 中设置时，Vite 配置中的值优先。
 
 `tsconfig.json` 中 `compilerOptions` 下的一些配置项需要特别注意。
 
-- **`isolatedModules` ，**应该设置为 `true`。**你写的每个 TS 文件，都应该能单独安全地转译。**
+- \*\*`isolatedModules` ，\*\*应该设置为 `true`。**你写的每个 TS 文件，都应该能单独安全地转译。**
   - tsc会做全局分析再转译，Vite 转译：像“单科速改”，只看当前文件
   - isolatedModules: true 就是在提前约束你，不要写那些“只有全局分析才成立”的代码。
 - **`target` ，tsconfig.target 不等于 Vite 的最终运行目标。**
@@ -270,7 +270,7 @@ Vite 会参考 `tsconfig.json` 中的一些配置项，并设置相应的 Oxc 
   - 可以指定 `resolve.tsconfigPaths: true` 来告诉 Vite 使用 `tsconfig.json` 中的 `paths` 选项来解析导入。
   - 但这个功能有性能损耗，所以不建议这么设置
 - **`useDefineForClassFields`** ，应该设置为 true，
-  - 如果 TypeScript 的 target 是 `ES2022` 或更高版本，包括 `ESNext`，那么默认值将为 `true`。这与 [**TypeScript 4.3.2 及以后版本的行为**](https://github.com/microsoft/TypeScript/pull/42663) 保持一致。 若设了其他 TypeScript target，则本项会默认为 `false`.
+  - 如果 TypeScript 的 target 是 `ES2022` 或更高版本，包括 `ESNext`，那么默认值将为 `true`。这与 **[TypeScript 4.3.2 及以后版本的行为](https://github.com/microsoft/TypeScript/pull/42663)** 保持一致。 若设了其他 TypeScript target，则本项会默认为 `false`.
   - 如果你正在使用一个严重依赖 class fields 的库，请注意该库对此选项的预期设置。 虽然大多数库期望 `"useDefineForClassFields": true`，但如果你的库不支持它，你可以明确地将 `useDefineForClassFields` 设置为 `false`。
 - **`types: ["vite/client"]` ,作用是让 TypeScript 认识 Vite 客户端环境里的额外能力**
   - 导入图片、svg、css 之类资源
@@ -287,7 +287,7 @@ Vite 默认的类型定义是写给它的 Node.js API 的。要将其补充到�
 }
 ```
 
-需要注意的是，如果指定了 [**`compilerOptions.types`**](https://www.typescriptlang.org/tsconfig#types)，则只有这些包会被包含在全局作用域内（而不是所有的“@types”包）。这是自 TypeScript 5.9 以来推荐的做法。
+需要注意的是，如果指定了 **[`compilerOptions.types`](https://www.typescriptlang.org/tsconfig#types)**，则只有这些包会被包含在全局作用域内（而不是所有的“@types”包）。这是自 TypeScript 5.9 以来推荐的做法。
 
 ## HTML 是资源入口
 
@@ -302,7 +302,7 @@ Webpack 的世界通常是：
 3. JS 里再 import './style.css'
 4. 再通过 loader 处理图片、字体等资源
 
-所以它主要是一个：**从 JS 模块图出发，递归收集依赖的打包器，**HTML 在这里通常不是模块图的起点。
+所以它主要是一个：\*\*从 JS 模块图出发，递归收集依赖的打包器，\*\*HTML 在这里通常不是模块图的起点。
 
 Vite 将 `index.html` 视为源码和模块图的一部分。webpack只是把打包结果注入 HTML
 
@@ -314,7 +314,7 @@ Vite 还能够处理依赖关系，解析处于根目录外的文件位置，这
 
 Vite 把 HTML 当入口，本质上是在顺着浏览器天然的启动流程走。
 
-**Vite 可以在最外层统一接管页面资源，**它不仅能看到 JS 入口，还能同时处理：
+\*\*Vite 可以在最外层统一接管页面资源，\*\*它不仅能看到 JS 入口，还能同时处理：
 
 - HTML 里的模块脚本
 - CSS 样式链接，图片、图标等资源路径
@@ -328,7 +328,7 @@ Vite 把 HTML 当入口，本质上是在顺着浏览器天然的启动流程走
 
 Vite 通过 `postcss-import` 预配置支持了 CSS `@import` 内联，Vite 的路径别名也遵从 CSS `@import`。换句话说，所有 CSS `url()` 引用，即使导入的文件在不同的目录中，也总是自动变基，以确保正确性。
 
-**@import 内联，**Vite 在处理时把被导入文件内容直接展开进来，不用再次发请求
+\*\*@import 内联，\*\*Vite 在处理时把被导入文件内容直接展开进来，不用再次发请求
 
 比如你写：
 
@@ -361,13 +361,13 @@ src/
 
 ### **PostCSS 转译 和 CSS 语法增强**
 
-Vite 在生产构建中默认使用 [**Lightning CSS**](https://lightningcss.dev/) 来压缩 CSS，但 PostCSS 仍用于其他 CSS 处理。
+Vite 在生产构建中默认使用 **[Lightning CSS](https://lightningcss.dev/)** 来压缩 CSS，但 PostCSS 仍用于其他 CSS 处理。
 
-同样也有对完全使用 Lightning CSS 进行 CSS 处理的实验性支持。你可以通过添加 [**`css.transformer: 'lightningcss'`**](https://cn.vite.dev/config/shared-options#css-transformer) 来选择启用它。
+同样也有对完全使用 Lightning CSS 进行 CSS 处理的实验性支持。你可以通过添加 **[`css.transformer: 'lightningcss'`](https://cn.vite.dev/config/shared-options#css-transformer)** 来选择启用它。
 
-如果项目包含有效的 PostCSS 配置 (任何受 [**postcss-load-config**](https://github.com/postcss/postcss-load-config) 支持的格式，例如 `postcss.config.js`)，它将会自动应用于所有已导入的 CSS。
+如果项目包含有效的 PostCSS 配置 (任何受 **[postcss-load-config](https://github.com/postcss/postcss-load-config)** 支持的格式，例如 `postcss.config.js`)，它将会自动应用于所有已导入的 CSS。
 
-请注意，CSS 最小化压缩将在 PostCSS 之后运行，并会使用 [**`build.cssTarget`**](https://cn.vite.dev/config/build-options#build-csstarget) 选项。
+请注意，CSS 最小化压缩将在 PostCSS 之后运行，并会使用 **[`build.cssTarget`](https://cn.vite.dev/config/build-options#build-csstarget)** 选项。
 
 PostCSS 本质上是一个“CSS 处理平台 / 编译管线”。很多你以为是“CSS 新语法支持”的功能，其实都是 PostCSS 插件完成的。
 
@@ -453,7 +453,7 @@ Vite 也支持带变量的动态导入。
 const module = await import(`./dir/${file}.js`)
 ```
 
-注意变量仅代表一层深的文件名。如果 `file` 是 `foo/bar`，导入将会失败。对于更进阶的使用详情，你可以使用 [**glob 导入**](https://cn.vite.dev/guide/features#glob-import) 功能。
+注意变量仅代表一层深的文件名。如果 `file` 是 `foo/bar`，导入将会失败。对于更进阶的使用详情，你可以使用 **[glob 导入](https://cn.vite.dev/guide/features#glob-import)** 功能。
 
 另请注意，动态导入必须符合以下规则才能被打包：
 
@@ -504,6 +504,6 @@ Vite 解决的是：
 
 ## 杂项能力
 
-Liscence，Vite 可以通过 [**`build.license`**](https://cn.vite.dev/config/build-options#build-license) 选项生成一个包含构建中使用的所有依赖项许可证的文件。该文件可以被托管，用于显示和确认应用程序所使用的依赖项。
+Liscence，Vite 可以通过 **[`build.license`](https://cn.vite.dev/config/build-options#build-license)** 选项生成一个包含构建中使用的所有依赖项许可证的文件。该文件可以被托管，用于显示和确认应用程序所使用的依赖项。
 
-CSP**内容安全策略，**由于 Vite 的内部机制，为了部署 CSP 必须设置某些指令或配置。
+CSP\*\*内容安全策略，\*\*由于 Vite 的内部机制，为了部署 CSP 必须设置某些指令或配置。

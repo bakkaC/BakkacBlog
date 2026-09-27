@@ -7,7 +7,7 @@ toc_max_heading_level: 4
 
 一次新的总结，发现看八股看自己准备的文章是方便的，阅读这篇的时候发现有很多细节的问题，于是重新以图的形式再总结了一遍
 
-![](assets/react%20Rendering%20strategy/file-20260401230911696.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/react%20Rendering%20strategy/file-20260401230911696.png)
 
 ---
 
@@ -389,7 +389,7 @@ React Fiber **Diff** 决策流程：
 
 * 每创建一个fiber，还要确定其真实的父节点，用于DOM操作，因为functional Component的存在，fiber Tree和DOM Tree不完全对应
 
-  ![](assets/react%20Rendering%20strategy/file-20260401230911696%201.png)
+  ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/react%20Rendering%20strategy/file-20260401230911696%201.png)
 
 * 为了找到 DOM 节点的父节点，我们需要沿着 fiber 树向上遍历，直到找到一个Type为host的DOM 节点的 fiber。
 

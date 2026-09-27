@@ -22,7 +22,7 @@ SSR 聚焦的点其实在于两个事情：首屏渲染速度和页面可交互�
 - SSR w/ data，把数据获取这一步在服务端的解决，渲染的时机改至两者中间，是一个中间的解决方案
 - RSC 做的核心举措就是通过把一个页面给按照组件级别拆分，逐个渲染在页面上，这使得浏览器会先解析了到达客户端的组件，执行 js，同时，服务端也在处理别的组件流式的发送过来，这使得原本串行的过程，被拆分成单位实现了并行
 
-![](assets/rsc-nextjs/file-20251208161755689-1.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/rsc-nextjs/file-20251208161755689-1.png)
 
 RSC解决的问题：
 
@@ -214,7 +214,7 @@ const messagesData =typeof window === 'undefined'
 
 实际上，这确实有效！性能结构将再次改变：
 
-![](assets/rsc-nextjs/file-20251208161755691.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/rsc-nextjs/file-20251208161755691.png)
 
 现在整个页面，包括之前动态的内容，将在 CSS 完成下载后立即可见。然后我们仍然需要等待与之前完全相同的 JavaScript，只有到那时页面才会变得可交互。
 
@@ -503,7 +503,7 @@ React Server Components + Streaming（即 Next.js App Router）确实能更快�
 ## Source
 
 文中的数据来源，该博客提供了GitHub 的仓库地址和她如何测量：
-- <https://www.developerway.com/posts/react-server-components-performance#measuring-next-js-app-router-after-lift-and-shift-migration>
+- [https://www.developerway.com/posts/react-server-components-performance#measuring-next-js-app-router-after-lift-and-shift-migration](https://www.developerway.com/posts/react-server-components-performance#measuring-next-js-app-router-after-lift-and-shift-migration)
 
 | 渲染方式 | LCP *(no cache / JS cache)* | Sidebar *(no cache / JS cache)* | Messages *(no cache / JS cache)* | Toggle interactive *(no cache / JS cache)* | No interactivity gap | 说明 |
 | ------------------------------------------------------------ | --------------------------- | ------------------------------- | -------------------------------- | ------------------------------------------ | -------------------- | ------------------------------------------ |

@@ -74,7 +74,7 @@ data: message 4
 客户端只是订阅者：不发消息，只接收。
 
 客户端如何使用 SSE：  
-`EventSource` 是浏览器提供的一个 **用于接收服务器实时推送数据的 API**，基于 **Server-Sent Events（SSE）** 技术。  
+EventSource 是浏览器提供的一个 **用于接收服务器实时推送数据的 API**，基于 **Server-Sent Events（SSE）** 技术。  
 简而言之，是在浏览器的一个 Web API，会在和服务器建立连接时监听相应事件。
 
 ```javascript
@@ -462,13 +462,13 @@ const ws2 = new WebSocket('wss://example.com/socket2');
 2. 有状态  
 每次发问和工具调用都会发送完整的历史，因为 LLM 本身没有上下文，它只能单问单答，所以每次问答后，需要发送完整的上下文，以保证下次对话是有记忆的，这不是一次 API 调用，而是一个整理上下文、调用 API 的循环。
 
-![](assets/实时通信策略—websocket-sse/file-20260409163337605.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/%E5%AE%9E%E6%97%B6%E9%80%9A%E4%BF%A1%E7%AD%96%E7%95%A5%E2%80%94websocket-sse/file-20260409163337605.png)
 
 然后任何可用的 GPU 会接收所有上下文，然后为了响应而加载它们。  
 缓存是为了减少模型需要的计算量，使它更便宜，也能更快地响应，但这不改变发送的数据量，因为缓存的 key 是历史的哈希。  
 依然需要发送完整的历史，只不过 GPU side 的加载可以缓存加速，减少的是处理数据的时间。
 
-![](assets/实时通信策略—websocket-sse/file-20260409163352684.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/%E5%AE%9E%E6%97%B6%E9%80%9A%E4%BF%A1%E7%AD%96%E7%95%A5%E2%80%94websocket-sse/file-20260409163352684.png)
 
 **问题：** 虽然 GPU 不用重新计算了，但你（客户端）**依然需要通过网络把那几万字的完整历史记录发给 API**。
 

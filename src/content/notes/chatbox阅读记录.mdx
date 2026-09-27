@@ -5,33 +5,37 @@ tags: [架构设计, IndexedDB, 消息系统, 缓存]
 ---
 
 
+
 ## 分级存储模型
 
-![](assets/chatbox阅读记录/file-20260401152025782.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/chatbox%E9%98%85%E8%AF%BB%E8%AE%B0%E5%BD%95/file-20260401152025782.png)
 为了避免每次全量获取消息，在indexedDB中对消息做本地存储，这样可以避免每次都全量获取消息，在indexedDB中进行增量获取，减少网络请求频率，并可以结合tanstack query和自定义队列做更新调度
 
 - 局部隔离与性能
+
 - 会话列表和每个 session 分别使用独立队列：避免全局锁竞争、降低单一队列的延时和冲突，同时让不同 session 的写入互不干扰。
 
-- 两类队列的职责分离  
- 	- sessionListUpdateQueue（全局一份）：只序列化会话列表（ChatSessionsList）的修改（updateSessionList），保证列表修改按顺序、原子地写入 storage。  
- 	- sessionUpdateQueues[sessionId]（每个 session 一份）：只序列化某个会话（含 messages）的修改（updateSessionWithMessages、insertMessage、updateMessage 等），保证该会话内的所有更新有序、不互相覆盖。
+- 两类队列的职责分离
+  - sessionListUpdateQueue（全局一份）：只序列化会话列表（ChatSessionsList）的修改（updateSessionList），保证列表修改按顺序、原子地写入 storage。
+  - sessionUpdateQueues[sessionId]（每个 session 一份）：只序列化某个会话（含 messages）的修改（updateSessionWithMessages、insertMessage、updateMessage 等），保证该会话内的所有更新有序、不互相覆盖。
 
 - 为什么能提升性能/并发性
 
 - 局部隔离：不同 session 的写入互不阻塞。两个不同 session 同时写时不会争用同一个队列/持久化操作，降低延时与锁竞争。
+
 - 减少全局阻塞：会话列表的写入与单个 session 的写入分隔开（list 的队列与 session 队列独立），避免写列表时阻塞大量消息写入场景（或反之）。
+
 - 批量合并与限频持久化：UpdateQueue 在微任务周期内合并多次 set，只在 state 发生最终变化时调用 onChange（这里通常是 storage.setItemNow），因此减少磁盘/IndexedDB 写入频率。
 
 - 插入消息（insertMessage）会调用 updateSessionWithMessages，内部会：
-    1. 确保为该 sessionId 创建一个 `UpdateQueue（sessionUpdateQueues[sessionId]）`。  
-    2. 调用 queue.set(updater)，入队并返回 awaitable 的 Promise。队列在微任务里 flush：串行执行所有入队 updater，合并得到最终 session，然后在 onChange 中调用 storage.setItemNow(StoreStorage.session(sessionId)) 持久化。  
-    3. flush 成功后，updateSessionWithMessages 会（若需要）调用 updateSessionList 更新会话 meta（这又走 sessionListUpdateQueue）。最后用 _setSessionCache 更新 queryClient 缓存。  
-  - 会话列表修改（createSession/deleteSession/updateSessionList）走 sessionListUpdateQueue，持久化到 StorageKey.ChatSessionsList，然后通过 queryClient.setQueryData 更新缓存。
+    1. 确保为该 sessionId 创建一个 `UpdateQueue（sessionUpdateQueues[sessionId]）`。
+    2. 调用 queue.set(updater)，入队并返回 awaitable 的 Promise。队列在微任务里 flush：串行执行所有入队 updater，合并得到最终 session，然后在 onChange 中调用 storage.setItemNow(StoreStorage.session(sessionId)) 持久化。
+    3. flush 成功后，updateSessionWithMessages 会（若需要）调用 updateSessionList 更新会话 meta（这又走 sessionListUpdateQueue）。最后用 \_setSessionCache 更新 queryClient 缓存。
+    - 会话列表修改（createSession/deleteSession/updateSessionList）走 sessionListUpdateQueue，持久化到 StorageKey.ChatSessionsList，然后通过 queryClient.setQueryData 更新缓存。
 
-- 举例对比说明效果  
-  - 情况 A（并发写不同 session）：两个请求并发修改 sessionA 和 sessionB，分别走不同的 sessionUpdateQueues，能同时进行各自的持久化，不互相等待。  
-  - 情况 B（并发写同一 session）：两个并发修改同一个 session 会被串行化（按入队顺序执行），不会出现最后写入覆盖前一次的竞态。  
+- 举例对比说明效果
+  - 情况 A（并发写不同 session）：两个请求并发修改 sessionA 和 sessionB，分别走不同的 sessionUpdateQueues，能同时进行各自的持久化，不互相等待。
+  - 情况 B（并发写同一 session）：两个并发修改同一个 session 会被串行化（按入队顺序执行），不会出现最后写入覆盖前一次的竞态。
   - 情况 C（频繁小更新）：短时间内多次对同一 session 调用 set，会被合并到一次 flush，从而只触发一次 storage.setItemNow，降低 I/O。
 
 ## 更新队列
@@ -225,6 +229,7 @@ if (s !== this.state) { // 只有状态真的变了，才需要写库
   - `({ u: r.u, e })` 用圆括号包裹对象字面量，表示把这个对象作为表达式返回（否则会被解析为函数体）。
   - 对象有两项：`u: r.u`（把原元素的 u 字段复制过来）和 e（简写属性，相当于 e: e）。
   - 这里的 e 来自外层 catch (e) 的异常变量，被闭包捕获并复用。
+
 - 最终结果是一个形如 `{ u: QueueItem<T>, e: unknown }[]` 的数组，正好与 settleQueue 的 rejected 参数类型匹配。
 
 - settleQueue负责简单的结束队列中promise的pending状态，调用他们的resolved和rejected方法
@@ -279,6 +284,7 @@ sessionAction.ts中message相关
 3. removeMessage：删除消息
 
 `submitNewUserMessage`：
+
 - 首先读取会话和设置，若缺失则直接返回；然后把用户消息插入当前会话，同时让 `insertMessage` 额外计算并存储 `wordCount`/`tokenCount`。
 - 根据新消息是否带文件或网页链接，给即将出现的助手占位消息附加状态（`sending_file`/`loading_webpage`），如果需要立即生成，先插入一个 `generating=true` 的空助手消息。
 - 在 try 块里构建模型依赖并确认（仅在 Web 端）所选模型是否支持当前的 webBrowsing 模式，同时验证所有附件的 storageKey 是否存在（缺失会在控制台警告）。
@@ -288,8 +294,11 @@ sessionAction.ts中message相关
 **`generate 流程`：**
 
 - 先拉最新的会话/设置/平台配置，埋点 `trackGenerateEvent`，然后把目标助手消息重置成初始状态（清错、置 `generating`，设置 `aiProvider`/model/`style`，标记流式模式、清空状态等）
+
 - 并通过 `modifyMessage` 将这条消息写入indexedDB，更新cache，反应至UI（generating属性为true，显示loading UI）
+
 - 找到目标消息在当前会话（或者历史线程）里的位置，拿出它之前的上下文（调用 `genMessageContext` 会按配置选出不会超量的历史消息，还会把文件/链接内容拼进 prompt）。
+
 - 根据会话类型分支：
   - **chat**：构建 `streamText` 所需参数（包含知识库、web browsing 标记），流式接收模型输出，每次 chunk 都更新缓存、记录首次 token latency、定期落盘。生成完成后计算 `tokensUsed`、设置 `finishReason/usage` 等再一次 `modifyMessage`。
 
@@ -404,3 +413,4 @@ await modifyMessage(sessionId, targetMsg, true)
 - **流式回调 + 低频持久化**（高频 UI 响应，低频存储写入）
 - **首 token 延迟统计**
 - **状态合并与错误处理**
+

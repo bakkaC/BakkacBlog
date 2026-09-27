@@ -42,7 +42,7 @@ toc_max_heading_level: 4
 - **主线程 → worker**：主线程用 `worker.postMessage(...)`，worker 用 `onmessage` 接收。
 - **worker → 主线程**：worker 用 `postMessage(...)`，主线程用 `worker.onmessage` 接收。
 
-![](assets/web%20worker%20与轻量线程池实现/file-20260524171814449.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/web%20worker%20%E4%B8%8E%E8%BD%BB%E9%87%8F%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AE%9E%E7%8E%B0/file-20260524171814449.png)
 
 message的引用是不同的，事实上是对数据进行复制
 
@@ -82,7 +82,7 @@ message的引用是不同的，事实上是对数据进行复制
 
 这里我们需要设计一个worker pool进行任务调度，思想和线程池是类似的
 
-![](assets/web%20worker%20与轻量线程池实现/file-20260524171814451.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/web%20worker%20%E4%B8%8E%E8%BD%BB%E9%87%8F%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AE%9E%E7%8E%B0/file-20260524171814451.png)
 
 ### worker pool设计
 
@@ -223,7 +223,7 @@ private async executeOnWorker(worker: Worker, params: CropParams): Promise<Blob>
 
 ### 不同代码对应的layer
 
-![](assets/web%20worker%20与轻量线程池实现/file-20260524171814449%201.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/web%20worker%20%E4%B8%8E%E8%BD%BB%E9%87%8F%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AE%9E%E7%8E%B0/file-20260524171814449%201.png)
 
 ```
 主线程

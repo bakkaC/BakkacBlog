@@ -11,7 +11,7 @@ toc_max_heading_level: 4
 
 之所以看到Action会觉得很疑惑就是，这一套想法好像和之前解耦Cropper的时候完全是通用的，但他们明显是不同的东西，那么他们的区别本质到底是什么呢，以及Action层和状态管理库的关系又是什么
 
-![](assets/状态管理库与组件解耦/file-20260401152042743.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%BA%93%E4%B8%8E%E7%BB%84%E4%BB%B6%E8%A7%A3%E8%80%A6/file-20260401152042743.png)
 
 什么是UI逻辑？什么是业务逻辑？
 
@@ -68,7 +68,7 @@ Hook 的语义定义:
 
 他们的位置也反应了他们各自的语义，hooks往往是根目录下一级和components同级的，而Action是和Store一起定义的，因为Action本身是脱离UI的，是纯粹的数据处理，借助API和state就应该可以完成的，而hooks是依赖Component的
 
-![](assets/状态管理库与组件解耦/file-20260401152042745.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%BA%93%E4%B8%8E%E7%BB%84%E4%BB%B6%E8%A7%A3%E8%80%A6/file-20260401152042745.png)
 
 本质是对业务逻辑和UI逻辑的区分
 
@@ -85,7 +85,7 @@ chatbox的架构：
 
 比如AI生成一条消息要走那么多Layer，中途会受到非常多外部干扰
 
-![](assets/状态管理库与组件解耦/file-20260401152042742.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86%E5%BA%93%E4%B8%8E%E7%BB%84%E4%BB%B6%E8%A7%A3%E8%80%A6/file-20260401152042742.png)
 
 ### zustand & jotai
 

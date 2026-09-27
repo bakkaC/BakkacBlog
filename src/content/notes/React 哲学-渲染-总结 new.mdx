@@ -53,8 +53,7 @@ React 对这个现实问题给出的方案是 Effect 抽象，可以理解为：
 
 React 的渲染实现也和上面的思路高度契合。回到 `UI = f(state) + effect(state)`，这天然地把逻辑分成两个阶段，而 React 的渲染也正是两个阶段。
 
-![](assets/React%20哲学-渲染-总结%20new/file-20260512141022153.png)
-
+![[Excalidraw/ReactRrender.excalidraw.md#^frame=t53Qg0r4|100%]]
 ### Why Fiber
 
 diff 的目的是最小化更新，而 diff 的前提是构造中的 element 必须有可比较的对象。
@@ -82,7 +81,7 @@ fiber 从对象树变成链表树，遍历过程中通过修改指针来更新�
 
 fiber 的结构示意：
 
-![](assets/React%20哲学-渲染-总结%20new/file-20260512141022152.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/React%20%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93%20new/file-20260512141022152.png)
 
 ### Render Phase
 
@@ -94,11 +93,11 @@ fiber 的结构示意：
 - 父组件里有子组件时，遍历顺序天然就是 DFS
 - 子组件 element 的创建过程，本来就属于父组件 element 的创建过程
 
-![](assets/React%20哲学-渲染-总结%20new/file-20260512141022154.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/React%20%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93%20new/file-20260512141022154.png)
 
 每创建一个 fiber，还要确定其真实父节点，以便后续 DOM 操作。因为 functional component 的存在，fiber tree 和 DOM tree 并不是一一对应的。
 
-![](assets/React%20哲学-渲染-总结%20new/file-20260512141022150.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/React%20%E5%93%B2%E5%AD%A6-%E6%B8%B2%E6%9F%93-%E6%80%BB%E7%BB%93%20new/file-20260512141022150.png)
 ### Diff 算法
 
 React 在 diff 时首先检查两个核心字段：
@@ -246,6 +245,7 @@ const createStore = (createState) => {
   const getState = () => state;
 
   const subscribe = (listener) => {
+	// listener 其实是更新函数
     listeners.add(listener);
     return () => listeners.delete(listener);
   };
@@ -281,9 +281,12 @@ export const create = (createState) => {
 关键点：
 
 - `createStore` 通过闭包持有唯一的 `state` 和 `listeners`
-- `subscribe` 注册订阅者
-- `setState` 更新状态并通知所有订阅者
+- `subscribe` 注册订阅者，传入callback函数
+- `setState` 更新状态并通知所有订阅者，执行回调队列里的回调函数
 - `useSyncExternalStore` 把这个外部 store 接进 React 渲染系统
+	- 接收订阅函数和读取状态函数
+	- 用Subcribe会传入listener函数，检查state是否更新，返回一个信号
+	- 如果更新了，useSyncExternalStore内部会把外部store里的state值调用react.setState
 
 ### 2. TanStack Query 的核心实现
 
@@ -355,6 +358,88 @@ export const useQuery = (key, queryFn) => {
 - Query 是缓存，没人使用时就应该清理
 - Zustand 是仓库，通常不希望因为某个组件卸载就自动销毁
 - Zustand 的 selector 让你可以灵活订阅任意派生结果，比预定义 key 更适合 UI 逻辑
+
+Zustand 经常是：
+
+```
+代码启动
+ ↓
+创建几个 Store
+ ↓
+整个应用一直使用这些 Store
+```
+
+例如：
+
+```
+userStore
+cartStore
+uiStore
+```
+
+这些 Store 是你**提前定义好的**。
+
+---
+
+TanStack Query 面对的是：
+
+```
+用户打开页面
+ ↓
+出现 /users/123
+ ↓
+创建 Query
+
+用户又打开 /users/456
+ ↓
+创建 Query
+
+用户关闭页面
+ ↓
+Query 没人用了
+ ↓
+以后可能被 GC
+
+过一会儿又打开 /users/123
+ ↓
+重新找到之前的 Query
+```
+
+你根本不知道应用运行过程中最终会有多少个：
+
+```
+Query
+```
+
+所以你不可能很自然地写：
+
+```
+const user123Query = ...
+const user456Query = ...
+const user789Query = ...
+```
+
+然后到处传引用。
+
+于是：
+
+```
+queryKey
+```
+
+就特别合适：
+
+```
+['user', 123] → Query
+['user', 456] → Query
+['user', 789] → Query
+```
+
+Query 可以动态创建、销毁。
+
+**但它的身份不变。**
+
+---
 
 ## React 18 & 19 更新
 

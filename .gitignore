@@ -34,3 +34,8 @@ yarn-error.log*
 
 # Astro generated build/cache
 /.astro
+
+# Article images are uploaded to Cloudflare R2.
+/src/content/**/assets/
+!/src/content/Excalidraw/assets/
+!/src/content/Excalidraw/assets/**

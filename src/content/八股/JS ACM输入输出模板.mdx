@@ -17,7 +17,7 @@ const readline = async () => (await iter.next()).value;
 一般readline先读一行，根据空格还是逗号使用split进行分割，如果想转为数字就直接map来转换，如果读的就是一个字符串类型的数组或对象直接用json.parse直接转为对象或数组
 
 `let [a, b] = (await readline()).split(' ').map(Number);`
-
+	
 ## 1. 多行输入，每行两个整数
 
 练习题：A+B问题I
@@ -137,8 +137,6 @@ void async function () {
 
 练习题：A+B问题 VII
 
-### Js
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -155,8 +153,6 @@ void async function () {
 ## 7. 多组n行数据，每行先输入一个整数N，然后在同一行内输入M个整数,每组输出之间输出一个空行
 
 练习题：A+B问题 VIII
-
-### JavaScript
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -189,8 +185,6 @@ void async function () {
 
 练习题：7. 平均绩点
 
-### JavaScript(Node)
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -208,8 +202,6 @@ void async function () {
 ## 9. 多组测试用例，第一行为正整数n, 第二行为n个正整数，n=0时，结束输入，每组输出结果的下面都输出一个空行
 
 练习题 8. 摆平积木
-
-### Js
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -235,8 +227,6 @@ void async function () {
 
 练习题：9. 奇怪的信
 
-### JS
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -255,8 +245,6 @@ void async function () {
 ## 11. 多组测试数据，每个测试实例包括 2 个整数 M、K（`2<=k<=M<=1000`）。M=0，K=0 代表输入结束
 
 练习题 10. 运营商活动
-
-### JS
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -278,8 +266,6 @@ void async function () {
 ## 12. 多组测试数据，首先输入一个整数N，接下来N行每行输入两个整数a和b, 读取输入数据到Map
 
 练习题 11. 共同祖先
-
-### Js
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -305,8 +291,6 @@ void async function () {
 ## 13. 多组测试数据。每组输入一个整数n，输出特定的数字图形
 
 练习题 12. 打印数字图形
-
-### JS
 
 ```js
 function printTopPart(n) {
@@ -348,8 +332,6 @@ void async function () {
 
 练习题 13. 镂空三角形
 
-### Js
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -370,8 +352,6 @@ void async function () {
 
 练习题 15.神秘字符
 
-### JS
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -391,8 +371,6 @@ void async function () {
 
 练习题：16. 位置互换
 
-### Js
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -410,8 +388,6 @@ void async function () {
 ## 17. 多组测试数据，每组测试数据的第一行为整数 N（`1<=N<=100`），当 N=0 时输入结束，第二行为 N 个正整数，以空格隔开，输出结果为字符串
 
 练习题：17. 出栈合法性
-
-### JS
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -440,8 +416,6 @@ void async function () {
 ## 18. 一组输入数据，第一行为n+1个整数，逆序插入n个整数，第二行为一个整数m, 接下来有m行字符串，并根据字符串内容输入不同个数的数据
 
 练习题：18. 链表的基本操作
-
-### Javascript
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -492,8 +466,6 @@ void async function () {
 ## 19. 多组测试数据，每行为n+1个数字， 输出链表或对应的字符串
 
 练习题：19. 单链表反转
-
-### Js
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -547,8 +519,6 @@ function printLinkedList(head) {
 
 练习题：21. 构造二叉树
 
-### JS
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -582,8 +552,6 @@ void async function () {
 ## 21. 一组多行数据，第一行为数字n, 表示后面有n行，后面每行为1个字符加2个整数，输出树节点的后序遍历字符串
 
 练习题：22. 二叉树的遍历
-
-### JS
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
@@ -637,8 +605,6 @@ void async function () {
 
 练习题：23. 二叉树的高度
 
-### JS
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -675,8 +641,6 @@ void async function () {
 
 练习题：24.最长公共子序列
 
-### Js
-
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });
 var iter = rl[Symbol.asyncIterator]();
@@ -696,8 +660,6 @@ void async function () {
 ## 24. 多组测试数据，每组第一行为两个正整数n和m，接下来m行，每行3个整数, 最后一行两个整数
 
 练习题：25. 最爱的城市
-
-### JS
 
 ```js
 const rl = require("readline").createInterface({ input: process.stdin });

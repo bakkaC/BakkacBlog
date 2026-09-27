@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 const imageExtensions = new Set([
   '.avif',
@@ -14,29 +15,80 @@ const imageExtensions = new Set([
   '.webp',
 ]);
 
+const imageMimeTypes = new Map([
+  ['.avif', 'image/avif'],
+  ['.gif', 'image/gif'],
+  ['.jpeg', 'image/jpeg'],
+  ['.jpg', 'image/jpeg'],
+  ['.png', 'image/png'],
+  ['.svg', 'image/svg+xml'],
+  ['.webp', 'image/webp'],
+]);
+
 const workspaceRoot = process.cwd();
 const contentRoot = path.join(workspaceRoot, 'src/content');
-const bucket = process.env.R2_BUCKET;
-const publicUrl = trimTrailingSlash(process.env.R2_PUBLIC_URL ?? '');
+const externalAssetCollections = new Set([
+  'archived',
+  'blogs',
+  'notes',
+  'thoughts',
+  'writing',
+  '八股',
+]);
+const bucket = process.env.R2_BUCKET ?? 'bakkac-blog-assets';
+const publicUrl = trimTrailingSlash(
+  process.env.R2_PUBLIC_URL ??
+    'https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev'
+);
 const keyPrefix = normalizeKey(process.env.R2_KEY_PREFIX ?? '');
+const cacheControl =
+  process.env.R2_CACHE_CONTROL ?? 'public, max-age=86400';
 const dryRun = process.argv.includes('--dry-run') || process.env.R2_DRY_RUN === '1';
 const skipUpload = process.argv.includes('--skip-upload') || process.env.R2_SKIP_UPLOAD === '1';
 
-if (!bucket && !dryRun && !skipUpload) {
-  exitWithConfigError('缺少 R2_BUCKET，例如：R2_BUCKET=bakka-assets');
-}
-
 if (!publicUrl) {
-  exitWithConfigError('缺少 R2_PUBLIC_URL，例如：R2_PUBLIC_URL=https://img.bakkac.github.io');
+  exitWithConfigError('缺少 R2_PUBLIC_URL，例如：R2_PUBLIC_URL=https://img.example.com');
 }
 
-const mdxFiles = await findFiles(contentRoot, (filePath) => filePath.endsWith('.mdx'));
+const documentFiles = await findFiles(
+  contentRoot,
+  (filePath) => filePath.endsWith('.md') || filePath.endsWith('.mdx')
+);
+const assetFiles = await findFiles(
+  contentRoot,
+  (filePath) => isImageFile(filePath) && isExternalAssetPath(filePath)
+);
 let uploadedCount = 0;
+let skippedCount = 0;
 let replacedCount = 0;
 let missingCount = 0;
 
-for (const mdxFile of mdxFiles) {
-  const original = await readFile(mdxFile, 'utf8');
+if (!skipUpload) {
+  const assetsToUpload = await mapWithConcurrency(
+    assetFiles,
+    12,
+    async (assetPath) => ({
+      assetPath,
+      shouldUpload: await shouldUploadAsset(
+        assetPath,
+        buildObjectKey(assetPath)
+      ),
+    })
+  );
+
+  for (const { assetPath, shouldUpload } of assetsToUpload) {
+    if (!shouldUpload) {
+      skippedCount += 1;
+      continue;
+    }
+
+    uploadAsset(assetPath, buildObjectKey(assetPath));
+    uploadedCount += 1;
+  }
+}
+
+for (const documentFile of documentFiles) {
+  const original = await readFile(documentFile, 'utf8');
   const images = findMarkdownImages(original);
   let next = original;
   let offset = 0;
@@ -48,30 +100,35 @@ for (const mdxFile of mdxFiles) {
       continue;
     }
 
-    const assetPath = resolveAssetPath(mdxFile, destination.url);
+    const assetPath = resolveAssetPath(documentFile, destination.url);
 
-    if (!assetPath || !isImageFile(assetPath)) {
+    if (
+      !assetPath ||
+      !isImageFile(assetPath) ||
+      !isExternalAssetPath(assetPath)
+    ) {
       continue;
     }
 
     if (!existsSync(assetPath)) {
       missingCount += 1;
-      console.warn(`找不到图片：${relativePath(assetPath)}，引用自 ${relativePath(mdxFile)}`);
+      console.warn(
+        `找不到图片：${relativePath(assetPath)}，引用自 ${relativePath(documentFile)}`
+      );
       continue;
     }
 
     const objectKey = buildObjectKey(assetPath);
     const nextUrl = buildPublicUrl(objectKey);
-    const nextRawDestination = formatDestination(nextUrl, destination.wrapWithAngleBrackets);
+    const nextRawDestination = formatDestination(
+      nextUrl,
+      destination.wrapWithAngleBrackets,
+      destination.suffix
+    );
     const nextImageMarkdown =
       image.raw.slice(0, image.destinationStartInRaw) +
       nextRawDestination +
       image.raw.slice(image.destinationEndInRaw);
-
-    if (!skipUpload) {
-      uploadAsset(assetPath, objectKey);
-      uploadedCount += 1;
-    }
 
     const start = image.start + offset;
     const end = image.end + offset;
@@ -81,19 +138,19 @@ for (const mdxFile of mdxFiles) {
   }
 
   if (next !== original && !dryRun) {
-    await writeFile(mdxFile, next);
+    await writeFile(documentFile, next);
   }
 }
 
 const modeLabel = dryRun ? 'dry-run：' : '';
 console.log(
-  `${modeLabel}完成。上传 ${skipUpload ? 0 : uploadedCount} 个，替换 ${replacedCount} 处，缺失 ${missingCount} 个。`,
+  `${modeLabel}完成。上传 ${skipUpload ? 0 : uploadedCount} 个，跳过 ${skipUpload ? 0 : skippedCount} 个未变化对象，替换 ${replacedCount} 处，缺失 ${missingCount} 个。`,
 );
 
 function exitWithConfigError(message) {
   console.error(message);
   console.error(
-    '用法：R2_BUCKET=你的bucket R2_PUBLIC_URL=https://img.bakkac.github.io pnpm r2:assets',
+    '用法：R2_BUCKET=你的bucket R2_PUBLIC_URL=https://img.example.com pnpm r2:assets',
   );
   process.exit(1);
 }
@@ -215,6 +272,7 @@ function parseDestination(rawDestination) {
     return {
       url: trimmed.slice(1, end),
       wrapWithAngleBrackets: true,
+      suffix: trimmed.slice(end + 1),
     };
   }
 
@@ -224,6 +282,7 @@ function parseDestination(rawDestination) {
   return {
     url,
     wrapWithAngleBrackets: false,
+    suffix: trimmed.slice(url.length),
   };
 }
 
@@ -275,8 +334,8 @@ function encodeObjectKey(objectKey) {
     .join('/');
 }
 
-function formatDestination(url, wrapWithAngleBrackets) {
-  return wrapWithAngleBrackets ? `<${url}>` : url;
+function formatDestination(url, wrapWithAngleBrackets, suffix) {
+  return `${wrapWithAngleBrackets ? `<${url}>` : url}${suffix}`;
 }
 
 function uploadAsset(filePath, objectKey) {
@@ -290,8 +349,34 @@ function uploadAsset(filePath, objectKey) {
   const localWrangler = path.join(workspaceRoot, 'node_modules/.bin/wrangler');
   const command = existsSync(localWrangler) ? localWrangler : 'pnpm';
   const args = existsSync(localWrangler)
-    ? ['r2', 'object', 'put', objectTarget, '--file', filePath]
-    : ['dlx', 'wrangler', 'r2', 'object', 'put', objectTarget, '--file', filePath];
+    ? [
+        'r2',
+        'object',
+        'put',
+        objectTarget,
+        '--file',
+        filePath,
+        '--remote',
+        '--content-type',
+        getImageMimeType(filePath),
+        '--cache-control',
+        cacheControl,
+      ]
+    : [
+        'dlx',
+        'wrangler',
+        'r2',
+        'object',
+        'put',
+        objectTarget,
+        '--file',
+        filePath,
+        '--remote',
+        '--content-type',
+        getImageMimeType(filePath),
+        '--cache-control',
+        cacheControl,
+      ];
 
   const result = spawnSync(command, args, {
     cwd: workspaceRoot,
@@ -301,6 +386,79 @@ function uploadAsset(filePath, objectKey) {
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
+}
+
+async function shouldUploadAsset(filePath, objectKey) {
+  const file = await readFile(filePath);
+  const localEtag = createHash('md5').update(file).digest('hex');
+  const expectedContentType = getImageMimeType(filePath);
+
+  try {
+    const response = await fetch(buildPublicUrl(objectKey), {
+      method: 'HEAD',
+      cache: 'no-store',
+    });
+    const remoteEtag = response.headers.get('etag')?.replaceAll('"', '');
+    const remoteSize = Number(response.headers.get('content-length'));
+    const remoteContentType = response.headers.get('content-type');
+    const remoteCacheControl = response.headers.get('cache-control');
+    const matches =
+      response.ok &&
+      remoteEtag === localEtag &&
+      remoteSize === file.byteLength &&
+      remoteContentType === expectedContentType &&
+      remoteCacheControl === cacheControl;
+
+    if (matches) {
+      console.log(`[skip] ${relativePath(filePath)}`);
+      return false;
+    }
+  } catch (error) {
+    console.warn(
+      `无法检查远端对象，将重新上传 ${relativePath(filePath)}：${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+
+  return true;
+}
+
+async function mapWithConcurrency(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex]);
+    }
+  }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, items.length) },
+      () => worker()
+    )
+  );
+  return results;
+}
+
+function isExternalAssetPath(filePath) {
+  const relative = path.relative(contentRoot, filePath);
+
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+    return false;
+  }
+
+  const [collection, ...segments] = relative.split(path.sep);
+  return externalAssetCollections.has(collection) && segments.includes('assets');
+}
+
+function getImageMimeType(filePath) {
+  return (
+    imageMimeTypes.get(path.extname(filePath).toLowerCase()) ??
+    'application/octet-stream'
+  );
 }
 
 function relativePath(filePath) {

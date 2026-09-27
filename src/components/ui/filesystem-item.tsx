@@ -43,7 +43,10 @@ export function FilesystemItem({
 }: FilesystemItemProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const hasChildren = Boolean(node.nodes && node.nodes.length > 0);
+  // A node with children should look like a folder even when it also links
+  // to an entry at the same path (for example, Vite/Vite.mdx).
   const isFolderRow = hasChildren && !node.href;
+  const isFolderLikeRow = hasChildren;
   const isParentEntryRow = hasChildren && Boolean(node.href);
   const canToggle = hasChildren && showToggles;
   const showChevronToggle = canToggle && (toggleTrigger === 'chevron' || toggleTrigger === 'both');
@@ -130,7 +133,7 @@ export function FilesystemItem({
 
   const contentStack = node.label ? (
     <div className="flex min-w-0 items-center gap-4">{label}</div>
-  ) : isFolderRow ? (
+  ) : isFolderLikeRow ? (
     <span className="flex min-w-0 items-center gap-3.5">
       <Folder className={cn('size-3.5 shrink-0', hoverTextClassName)} aria-hidden="true" />
       {titleNode}

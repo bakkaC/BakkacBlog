@@ -19,26 +19,26 @@ tags: [AI, LLM, Agent, 上下文工程]
  	- 希望搜索，补充信息的过程自动化，这可以通过 coding 解决，调用 Google 的 API，然后补充信息，再生成回复
  	- 在用户眼里就只有右侧的一问一答，于是又是一个成功的封装
  	- 早期也就是简单的加一段 prompt ，根据大语言的回复做一些字符串判断是否调用 API
- 	- ![](assets/AI%20concept/file-20260223173413335.png)
+ 	- ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413335.png)
 - 因为这个中间的 layer 似乎有了智能，可以自己查询自己需要的内容，还能调用自己需要的工具（如这里的 web searching），所以将这个中间层取名为 智能体Agent
  	- 既然Agent能联网搜索，那应该也能调用本地的外部文档数据，只不过不是用传统的数据库来做，而是使用向量 数据库，做语义化的检索
  	- 这种通过向量检索做语义匹配，并加入上下文的技术，叫做 RAG 检索增强生成
  	- RAG 和 web search都可以被称为 search，即获取模型参数外信息的能力
-- 现在的架构如下![](assets/AI%20concept/file-20260223173413333.png)
+- 现在的架构如下![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413333.png)
  	- 前文提到 agent 使用字符串匹配，来判断工具的调用，但是大语言不确定的回答格式，显然会为这个规则带来困难
  	- 为了解决这个困难，可以显式prompt 规定大模型回复 agent 的格式，比如 JSON
  	- 就类似于前后端的 API 规定
 - 这种按照约定调用工具的方式，叫做 function calling
 - 前文的架构工具写在 Agent 内部的，而如果工具作为外部的服务，如何进行通信呢，于是就又规定了一套协议，用于规定通讯格式，也就是 MCP
-- Agent 就像是一个传话筒，四处收集信息回答给我们![](assets/AI%20concept/file-20260223173413331.png)
-- 底层是肯定是文字，但是交互上可以有各种形式衍生![](assets/AI%20concept/file-20260223173413330%201.png)
-- 对于一些重复使用的可以编程固定的流程，每次让 Agent 发挥不仅不稳定，还效率低下，那为什么不把他们抽象出来呢，实现这个东西的方式，一种是 langchain，更低代码拖拽的形式就是 workflow![](assets/AI%20concept/file-20260223173413330.png)
+- Agent 就像是一个传话筒，四处收集信息回答给我们![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413331.png)
+- 底层是肯定是文字，但是交互上可以有各种形式衍生![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413330%201.png)
+- 对于一些重复使用的可以编程固定的流程，每次让 Agent 发挥不仅不稳定，还效率低下，那为什么不把他们抽象出来呢，实现这个东西的方式，一种是 langchain，更低代码拖拽的形式就是 workflow![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413330.png)
 - 假设不是这种单一的场景，输入可能是各种格式，而输出又有可能是各种格式，那么写 if else 来判断显然不能是规模化的，不可能为所有的情况都写一套 workflow
 - 而解决方案是，把这一系列工具放在一个文件夹里，再写一个类似说明书的文档，让大模型去读取，按需生成回复，调用需要的工具，就可以实现上述无法实现的复杂判断了
 - 而这又带来了优化空间，可以规定其放在指定的位置里，这样不用每次都主动让 Agent 读取这个文件的一句废话，再把它隐式的加入prompt 中，而这就是 skill
-- ![](assets/AI%20concept/file-20260223173413328.png)
-- ![](assets/AI%20concept/file-20260223173413326.png)
+- ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413328.png)
+- ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413326.png)
 - 而现在导致上下文膨胀，显然会影响质量和成本
 - 于是又发明了subAgent，对上下文进行隔离子 Agent 的上下文不会再 Agent 里保存
 
-![](assets/AI%20concept/file-20260223173413325.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/AI%20concept/file-20260223173413325.png)

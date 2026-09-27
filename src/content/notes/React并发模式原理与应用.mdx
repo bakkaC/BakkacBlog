@@ -5,12 +5,13 @@ tags: [React, 并发, 性能优化, 渲染]
 ---
 
 
+
 React并发模式部分：
 
-- <https://vercel.com/blog/how-react-18-improves-application-performance>
-- <https://7km.top/main/scheduler>
-- <https://jser.dev/react/2022/03/16/how-react-scheduler-works>
-- <https://jser.dev/react/2022/03/26/lanes-in-react>
+- [https://vercel.com/blog/how-react-18-improves-application-performance](https://vercel.com/blog/how-react-18-improves-application-performance)
+- [https://7km.top/main/scheduler](https://7km.top/main/scheduler)
+- [https://jser.dev/react/2022/03/16/how-react-scheduler-works](https://jser.dev/react/2022/03/16/how-react-scheduler-works)
+- [https://jser.dev/react/2022/03/26/lanes-in-react](https://jser.dev/react/2022/03/26/lanes-in-react)
 
 ## 并发模式带来的优化
 
@@ -20,13 +21,13 @@ React并发模式部分：
 
 总阻塞时间（TBT）是一个重要指标，它测量从首次内容绘制（First Contentful Paint, FCP）到可交互（Time to Interactive, TTI）之间的时间。TBT 是执行时间超过 50 毫秒的任务所花费时间的总和，这会对用户体验产生重大影响。
 
-![由于在 TTI 之前有两个任务执行时间超过 50 毫秒，TBT 为 45 毫秒，这两个任务分别超过了 50 毫秒阈值 30 毫秒和 15 毫秒。总阻塞时间是这些值的累积：30 毫秒 + 15 毫秒 \\\\\\\\\\\\\\\= 45 毫秒。](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesThe_TBT_is_45ms_since_we_have_two_tasks_that_took_longer_than_50ms_be.png)
+![由于在 TTI 之前有两个任务执行时间超过 50 毫秒，TBT 为 45 毫秒，这两个任务分别超过了 50 毫秒阈值 30 毫秒和 15 毫秒。总阻塞时间是这些值的累积：30 毫秒 + 15 毫秒 \\\\\\\\\\\\\\= 45 毫秒。](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesThe_TBT_is_45ms_since_we_have_two_tasks_that_took_longer_than_50ms_be.png)
 
 由于在 TTI 之前有两个任务执行时间超过 50 毫秒，TBT 为 45 毫秒，这两个任务分别超过了 50 毫秒阈值 30 毫秒和 15 毫秒。总阻塞时间是这些值的累积：30 毫秒 + 15 毫秒 = 45 毫秒。
 
 交互式下一次绘制（INP），一项新的核心网页指标，衡量用户首次与页面交互（例如点击按钮）到该交互在屏幕上可见（下一次绘制）的时间。这一指标对于具有大量用户交互的页面尤为重要，例如电子商务网站或社交媒体平台。它通过累积用户当前访问期间的所有 INP 测量值，并返回最差分数来衡量。
 
-![交互式下一次绘制为 250 毫秒，因为这是测量的最高视觉延迟](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesThe_Interaction_to_Next_Paint_is_250ms_as_its_the_highest_measured_vi.png)
+![交互式下一次绘制为 250 毫秒，因为这是测量的最高视觉延迟](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesThe_Interaction_to_Next_Paint_is_250ms_as_its_the_highest_measured_vi.png)
 
 交互式下一次绘制为 250 毫秒，因为这是测量的最高视觉延迟
 
@@ -36,7 +37,6 @@ React并发模式部分：
 二者的共同敌人都是：
 
 > 长时间不可中断的 JS 执行。
->
 
 **长时间不可中断的 JS 执行的来源于react的计算，这也是原本同步react的缺陷**
 
@@ -44,7 +44,7 @@ React并发模式部分：
 
 React 的渲染阶段是一个纯计算阶段，React 元素与现有 DOM 进行比对（即比较）。这个阶段涉及创建一个新的 React 元素树，也称为”虚拟 DOM”，它本质上是实际 DOM 的一个轻量级内存表示。
 
-![](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesimage.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesimage.png)
 
 在渲染阶段，React 计算当前 DOM 与新的 React 组件树之间的差异，并准备必要的更新。
 
@@ -54,7 +54,7 @@ React 的渲染阶段是一个纯计算阶段，React 元素与现有 DOM 进行
 
 当渲染组件树时，无论是初始渲染还是状态更新，React 会继续以单个不可中断的任务渲染整个树，然后将其提交到 DOM 中以更新屏幕上的组件。
 
-![](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesThe_main_thread_is_responsible_for_handling_tasks_one_by_one.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesThe_main_thread_is_responsible_for_handling_tasks_one_by_one.png)
 
 react的执行时间是执行Javascript的时间，同步渲染的过程，每个组件一旦开始了就必须渲染出来（render phase，整颗fiber tree），不允许中断，在重型组件中，就会导致阻塞其他任务
 
@@ -64,13 +64,13 @@ react的执行时间是执行Javascript的时间，同步渲染的过程，每�
 
 React 18 引入了一个新的并发渲染器，在后台运行。这个渲染器提供了一些方式让我们标记某些渲染为非紧急。
 
-![在渲染低优先级组件（粉色）时，React 会让出主线程以检查更重要的任务](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesWhen_rendering_the_low-priority_components_(pink)_React_yields_back_t.png)
+![在渲染低优先级组件（粉色）时，React 会让出主线程以检查更重要的任务](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesWhen_rendering_the_low-priority_components_(pink)_React_yields_back_t.png)
 
 在渲染低优先级组件（粉色）时，React 会让出主线程以检查更重要的任务
 
 在这种情况下，React 每 5 毫秒会回退到主线程，查看是否有更重要的任务需要处理，例如用户输入，甚至渲染对用户体验更重要的 React 组件状态更新。通过持续回退到主线程，React 能够使这些渲染操作非阻塞，并优先处理更重要的任务。
 
-![](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesInstead_of_a_single_non-interruptible_task_for_every_render_the_concu.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesInstead_of_a_single_non-interruptible_task_for_every_render_the_concu.png)
 
 在每次渲染不是单一不可中断的任务的情况下，并发渲染器在低优先级组件的（重新）渲染过程中每隔 5 毫秒将控制权交还给主线程。
 
@@ -78,7 +78,7 @@ React 18 引入了一个新的并发渲染器，在后台运行。这个渲染�
 
 同步渲染是一种全有或全无的计算，而并发渲染器允许 React 暂停和恢复一个或多个组件树的渲染，以实现最优的用户体验。
 
-![React 基于用户交互而暂停当前渲染，迫使它优先渲染另一个更新](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesReact_pauses_the_current_render_based_on_a_user_interaction_that_force.png)
+![React 基于用户交互而暂停当前渲染，迫使它优先渲染另一个更新](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesReact_pauses_the_current_render_based_on_a_user_interaction_that_force.png)
 
 React 基于用户交互而暂停当前渲染，迫使它优先渲染另一个更新
 
@@ -136,7 +136,7 @@ export default function SearchCities() {
 
 通过将状态更新包装在 **`startTransition`** 中，我们可以告诉 React 我们愿意推迟或中断渲染，以优先处理更重要的任务，保持当前用户界面具有交互性。
 
-![](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesimage-1.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesimage-1.png)
 
 当触发startTransition时（类似setState是一个触发渲染的update信号），并发渲染器会开始构建fiber tree。一旦渲染完成，它会将结果保存在内存中，直到 React Scheduler能够高效地更新 DOM 以反映新状态。这个时刻可能是浏览器空闲且没有更高优先级的任务（如用户交互）待处理
 
@@ -191,7 +191,6 @@ React 18 之后：
 这里主要讲react 18下suspense基于并发模式的特性，在包体积相关的优化时会展开讲前者的用法
 
 > Suspense 是一个声明式的“渲染是否可继续”边界。
->
 
 使用 **`Suspense`** ，我们可以在满足特定条件（如从远程源加载数据）之前延迟组件的渲染。在此期间，我们可以渲染一个备用组件，以指示该组件仍在加载中。
 
@@ -257,7 +256,6 @@ Suspense结合服务端能力，进行ssr时，还能结合并发模式有更强
 他利用空闲时间的方式是以帧为单位
 
 > 浏览器判断：在下一帧截止前，还有“用不完的时间”
->
 
 这段时间：
 
@@ -393,7 +391,7 @@ Lane诞生于一个update（比如一次setState，这往往发生在workloop之
 
 ### 并发模式运行方式
 
-![](../thoughts/assets/性能优化：包体积%20并发模式视角/imagesimage-2.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesimage-2.png)
 
 为了避免一些条件判断开销，旧的同步循环和新的并发循环是两种方式
 
@@ -432,7 +430,7 @@ Suspense则不同
 
 在并发模式中，一个 Suspense 结构大致是：
 
-```
+```jsx
 <Suspense>
   primary children// 正常内容
   fallback children// loading / 占位
@@ -448,14 +446,14 @@ Suspense则不同
 
 正常情况：
 
-```
+```plaintext
 Suspense
  └─ PrimaryContent Fiber Tree
 ```
 
 挂起时：
 
-```
+```plaintext
 Suspense
  ├─ Offscreen(Primary ContentFiber Tree)// 隐藏
  └─ FallbackFiber Tree// 当前可见
@@ -471,6 +469,6 @@ Suspense 的恢复 = Promise 触发一次低成本的重渲染，React 通过 Of
 
 懒加载和并发模式结合，在ssr中的性能优化，可以看这两个资料的相关部分
 
-<https://vercel.com/blog/how-react-18-improves-application-performance>
+[https://vercel.com/blog/how-react-18-improves-application-performance](https://vercel.com/blog/how-react-18-improves-application-performance)
 
-<https://oceanofpdf.com/category/authors/nadia-makarevich/>
+[https://oceanofpdf.com/category/authors/nadia-makarevich/](https://oceanofpdf.com/category/authors/nadia-makarevich/)

@@ -3,7 +3,7 @@ title: "HMR 如何工作"
 description: "HMR 如何工作，解析热模块替换的基本原理、最小实现路径，以及 Vite 如何基于模块图完成热更新。"
 parent: vite
 ---
-> 上级：[[Vite]]
+> 上级：[[../../../Vite]]
 
 HMR，也就是 Hot Module Replacement，也就是 **文件一改，Vite 不整页重载，而是沿着模块图只更新受影响的那一小段模块链。**
 
@@ -21,16 +21,16 @@ Server（服务器）端，是只开发服务器所在的位置，这里就是�
 
 - Express 静态资源服务器
 - HMR 中间件
-    - 这部分就是“开发服务器（Dev Server）”。
-    - 拦截 `.js` 文件请求，并注入 HMR 客户端代码（HMR Client）。
+  - 这部分就是“开发服务器（Dev Server）”。
+  - 拦截 `.js` 文件请求，并注入 HMR 客户端代码（HMR Client）。
 
 Client（客户端），也就是浏览器，是前端代码的请求目标：
 
 - `HotModule` 类的实现
 - `hmrClient` 函数，用于初始化 HMR，并连接到 WebSocket。
 - 注册（`register`）`accept` 回调函数
-    - 用来定义当模块被保存或发生变化时应该执行什么操作。
-    - 也就是说，针对特定模块类型，如何进行 HMR 更新。
+  - 用来定义当模块被保存或发生变化时应该执行什么操作。
+  - 也就是说，针对特定模块类型，如何进行 HMR 更新。
 - WebSocket 客户端（`connectWs`），用于响应来自 Dev Server 的事件通知。
 
 Dev Server（开发服务器），就是上述两者的结合加上前端源码
@@ -44,10 +44,11 @@ Dev Server（开发服务器），就是上述两者的结合加上前端源码
 
 **开发服务器监听文件变化 → 通过 WebSocket 通知浏览器 → 浏览器中的 HMR 客户端接收消息 → 重新加载对应模块并执行已注册的 `accept` 回调 → 页面无需刷新即可更新内容。**
 
-![image.png](<assets/HMR 如何工作/image.png>)
+![image.png](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HMR%20%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C/image.png)
+
 1. 浏览器请求dev server，拿到 index.html，作为入口，依次执行所有的 js模块，会hmrMiddleware 拦截 .js 请求，这个过程会把 hmrClient(import.meta) 进行注入
 2. 浏览器和 dev server 建立 websocket 连接
-3. 为每个模块创建 HotModule，存入 window.hotModules[path]
+3. 为每个模块创建 HotModule，存入 window\.hotModules[path]
 4. dev server 监听本地所有 js文件，一旦 js文件更新，就像浏览器发这个更新的文件内容
 5. 浏览器 websocket 收到消息，就执行更新
 

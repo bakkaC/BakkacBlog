@@ -75,7 +75,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute bottom-88 -left-4 -right-4 z-20 h-56 md:pointer-events-auto md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56">
+      <div className="pointer-events-none absolute bottom-88 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56" aria-hidden="true">
         <FallingText
           text="React TailwindCSS TanstackStart Codex PostgreSQL AfterEffects Figma Springboot Vite"
           highlightClass="highlighted"
@@ -84,6 +84,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
           chaosFactor={1.5}
           fontSize="clamp(0.75rem,2.2vw,1.9rem)"
           mouseConstraintStiffness={0.9}
+          interactive={false}
         />
       </div>
 

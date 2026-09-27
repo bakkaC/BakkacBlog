@@ -8,8 +8,8 @@ tags: [Vite, 工程化, "Code Splitting", 性能优化]
 
 包部分：
 
-- <https://www.developerway.com/posts/bundle-size-investigation>
-- 以及文章作者的书：<https://oceanofpdf.com/category/authors/nadia-makarevich/>
+- [https://www.developerway.com/posts/bundle-size-investigation](https://www.developerway.com/posts/bundle-size-investigation)
+- 以及文章作者的书：[https://oceanofpdf.com/category/authors/nadia-makarevich/](https://oceanofpdf.com/category/authors/nadia-makarevich/)
 
 ## 从包体积角度性能优化
 
@@ -55,7 +55,7 @@ Vite的打包器（rollup）的默认行为
 可以把 Rollup 的默认行为概括为一句话：
 
 > Rollup 会尝试“尽量少生成 chunk，同时避免明显的重复代码”。
->
+
 - **减少请求（少生成 Chunk）：** 浏览器发起 HTTP 请求是有开销的（尤其是建立连接的时间）。如果一个页面要下载 100 个 1KB 的小文件，速度远慢于下载 1 个 100KB 的大文件。所以 Rollup **倾向于合包**。
 - **避免重复（去重）：** 如果组件 A 和组件 B 都引用了 lodash，把 lodash 分别打包进 A 和 B 会导致重复下载。所以 Rollup **倾向于把共享代码提取出来**。
 - **首屏纯净（按需）：** 我只访问首页，你不能把后台管理页的代码也发给我。所以 Rollup **倾向于把动态导入（lazy）的部分拆出去**。
@@ -73,7 +73,6 @@ Vite的打包器（rollup）的默认行为
 ### 如何观测
 
 > Bundle 的分析，必须基于“生产构建产物”，而不是开发模式。 因为 dev 和 build 的产物，在“体积、结构、执行方式”上几乎是两套系统。
->
 
 我们最终在意的是生产环境下的性能，所以当然应该build后分析
 
@@ -83,7 +82,7 @@ Vite的打包器（rollup）的默认行为
 
 在本地build然后start项目，进入stat.html页面，即可看到报告
 
-![](../../thoughts/assets/性能优化：包体积 并发模式视角/imagesimage-3.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesimage-3.png)
 
 - **Rendered**
   - 打包后所有 JS 模块的原始体积之和（开发视角）
@@ -105,7 +104,7 @@ build，start的环境下进入首屏，打开dev tool，进入network，勾选J
 - **> 3 MB**：明确有优化空间
 ```
 
-![](../../thoughts/assets/性能优化：包体积 并发模式视角/imagesimage-4.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/thoughts/assets/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%EF%BC%9A%E5%8C%85%E4%BD%93%E7%A7%AF%20%E5%B9%B6%E5%8F%91%E6%A8%A1%E5%BC%8F%E8%A7%86%E8%A7%92/imagesimage-4.png)
 
 ## 懒加载与预加载优化
 
@@ -252,7 +251,6 @@ function manualChunks(id) {
 ⚠️ 关键点：
 
 > 即使你只 import ‘lodash/get’，也会把 整个 lodash 合并进来
->
 
 本质是一个 **模块分类器**。
 
@@ -468,7 +466,7 @@ export default function App() {
 }
 ```
 
-既然标题最重要，那么**侧边栏（Sidebar）**其实可以被视为次要的。我们可以把侧边栏也变成懒加载，进一步减少首屏关键 JS 的体积。
+既然标题最重要，那么\*\*侧边栏（Sidebar）\*\*其实可以被视为次要的。我们可以把侧边栏也变成懒加载，进一步减少首屏关键 JS 的体积。
 
 ① 找到你的“一等公民”
 
@@ -578,7 +576,7 @@ export default [
 
 1. 完美的“关键路径”控制 (Nested Routing & Layouts)
 
-文章中提到，为了优化 LCP，需要手动把 `AppLayout` 移到 `Suspense` 之外。 React Router v7 的**嵌套路由（Nested Routing）**天生就解决了这个问题：
+文章中提到，为了优化 LCP，需要手动把 `AppLayout` 移到 `Suspense` 之外。 React Router v7 的\*\*嵌套路由（Nested Routing）\*\*天生就解决了这个问题：
 
 ```tsx
 // root.tsx (根布局，包含侧边栏和顶栏标题)

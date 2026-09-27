@@ -19,15 +19,15 @@ toc_max_heading_level: 4
 
 ## theo的视频
 
-<https://www.youtube.com/watch?v=Cifkb-ZVps4>
+[https://www.youtube.com/watch?v=Cifkb-ZVps4](https://www.youtube.com/watch?v=Cifkb-ZVps4)
 
-![](assets/HTML渲染策略/file-20251208155153967.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208155153967.png)
 
 # Classic MPA
 
 经典多页应用
 
-![](assets/HTML渲染策略/file-20251208155622079.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208155622079.png)
 
 * User向Server发送URL请求
 * Server找到HTML文件，如果是非静态页面，则会返回一个接受参数，生成HTML文件的函数
@@ -45,7 +45,7 @@ toc_max_heading_level: 4
 
 经典单页应用
 
-![](assets/HTML渲染策略/file-20251208155758280.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208155758280.png)
 
 通过URL只会返回一个HTML骨架文件，不会像MPA那样返回完整的HTML文件
 
@@ -70,7 +70,7 @@ toc_max_heading_level: 4
 
 ## 缺陷
 
-![](assets/HTML渲染策略/file-20251208155850070.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208155850070.png)
 
 用户点击的下半部分确实对MPA的体验进行很多优化
 而问题在于上半部分，除非做完上半部分的工作，用户是不能看到正确的HTML内容的
@@ -83,7 +83,7 @@ toc_max_heading_level: 4
 
 # SSR's SPA
 
-![](assets/HTML渲染策略/file-20251208155916536.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208155916536.png)
 
 Server side rendering的想法是
 为了避免 **经典SPA** 首屏加载问题，
@@ -121,7 +121,7 @@ React code会跑两次
 * 保持了SPA立刻可以显示一些不需要数据的html的优点
 * 还对获取数据的过程做了简化
 
-![](assets/HTML渲染策略/file-20251208160253505.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208160253505.png)
 
 * 另外SPA还可以使数据持久话，让相同的内容可以轻易的在不同的page间共享，因为它没有进行浏览器的导航
 
@@ -147,7 +147,7 @@ React code会跑两次
 
 SPA-influenced Isomorphic 同构SSR
 
-![](assets/HTML渲染策略/file-20251208160334785.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208160334785.png)
 
 同构体现在，同一份代码在服务器和客户端上以不同方式运行，
 
@@ -155,7 +155,7 @@ SPA-influenced Isomorphic 同构SSR
 
 * **核心改进与工作原理** :
   * **非阻塞导航与流式HTML块**：这是同构SSR的关键优势。通过使用像React `Suspense` 这样的机制，开发者可以指定页面中某些部分（如数据加载中的内容）不应阻塞页面的初始渲染或导航。
-    * 当用户点击链接进行导航时，**客户端可以立即显示一个加载状态（通过`Suspense`** &#x7684;**`fallback`** ），而无需等待服务器完全准备好所有内容 。
+    * 当用户点击链接进行导航时，**客户端可以立即显示一个加载状态（通过`Suspense`** &#x7684;\*\*`fallback`\*\* ），而无需等待服务器完全准备好所有内容 。
     * 与此同时，服务器不会重新生成整个页面，而是**只生成那些发生变化的HTML“块”（chunks）**，并以流（stream）的形式发送到浏览器。
     * 浏览器接收到这些HTML块后，会用它们替换掉之前显示的加载状态，从而逐步填充页面内容 \[2]。
   * **减少数据传输和JavaScript包大小**:
@@ -179,13 +179,13 @@ SPA-influenced Isomorphic 同构SSR
 
 # MPA-influenced split-excution(Islands/Server Components)
 
-![](assets/HTML渲染策略/file-20251208160457434.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/HTML%E6%B8%B2%E6%9F%93%E7%AD%96%E7%95%A5/file-20251208160457434.png)
 
 MPA-influenced split-execution（多页应用影响下的分割执行）模型是当今网络应用渲染策略的一种演进，它与同构 SSR（服务器端渲染）模型类似，但解决了一些不同的问题。
 
 以下是该模型的详细介绍：
 
-**核心概念与原理** MPA-influenced split-execution 的核心思想&#x662F;**“岛屿（Islands）”架构**。在这种模式下，页面的大部分内容是静态的，可以像传统多页应用一样被静态托管，而只有少数动态、交互式的部分被视为“岛屿”。
+**核心概念与原理** MPA-influenced split-execution 的核心思想&#x662F;\*\*“岛屿（Islands）”架构\*\*。在这种模式下，页面的大部分内容是静态的，可以像传统多页应用一样被静态托管，而只有少数动态、交互式的部分被视为“岛屿”。
 
 * **静态内容优先**：页面的主要骨架和非动态内容会生成为静态 HTML 文件。这意味着你可以将这些文件部署在静态 CDN（内容分发网络）上，如 S3，从而实现页面**几乎即时**的加载速度。用户在导航到页面时，会立即看到页面的大部分静态内容。
 

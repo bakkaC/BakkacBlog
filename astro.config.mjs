@@ -11,10 +11,11 @@ import { remarkMermaid } from './src/lib/remark-mermaid.js';
 import tailwindcss from '@tailwindcss/vite';
 
 const srcDir = fileURLToPath(new URL('./src', import.meta.url));
-const siteBase = '/BakkacBlog/';
+const siteBase = '/';
+const siteUrl = process.env.SITE_URL ?? 'https://bakkac-blog.pages.dev';
 
 export default defineConfig({
-  site: 'https://bakkac.github.io',
+  site: siteUrl,
   base: siteBase,
   trailingSlash: 'never',
   output: 'static',

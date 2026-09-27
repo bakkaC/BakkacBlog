@@ -1,62 +1,185 @@
 
-从输入 URL 到浏览器把页面渲染出来，大致会经历这几段：
+# 整体流程
 
-## 1. 解析 URL
+```html preview
 
-浏览器先把 URL 拆开，得到：
+<style>
+:root {
+  color-scheme: light;
+  --surface: #F7F7F8;
+  --surface-muted: #EFEFF2;
+  --text: #171717;
+  --text-muted: #52525B;
+  --border: rgba(23, 23, 23, 0.12);
+  --brand: #4B3FE3;
+  --brand-soft: #F2F7FF;
+  --brand-text: #1A1759;
+  --font-sans: "SF Pro Text", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --text-caption: 12px/18px;
+  --text-body: 14px/20px;
+  --text-title: 16px/24px;
+}
+:root[data-widget-theme="dark"] {
+  color-scheme: dark;
+  --surface: #171717;
+  --surface-muted: #262626;
+  --text: #E5E5E5;
+  --text-muted: #A1A1AA;
+  --border: rgba(229, 229, 229, 0.12);
+  --brand: #6054F1;
+  --brand-soft: #1A1759;
+  --brand-text: #CFD8FF;
+}
+.widget {
+  color: var(--text);
+  background: transparent;
+  font: var(--weight-regular) var(--text-body) var(--font-sans);
+}
+.widget .ttl { fill: var(--text); font: var(--weight-medium) var(--text-title) var(--font-sans); }
+.widget .th { fill: var(--text); font: var(--weight-medium) var(--text-body) var(--font-sans); }
+.widget .ts { fill: var(--text-muted); font: var(--weight-regular) var(--text-caption) var(--font-sans); }
+.widget .ph { fill: var(--text-muted); font: var(--weight-medium) var(--text-caption) var(--font-sans); letter-spacing: 0.5px; }
+.widget .arr { stroke: var(--text-muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.widget g.c-neutral > rect { fill: var(--surface); stroke: var(--border); stroke-width: 1; }
+</style>
 
-- 协议：`https`
-    
-- 域名：`example.com`
-    
-- 端口：默认 443
-    
-- 路径：`/path`
-    
-- 查询参数：`?a=1`
-    
-- 片段：`#top`
-    
+<div class="widget" data-dynamic-ui-widget data-template="node-flow" data-mounted="true">
+  <svg viewBox="0 0 720 252" width="100%" height="auto" role="img" aria-label="从输入URL到页面渲染的完整流程">
+    <defs>
+      <marker id="arr-end" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+        <path d="M1 1 L7 4 L1 7 Z" fill="var(--text-muted)"/>
+      </marker>
+    </defs>
 
-如果地址栏里输入的不是完整 URL，浏览器还会先帮你补全、判断是搜索词还是网址。
+    <text x="360" y="24" text-anchor="middle" class="ttl">从输入 URL 到页面渲染的完整流程</text>
 
-## 2. 查找缓存
+    <!-- Phase 1 label -->
+    <text x="360" y="44" text-anchor="middle" class="ph">① 网络请求阶段</text>
+
+    <!-- Row 1: Network nodes -->
+    <g class="c-neutral">
+      <rect x="30" y="54" width="104" height="60" rx="8"/>
+      <text x="82" y="80" text-anchor="middle" class="th">URL解析</text>
+      <text x="82" y="100" text-anchor="middle" class="ts">解析URL</text>
+    </g>
+    <path d="M 138 84 L 164 84" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="168" y="54" width="104" height="60" rx="8"/>
+      <text x="220" y="80" text-anchor="middle" class="th">DNS解析</text>
+      <text x="220" y="100" text-anchor="middle" class="ts">域名→IP</text>
+    </g>
+    <path d="M 276 84 L 302 84" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="306" y="54" width="104" height="60" rx="8"/>
+      <text x="358" y="80" text-anchor="middle" class="th">建立连接</text>
+      <text x="358" y="100" text-anchor="middle" class="ts">TCP·TLS</text>
+    </g>
+    <path d="M 414 84 L 440 84" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="444" y="54" width="104" height="60" rx="8"/>
+      <text x="496" y="80" text-anchor="middle" class="th">发送请求</text>
+      <text x="496" y="100" text-anchor="middle" class="ts">HTTP请求</text>
+    </g>
+    <path d="M 552 84 L 578 84" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="582" y="54" width="104" height="60" rx="8"/>
+      <text x="634" y="80" text-anchor="middle" class="th">接收响应</text>
+      <text x="634" y="100" text-anchor="middle" class="ts">HTML数据</text>
+    </g>
+
+    <!-- L-connector: row 1 right → row 2 left -->
+    <path d="M 634 116 L 634 140 L 82 140 L 82 162" class="arr" marker-end="url(#arr-end)"/>
+
+    <!-- Phase 2 label -->
+    <text x="360" y="158" text-anchor="middle" class="ph">② 页面渲染阶段</text>
+
+    <!-- Row 2: Rendering nodes -->
+    <g class="c-neutral">
+      <rect x="30" y="168" width="104" height="60" rx="8"/>
+      <text x="82" y="194" text-anchor="middle" class="th">HTML解析</text>
+      <text x="82" y="214" text-anchor="middle" class="ts">DOM·CSSOM</text>
+    </g>
+    <path d="M 138 198 L 164 198" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="168" y="168" width="104" height="60" rx="8"/>
+      <text x="220" y="194" text-anchor="middle" class="th">渲染树</text>
+      <text x="220" y="214" text-anchor="middle" class="ts">Render Tree</text>
+    </g>
+    <path d="M 276 198 L 302 198" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="306" y="168" width="104" height="60" rx="8"/>
+      <text x="358" y="194" text-anchor="middle" class="th">布局</text>
+      <text x="358" y="214" text-anchor="middle" class="ts">Layout</text>
+    </g>
+    <path d="M 414 198 L 440 198" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="444" y="168" width="104" height="60" rx="8"/>
+      <text x="496" y="194" text-anchor="middle" class="th">绘制</text>
+      <text x="496" y="214" text-anchor="middle" class="ts">Paint</text>
+    </g>
+    <path d="M 552 198 L 578 198" class="arr" marker-end="url(#arr-end)"/>
+
+    <g class="c-neutral">
+      <rect x="582" y="168" width="104" height="60" rx="8"/>
+      <text x="634" y="194" text-anchor="middle" class="th">合成</text>
+      <text x="634" y="214" text-anchor="middle" class="ts">Composite</text>
+    </g>
+  </svg>
+</div>
+```
+
+## 网络请求
+
+### 1. URL 与 DNS 解析
+
+- 判断是**搜索词**还是**URL**（如果不含协议，会拼接默认搜索引擎）
+- 拆解 URL 各部分：`协议` + `域名` + `端口` + `路径` + `查询参数` + `锚点`
+- 对非 ASCII 字符进行 **Punycode 编码**（如中文域名）和 **百分号编码**
+
+### 2. 查找缓存
 
 在真正发请求前，浏览器会先看本地有没有可用资源，比如：
 
 - 强缓存
-    
+
 - 协商缓存
-    
+
 - DNS 缓存
-    
+
 - HSTS 记录
-    
+
 - Service Worker 缓存
-    
 
 命中缓存的话，可能根本不用走完整网络流程。
 
-## 3. DNS 解析
+### 3. DNS 解析
 
 浏览器需要把域名解析成 IP 地址。
 
 通常会依次查：
 
 - 浏览器 DNS 缓存
-    
+
 - 操作系统缓存
-    
+
 - 本地 hosts
-    
+
 - 路由器缓存
-    
+
 - DNS 服务器
-    
 
 最后拿到目标服务器 IP。
 
-## 4. 建立连接
+### 4. 建立连接
 
 ### HTTP
 
@@ -67,20 +190,18 @@
 如果是 HTTPS，会多一步 TLS 握手，用来：
 
 - 验证服务器证书
-    
+
 - 协商加密算法
-    
+
 - 生成会话密钥
-    
 
 在这之前，底层还要先做 TCP 三次握手：
 
 - 客户端发 SYN
-    
+
 - 服务端回 SYN + ACK
-    
+
 - 客户端回 ACK
-    
 
 如果是 HTTP/3，则底层不再是 TCP，而是 QUIC/UDP，连接建立方式会不一样，但目标还是一样：可靠传输 + 安全加密。
 
@@ -99,30 +220,28 @@ Cookie: ...
 请求里可能带上：
 
 - Cookie
-    
+
 - Accept / Accept-Encoding
-    
+
 - Referer
-    
+
 - Authorization
-    
+
 - 缓存相关头
-    
+
 - 各种浏览器自动附加的信息
-    
 
 ## 6. 服务器处理请求
 
 服务器收到请求后，一般会经过：
 
 - 负载均衡
-    
+
 - Web 服务器（Nginx / Apache）
-    
+
 - 应用服务器
-    
+
 - 数据库 / 缓存 / 微服务
-    
 
 然后生成响应内容。
 
@@ -145,7 +264,7 @@ Set-Cookie: ...
 
 ---
 
-# 浏览器渲染过程
+## 浏览器渲染过程
 
 ## 8. 解析 HTML，构建 DOM
 
@@ -164,13 +283,12 @@ Set-Cookie: ...
 会变成类似树结构：
 
 - html
-    
-    - body
-        
-        - h1
-            
-            - text
-                
+
+  - body
+
+    - h1
+
+      - text
 
 DOM 表示文档结构。
 
@@ -179,11 +297,10 @@ DOM 表示文档结构。
 浏览器同时会解析：
 
 - 外部 CSS
-    
+
 - `<style>` 里的 CSS
-    
+
 - 行内样式
-    
 
 然后生成 CSSOM（CSS Object Model）。
 
@@ -202,13 +319,12 @@ CSSOM 表示每个节点最终可用的样式规则。
 默认情况下会：
 
 - 停止 HTML 解析
-    
+
 - 下载 JS
-    
+
 - 执行 JS
-    
+
 - 执行完后再继续解析 HTML
-    
 
 因为 JS 可能修改 DOM 结构，比如 `document.write()` 或插入节点。
 
@@ -217,9 +333,8 @@ CSSOM 表示每个节点最终可用的样式规则。
 常见优化方式：
 
 - `defer`：HTML 解析完后再执行
-    
+
 - `async`：下载完成就执行，顺序不保证
-    
 
 ## 11. 构建渲染树 Render Tree
 
@@ -228,33 +343,30 @@ DOM + CSSOM 合并，形成 Render Tree。
 它和 DOM 不完全一样：
 
 - `display: none` 的元素不会进入渲染树
-    
+
 - `head` 通常不会进入渲染树
-    
+
 - 渲染树里保留的是“要显示什么”
-    
 
 ## 12. Layout / Reflow：计算布局
 
 浏览器根据渲染树计算每个元素的几何信息：
 
 - 位置
-    
+
 - 宽高
-    
+
 - 盒模型
-    
+
 - 相对谁排列
-    
 
 这一步也叫：
 
 - Layout
-    
+
 - Reflow
-    
+
 - 回流
-    
 
 只要元素尺寸、位置、文档流发生变化，就可能触发回流。
 
@@ -263,15 +375,14 @@ DOM + CSSOM 合并，形成 Render Tree。
 布局完成后，浏览器把元素画出来：
 
 - 文字
-    
+
 - 颜色
-    
+
 - 边框
-    
+
 - 阴影
-    
+
 - 图片
-    
 
 这一步叫重绘。
 
@@ -282,38 +393,36 @@ DOM + CSSOM 合并，形成 Render Tree。
 比如这些属性常常更容易触发独立图层：
 
 - `transform`
-    
+
 - `opacity`
-    
+
 - `will-change`
-    
 
 所以动画里推荐尽量改 `transform` 和 `opacity`，因为通常只需要合成，不一定触发回流和重绘，性能更好。
 
 ---
 
-# 页面不是一次渲染完就结束
+## 页面不是一次渲染完就结束
 
 首屏显示后，后面还会继续发生很多事：
 
 - JS 执行修改 DOM
-    
+
 - 异步请求数据
-    
+
 - 图片陆续加载
-    
+
 - 字体文件加载后文字重排
-    
+
 - 用户交互触发样式变化
-    
+
 - 浏览器继续回流、重绘、合成
-    
 
 所以渲染是持续过程，不是一次性的。
 
 ---
 
-# 可以把整个过程压缩成一条线
+## 可以把整个过程压缩成一条线
 
 ## 网络阶段
 

@@ -7,10 +7,14 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "pnpm r2:assets && pnpm build:site",
+    "build:site": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "r2:assets": "node scripts/r2-sync-assets.mjs"
+    "deploy:pages": "pnpm r2:assets && pnpm check && pnpm build:site && wrangler pages deploy dist --project-name bakkac-blog --branch main",
+    "publish:site": "pnpm deploy:pages",
+    "r2:assets": "node scripts/r2-sync-assets.mjs",
+    "r2:assets:dry": "node scripts/r2-sync-assets.mjs --dry-run"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
@@ -44,6 +48,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "wrangler": "^4.140.0"
   }
 }

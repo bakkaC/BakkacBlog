@@ -123,19 +123,19 @@ async function findFileByBasename(
 }
 
 function parseMarkdownScene(markdown: string): ParsedMarkdownScene {
-  const compressed = markdown.match(/```json\s+([\s\S]*?)\s+```/);
+  const compressed = markdown.match(/```(?:compressed-json|json)\s+([\s\S]*?)\s+```/);
   if (!compressed?.[1]) {
     throw new Error('未在 Excalidraw markdown 文件中找到压缩绘图数据');
   }
 
-  const decompressed = decompressFromBase64(
-    compressed[1].replace(/\s+/g, '')
-  );
-  if (!decompressed) {
+  const sceneText = compressed[0].startsWith('```json')
+    ? compressed[1]
+    : decompressFromBase64(compressed[1].replace(/\s+/g, ''));
+  if (!sceneText) {
     throw new Error('Excalidraw 绘图数据解压失败');
   }
 
-  const scene = JSON.parse(decompressed) as Record<string, unknown>;
+  const scene = JSON.parse(sceneText) as Record<string, unknown>;
   const embeddedSection = markdown.match(/## Embedded Files([\s\S]*?)\n%%/);
   const embeddedFiles = new Map<string, string>();
 

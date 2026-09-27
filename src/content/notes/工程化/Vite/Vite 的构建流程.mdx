@@ -3,9 +3,9 @@ title: "Vite 的构建流程"
 description: "Vite 的构建流程笔记，拆解 Vite 从开发到生产构建的完整工作流，理解现代前端工具链的输入、转换与输出。"
 parent: vite
 ---
-> 上级：[[Vite]]
+> 上级：[[../../../Vite]]
 
-![image.png](<assets/Vite 的构建流程/image.png>)
+![image.png](<https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/Vite%20%E7%9A%84%E6%9E%84%E5%BB%BA%E6%B5%81%E7%A8%8B/image.png>)
 Vite 的工作流（或称之为现代前端工具链）旨在提供卓越的开发体验和高效的生产构建。Vite 在底层为您做了很多工作，主要通过两种命令支持两种不同的环境：开发环境和生产环境。
 
 以下是 Vite 核心工作流的详细分解：
@@ -59,7 +59,7 @@ Vite 使用的是**双打包器架构** (two-bundler architecture)。
 
 Rolldown 就是为了简化这种架构而诞生的。他们的目标是为 Vite 提供一个单一的打包工具，最终能同时满足开发和生产的需求。它需要足够快以应对 esbuild 的竞争，具有足够的兼容性以保留基于 Rollup 的庞大插件生态系统，并且足够灵活以支持 Vite 在大型实际应用中所需的功能。
 
-![image.png](<assets/Vite 的构建流程/image 1.png>)
+![image.png](<https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/assets/Vite%20%E7%9A%84%E6%9E%84%E5%BB%BA%E6%B5%81%E7%A8%8B/image%201.png>)
 为什么打包速度很重要呢？
 
 1. 打包是个繁重的过程，如果不 care，真的会很慢，打包工具必须解析源文件、解析导入关系、应用代码转换、运行插件、分析导出、移除未使用的代码、生成代码块，最后写入输出文件。在大型项目中，这些步骤耗费的时间很快就会累加起来。

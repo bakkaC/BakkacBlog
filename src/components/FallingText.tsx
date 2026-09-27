@@ -11,6 +11,7 @@ interface FallingTextProps {
   mouseConstraintStiffness?: number;
   fontSize?: string;
   chaosFactor?: number;
+  interactive?: boolean;
 }
 
 const DEFAULT_HIGHLIGHT_WORDS: string[] = [];
@@ -24,7 +25,8 @@ const FallingText: React.FC<FallingTextProps> = ({
   gravity = 1,
   mouseConstraintStiffness = 0.2,
   fontSize = '1rem',
-  chaosFactor = 1
+  chaosFactor = 1,
+  interactive = true
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement | null>(null);
@@ -56,8 +58,19 @@ const FallingText: React.FC<FallingTextProps> = ({
 
   useEffect(() => {
     if (trigger === 'auto') {
-      setEffectStarted(true);
-      return;
+      const startEffect = () => setEffectStarted(true);
+      const idleWindow = window as Window & {
+        requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+        cancelIdleCallback?: (handle: number) => void;
+      };
+
+      if (idleWindow.requestIdleCallback && idleWindow.cancelIdleCallback) {
+        const idleId = idleWindow.requestIdleCallback(startEffect, { timeout: 800 });
+        return () => idleWindow.cancelIdleCallback?.(idleId);
+      }
+
+      const timeoutId = globalThis.setTimeout(startEffect, 250);
+      return () => globalThis.clearTimeout(timeoutId);
     }
     if (trigger === 'scroll' && containerRef.current) {
       const observer = new IntersectionObserver(
@@ -136,16 +149,25 @@ const FallingText: React.FC<FallingTextProps> = ({
       elem.style.transform = `translate3d(${body.position.x}px, ${body.position.y}px, 0) translate(-50%, -50%) rotate(${body.angle}rad)`;
     });
 
-    const mouse = Mouse.create(container);
-    const mouseConstraint = MouseConstraint.create(engine, {
-      mouse,
-      constraint: {
-        stiffness: mouseConstraintStiffness,
-        render: { visible: false }
-      }
-    });
+    const mouse = interactive ? Mouse.create(container) : null;
+    const mouseConstraint = mouse
+      ? MouseConstraint.create(engine, {
+          mouse,
+          constraint: {
+            stiffness: mouseConstraintStiffness,
+            render: { visible: false }
+          }
+        })
+      : null;
 
-    World.add(engine.world, [floor, leftWall, rightWall, ceiling, mouseConstraint, ...wordBodies.map(wb => wb.body)]);
+    World.add(engine.world, [
+      floor,
+      leftWall,
+      rightWall,
+      ceiling,
+      ...(mouseConstraint ? [mouseConstraint] : []),
+      ...wordBodies.map(wb => wb.body)
+    ]);
 
     let animationFrameId: number | null = null;
     let lastFrameTime: number | null = null;
@@ -202,18 +224,20 @@ const FallingText: React.FC<FallingTextProps> = ({
 
       wordBodies.forEach(({ body }) => {
         const wasClamped = clampBodyToContainer(body);
-        if (wasClamped && body === mouseConstraint.body) {
+        if (wasClamped && body === mouseConstraint?.body) {
           activeBodyWasClamped = true;
         }
       });
 
-      if (activeBodyWasClamped && mouseConstraint.body && mouseConstraint.constraint.pointB) {
+      if (activeBodyWasClamped && mouse && mouseConstraint?.body && mouseConstraint.constraint.pointB) {
         mouse.position.x = mouseConstraint.body.position.x + mouseConstraint.constraint.pointB.x;
         mouse.position.y = mouseConstraint.body.position.y + mouseConstraint.constraint.pointB.y;
       }
     };
 
     const constrainMouseTarget = () => {
+      if (!mouse || !mouseConstraint) return;
+
       const activeBody = mouseConstraint.body;
       const pointB = mouseConstraint.constraint.pointB;
       if (!isPointerDown || !activeBody || !pointB) return;
@@ -253,7 +277,7 @@ const FallingText: React.FC<FallingTextProps> = ({
         : Math.min(time - lastFrameTime, 1000 / 30);
       lastFrameTime = time;
 
-      if (!isPointerDown && mouse.button === 0) {
+      if (mouse && !isPointerDown && mouse.button === 0) {
         mouse.button = -1;
         Mouse.clearSourceEvents(mouse);
       }
@@ -301,8 +325,10 @@ const FallingText: React.FC<FallingTextProps> = ({
 
     const releasePointer = (pointerId?: number) => {
       isPointerDown = false;
-      mouse.button = -1;
-      Mouse.clearSourceEvents(mouse);
+      if (mouse) {
+        mouse.button = -1;
+        Mouse.clearSourceEvents(mouse);
+      }
 
       if (pointerId !== undefined && container.hasPointerCapture?.(pointerId)) {
         container.releasePointerCapture(pointerId);
@@ -334,13 +360,15 @@ const FallingText: React.FC<FallingTextProps> = ({
       }
     });
 
-    container.addEventListener('pointerdown', handlePointerDown);
-    container.addEventListener('pointerup', handlePointerUp);
-    container.addEventListener('pointercancel', handlePointerUp);
-    container.addEventListener('lostpointercapture', handlePointerUp);
-    document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointercancel', handlePointerUp);
-    window.addEventListener('blur', handleWindowBlur);
+    if (interactive) {
+      container.addEventListener('pointerdown', handlePointerDown);
+      container.addEventListener('pointerup', handlePointerUp);
+      container.addEventListener('pointercancel', handlePointerUp);
+      container.addEventListener('lostpointercapture', handlePointerUp);
+      document.addEventListener('pointerup', handlePointerUp);
+      document.addEventListener('pointercancel', handlePointerUp);
+      window.addEventListener('blur', handleWindowBlur);
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange);
     visibilityObserver.observe(container);
     startAnimation();
@@ -349,24 +377,28 @@ const FallingText: React.FC<FallingTextProps> = ({
       disposed = true;
       stopAnimation();
       visibilityObserver.disconnect();
-      container.removeEventListener('pointerdown', handlePointerDown);
-      container.removeEventListener('pointerup', handlePointerUp);
-      container.removeEventListener('pointercancel', handlePointerUp);
-      container.removeEventListener('lostpointercapture', handlePointerUp);
-      document.removeEventListener('pointerup', handlePointerUp);
-      document.removeEventListener('pointercancel', handlePointerUp);
-      window.removeEventListener('blur', handleWindowBlur);
+      if (interactive) {
+        container.removeEventListener('pointerdown', handlePointerDown);
+        container.removeEventListener('pointerup', handlePointerUp);
+        container.removeEventListener('pointercancel', handlePointerUp);
+        container.removeEventListener('lostpointercapture', handlePointerUp);
+        document.removeEventListener('pointerup', handlePointerUp);
+        document.removeEventListener('pointercancel', handlePointerUp);
+        window.removeEventListener('blur', handleWindowBlur);
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       releasePointer();
 
-      container.removeEventListener('mousemove', mouse.mousemove);
-      container.removeEventListener('mousedown', mouse.mousedown);
-      container.removeEventListener('mouseup', mouse.mouseup);
-      container.removeEventListener('wheel', mouse.mousewheel);
-      container.removeEventListener('touchmove', mouse.mousemove);
-      container.removeEventListener('touchstart', mouse.mousedown);
-      container.removeEventListener('touchend', mouse.mouseup);
-      Mouse.clearSourceEvents(mouse);
+      if (mouse) {
+        container.removeEventListener('mousemove', mouse.mousemove);
+        container.removeEventListener('mousedown', mouse.mousedown);
+        container.removeEventListener('mouseup', mouse.mouseup);
+        container.removeEventListener('wheel', mouse.mousewheel);
+        container.removeEventListener('touchmove', mouse.mousemove);
+        container.removeEventListener('touchstart', mouse.mousedown);
+        container.removeEventListener('touchend', mouse.mouseup);
+        Mouse.clearSourceEvents(mouse);
+      }
 
       wordBodies.forEach(({ elem }) => {
         elem.style.position = '';
@@ -380,7 +412,7 @@ const FallingText: React.FC<FallingTextProps> = ({
       World.clear(engine.world, false);
       Engine.clear(engine);
     };
-  }, [effectStarted, prefersReducedMotion, gravity, mouseConstraintStiffness, chaosFactor]);
+  }, [effectStarted, prefersReducedMotion, gravity, mouseConstraintStiffness, chaosFactor, interactive]);
 
   const handleTrigger = () => {
     if (!effectStarted && (trigger === 'click' || trigger === 'hover')) {
@@ -392,6 +424,7 @@ const FallingText: React.FC<FallingTextProps> = ({
     <div
       ref={containerRef}
       className="falling-text-container"
+      data-interactive={interactive}
       onClick={trigger === 'click' ? handleTrigger : undefined}
       onMouseEnter={trigger === 'hover' ? handleTrigger : undefined}
       style={{

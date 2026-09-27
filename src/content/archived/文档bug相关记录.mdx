@@ -87,7 +87,7 @@ React 的 useMemo 只在依赖变化时更新，但你的 initParams 依赖里�
 * 之后即使 props 变，也不会更新 ref.current
   这就把“首帧参数”冻结住了。
 
-![](assets/文档bug相关记录/file-20260401161010584.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010584.png)
 
 **为什么不直接写常量或 useState**
 
@@ -119,7 +119,7 @@ src冻结后如何更新？
 
 doc 切换时 startBlocksuiteStyleIsolation() 被反复启动/释放，释放会清掉 Blocksuite 模块级注入的样式，但这些样式在模块缓存后不会再次注入，所以后续文档就“没样式”。
 
-![这里绿色是为了还原测试旧代码，实际上这是被删去的代码](assets/文档bug相关记录/file-20260401161010583.png)
+![这里绿色是为了还原测试旧代码，实际上这是被删去的代码](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010583.png)
 
 事实上，这里没必要再用隔离器了，因为我们保证所有editor都在iframe内部了，删掉相关逻辑即可
 
@@ -354,9 +354,9 @@ AI突然就会了，原本我给予清理状态的指示让他修复闪烁他都
 
 * 订阅/初始化 header 时都写入当前 docId。
 
-![](assets/文档bug相关记录/file-20260401161010583%201.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010583%201.png)
 
-![](assets/文档bug相关记录/file-20260401161010581.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010581.png)
 
 ### 如何解决首次加载的白屏
 
@@ -414,7 +414,7 @@ iframe内部的组件是什么？就是runtime组件，所以应该分析runtime
 
 * 也就是上述的第十步之后，dom挂载发生在createEmbeddedAffineEditor()内部，把style相关内容设置完之后给外部发送render-ready的消息
 
-  ![](assets/文档bug相关记录/file-20260401161010584%201.png)
+  ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010584%201.png)
 
 * 这样保证：
 
@@ -426,7 +426,7 @@ iframe内部的组件是什么？就是runtime组件，所以应该分析runtime
 
 * 而宿主组件监听这个消息，设置loading状态就可以了
 
-  ![](assets/文档bug相关记录/file-20260401161010582.png)
+  ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010582.png)
 
 ### 为什么其他入口还是存在白屏闪烁
 
@@ -448,17 +448,17 @@ SidebarTreeOverlay → 在 chatPage.tsx 中打开文档使用 BlocksuiteDescript
 
 解决方案是在收到ready消息前严格就让其透明
 
-![](assets/文档bug相关记录/file-20260401161010586.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010586.png)
 
 ## 仅在生产环境无法粘贴？
 
-![](assets/文档bug相关记录/file-20260401161010580.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/archived/assets/%E6%96%87%E6%A1%A3bug%E7%9B%B8%E5%85%B3%E8%AE%B0%E5%BD%95/file-20260401161010580.png)
 
 这通常只有两种原因（和“生产才出问题”完全吻合）：
 
 **生产不是安全上下文**
 navigator.clipboard 只在 **HTTPS 或 localhost** 生效。
-开发环境是 <http://localhost（被浏览器当作安全上下文），所以能用；>
+开发环境是 [http://localhost](http://localhost)（被浏览器当作安全上下文），所以能用；
 生产如果是 http://，就会直接变成“不支持”。
 
 **生产响应头禁止了剪贴板权限**

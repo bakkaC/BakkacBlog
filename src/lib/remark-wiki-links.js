@@ -105,6 +105,13 @@ function parseTextNode(value, file, wikiIndex, currentCollection, node) {
     const [, embedMarker, rawTarget] = match;
     const embed = Boolean(embedMarker);
     const parsed = parseWikiReference(rawTarget);
+
+    if (embed && isExcalidrawEmbed(parsed.target)) {
+      nextNodes.push(buildExcalidrawNode(parsed.target));
+      lastIndex = match.index + match[0].length;
+      continue;
+    }
+
     const resolved = resolveWikiReference(parsed.target, wikiIndex, currentCollection);
 
     nextNodes.push(buildWikiNode({
@@ -125,6 +132,30 @@ function parseTextNode(value, file, wikiIndex, currentCollection, node) {
   }
 
   return nextNodes;
+}
+
+function isExcalidrawEmbed(target) {
+  const normalized = target.replaceAll('\\', '');
+  return /^excalidraw\//i.test(normalized) && /\.excalidraw(?:\.md)?$/i.test(normalized);
+}
+
+function buildExcalidrawNode(target) {
+  const normalizedTarget = target
+    .replaceAll('\\', '')
+    .replace(/^excalidraw\//i, '');
+
+  return {
+    type: 'mdxJsxFlowElement',
+    name: 'Excalidraw',
+    attributes: [
+      {
+        type: 'mdxJsxAttribute',
+        name: 'src',
+        value: normalizedTarget,
+      },
+    ],
+    children: [],
+  };
 }
 
 function buildWikiNode({ embed, file, label, node, parsedTarget, resolved, suffix }) {

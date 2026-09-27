@@ -85,15 +85,6 @@ const writing = defineCollection({
   schema: baseSchema,
 });
 
-const Excalidraw = defineCollection({
-  loader: glob({
-    pattern: '**/*.mdx',
-    base: './src/content/Excalidraw',
-    generateId: generateContentId,
-  }),
-  schema: baseSchema,
-});
-
 const 八股 = defineCollection({
   loader: glob({
     pattern: '**/*.{md,mdx}',
@@ -109,6 +100,5 @@ export const collections = {
   blogs,
   archived,
   writing,
-  Excalidraw,
   八股,
 };

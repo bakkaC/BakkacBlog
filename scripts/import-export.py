@@ -8,9 +8,12 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import unquote
 
 
 LINK_RE = re.compile(r"\(([^)]+)\)")
+IMAGE_RE = re.compile(r"!\[[^\]]*\]\((?:<([^>]+)>|([^\s)]+))")
+HTML_IMAGE_RE = re.compile(r"<img\b[^>]*\bsrc=[\"']([^\"']+)[\"']", re.IGNORECASE)
 SKIP_PREFIXES = ("http://", "https://", "mailto:", "data:", "#")
 
 
@@ -50,28 +53,50 @@ def find_single_md(export_dir: Path) -> Path:
     return md_files[0]
 
 
-def collect_asset_dirs(export_dir: Path, markdown: str) -> list[str]:
-    candidates: set[str] = set()
-    for match in LINK_RE.finditer(markdown):
+def image_references(markdown: str) -> list[str]:
+    """Return local Markdown image targets (without optional angle brackets)."""
+    refs: list[str] = []
+    for match in IMAGE_RE.finditer(markdown):
+        raw = (match.group(1) or match.group(2) or "").strip()
+        if raw and not raw.startswith(SKIP_PREFIXES):
+            refs.append(raw)
+    for match in HTML_IMAGE_RE.finditer(markdown):
         raw = match.group(1).strip()
-        if not raw:
-            continue
-        if raw.startswith("<") and raw.endswith(">"):
-            raw = raw[1:-1].strip()
-        if raw.startswith(SKIP_PREFIXES):
-            continue
-        if raw.startswith("./"):
-            raw = raw[2:]
-        head = raw.split("/", 1)[0]
-        if head:
-            candidates.add(head)
-    asset_dirs = [d for d in candidates if (export_dir / d).is_dir()]
-    return sorted(asset_dirs)
+        if raw and not raw.startswith(SKIP_PREFIXES):
+            refs.append(raw)
+    return refs
 
 
-def rewrite_links(markdown: str, asset_dirs: list[str], docname_url: str) -> str:
-    if not asset_dirs:
+def collect_assets(export_dir: Path, markdown_dir: Path, markdown: str) -> list[tuple[str, Path]]:
+    """Resolve every referenced local image, including single files and nested dirs."""
+    assets: list[tuple[str, Path]] = []
+    seen: set[Path] = set()
+    for raw in image_references(markdown):
+        target = (markdown_dir / unquote(raw.split("#", 1)[0].split("?", 1)[0])).resolve()
+        try:
+            target.relative_to(export_dir.resolve())
+        except ValueError:
+            continue
+        if not target.exists() or target in seen:
+            continue
+        seen.add(target)
+        assets.append((raw, target))
+    return assets
+
+
+def rewrite_links(markdown: str, assets: list[tuple[str, Path]], export_dir: Path, docname_url: str) -> str:
+    if not assets:
         return markdown
+
+    export_root = export_dir.resolve()
+    mapping = {
+        raw: f"assets/{docname_url}/{target.relative_to(export_root).as_posix().replace(' ', '%20')}"
+        for raw, target in assets
+    }
+    mapping.update({
+        raw.split("#", 1)[0].split("?", 1)[0]: value
+        for raw, value in list(mapping.items())
+    })
 
     def repl(match: re.Match[str]) -> str:
         raw = match.group(1).strip()
@@ -85,13 +110,21 @@ def rewrite_links(markdown: str, asset_dirs: list[str], docname_url: str) -> str
             return match.group(0)
         if raw.startswith("./"):
             raw = raw[2:]
-        for seg in asset_dirs:
-            if raw.startswith(seg + "/"):
-                new_url = f"assets/{docname_url}/{raw}"
-                return f"({prefix}{new_url}{suffix})"
+        if raw in mapping:
+            return f"({prefix}{mapping[raw]}{suffix})"
         return match.group(0)
 
-    return LINK_RE.sub(repl, markdown)
+    rewritten = LINK_RE.sub(repl, markdown)
+
+    def html_repl(match: re.Match[str]) -> str:
+        raw = match.group(1).strip()
+        clean = raw.split("#", 1)[0].split("?", 1)[0]
+        if clean not in mapping:
+            return match.group(0)
+        replacement = mapping[clean] + raw[len(clean) :]
+        return match.group(0).replace(raw, replacement, 1)
+
+    return HTML_IMAGE_RE.sub(html_repl, rewritten)
 
 
 def main() -> None:
@@ -128,20 +161,25 @@ def main() -> None:
         dest_assets_base.mkdir(parents=True, exist_ok=False)
 
         markdown = md_path.read_text(encoding="utf-8")
-        asset_dirs = collect_asset_dirs(export_dir, markdown)
+        assets = collect_assets(export_dir, md_path.parent, markdown)
 
         shutil.copy2(md_path, dest_md)
-        for asset_dir in asset_dirs:
-            shutil.copytree(export_dir / asset_dir, dest_assets_base / asset_dir)
+        for raw, target in assets:
+            destination = dest_assets_base / target.relative_to(export_dir.resolve())
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if target.is_dir():
+                shutil.copytree(target, destination, dirs_exist_ok=True)
+            else:
+                shutil.copy2(target, destination)
 
-        updated = rewrite_links(markdown, asset_dirs, docname_url)
+        updated = rewrite_links(markdown, assets, export_dir, docname_url)
         dest_md.write_text(updated, encoding="utf-8")
 
         print("Imported:")
         print(f"- Markdown: {dest_md}")
-        if asset_dirs:
+        if assets:
             print(f"- Assets: {dest_assets_base}")
-            print(f"- Asset folders: {', '.join(asset_dirs)}")
+            print(f"- Asset files: {len(assets)}")
         else:
             print("- Assets: none detected")
     finally:

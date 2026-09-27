@@ -4,9 +4,21 @@ import Columns from '../components/content/Columns.astro';
 import Excalidraw from '../components/content/Excalidraw.astro';
 import ZoomImage from '../components/content/ZoomImage.astro';
 
-import viteImage from '../content/notes/assets/Vite/image.png';
-import bestPracticeImage from '../content/thoughts/assets/AI coding Best Practice/image.png';
-import renderingImage from '../content/notes/assets/HTML渲染策略/file-20251208155153967.png';
+const r2PublicUrl = (
+  import.meta.env.R2_PUBLIC_URL ??
+  'https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev'
+).replace(/\/+$/, '');
+
+const r2Asset = (key: string) =>
+  `${r2PublicUrl}/${key.split('/').map(encodeURIComponent).join('/')}`;
+
+const viteImage = r2Asset('src/content/notes/assets/Vite/image.png');
+const bestPracticeImage = r2Asset(
+  'src/content/thoughts/assets/AI coding Best Practice/image.png'
+);
+const renderingImage = r2Asset(
+  'src/content/notes/assets/HTML渲染策略/file-20251208155153967.png'
+);
 ---
 
 <BaseLayout
@@ -95,18 +107,18 @@ import renderingImage from '../content/notes/assets/HTML渲染策略/file-202512
       <div class="space-y-2">
         <h2 class="font-display text-2xl text-foreground">3. Excalidraw 组件</h2>
         <p class="text-sm leading-6 text-muted-foreground">
-          支持直接读取仓库里的 `.excalidraw` 或 Obsidian 导出的 `.excalidraw.mdx` 文件，并生成内嵌预览。
+          支持直接读取仓库里的 `.excalidraw.md` 文件，并生成内嵌预览。
         </p>
       </div>
 
       <Excalidraw
-        src="批量裁剪.excalidraw.excalidraw"
+        src="批量裁剪.excalidraw.md"
         title="批量裁剪"
         caption="直接读取 JSON 版 Excalidraw 文件。"
       />
 
       <Excalidraw
-        src="ReactRrender.excalidraw.mdx"
+        src="ReactRrender.excalidraw.md"
         title="ReactRrender"
         caption="也支持 Obsidian Excalidraw 导出的压缩 markdown 文件。"
         align="left"

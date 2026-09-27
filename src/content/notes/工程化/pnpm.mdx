@@ -11,7 +11,7 @@ description: "梳理 pnpm 的设计初衷、Node 依赖解析、symlink、hoist�
 使用 npm 时，依赖每次被不同的项目使用，都会重复安装一次。  而在使用 pnpm 时，依赖会被存储在内容可寻址的存储中，所以：
 1. 如果你用到了某依赖项的不同版本，只会将不同版本间有差异的文件添加到仓库
 1. 所有文件都会存储在硬盘上的某一位置。 当软件包被被安装时，包里的文件会硬链接到这一位置，而不会占用额外的磁盘空间。 这允许你跨项目地共享同一版本的依赖。
-![](./assets/pnpm/image-1.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-1.png)
 pnpm 的存储核心是：
 
 - 包先进入全局 store
@@ -19,8 +19,8 @@ pnpm 的存储核心是：
 - 而是通过 hard link / symlink 把 store 里的内容组织出来
 
 1. **提高安装速度**
-  ![](./assets/pnpm/image-2.png)
-  ![](./assets/pnpm/image-3.png)
+  ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-2.png)
+  ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-3.png)
 pnpm 分三个阶段执行安装：
 1. 依赖解析。 仓库中没有的依赖都被识别并获取到仓库。
 1. 目录结构计算。 `node_modules` 目录结构是根据依赖计算出来的。
@@ -53,9 +53,9 @@ pnpm 使用 **符号链接**将项目的直接依赖项添加到模块目录的�
 2. 没找到 → 进入**父目录**的 `node_modules/` 找
 3. 没找到 → 继续向上，直到**文件系统根目录**的 `node_modules/`
 4. 全程没找到 → 抛 `MODULE_NOT_FOUND`
-![](./assets/pnpm/image-4.png)
-Node 默认 `preserveSymlinks: false`，意思是：**遇到符号链接时，先跟随到真实物理位置，再从那个位置开始向上查找**。
-**Node 不会递归搜索 node_modules 的子目录，它只在每一层找 ****`node_modules/<包名>`**** 这个直接子节点**。
+   ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-4.png)
+   Node 默认 `preserveSymlinks: false`，意思是：**遇到符号链接时，先跟随到真实物理位置，再从那个位置开始向上查找**。
+   **Node 不会递归搜索 node_modules 的子目录，它只在每一层找 `node_modules/<包名>` 这个直接子节点**。
 
 ## **Symlink**与依赖解析
 
@@ -106,9 +106,9 @@ foo/
 
 如果按直觉构造依赖树，会产生大量互相指向的符号链接，结构复杂、难维护，而且在某些工具里确实可能出现循环遍历问题。这其实就是扁平化的意图
 pnpm 构建 node module 的过程 分为几个步骤：
-![](./assets/pnpm/image-5.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-5.png)
 
-- **下载依赖到全局 Store，**pnpm 把所有依赖包下载到一个**全局 Store**（内容寻址存储）。无论多少个项目引用同一个包，磁盘上只存一份真实文件。这是后续一切复用的基础。
+- **下载依赖到全局 Store，pnpm 把所有依赖包下载到一个全局 Store**（内容寻址存储）。无论多少个项目引用同一个包，磁盘上只存一份真实文件。这是后续一切复用的基础。
 - **Hard Link（硬链接）**
   - 用于复用真实文件，不处理依赖关系，只是递归的把依赖文件进行复用
   - `.pnpm → store`
@@ -125,7 +125,7 @@ node_modules
             └── bar
  ```
 
- ![](./assets/pnpm/image-6.png)
+ ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-6.png)
 
 - **Symlink（符号链接）**
   - 用于表达依赖关系，硬链接只是单纯的把依赖给装到电脑上，项目可以访问，一些依赖内部的依赖关系，比如子依赖，就通过符号链接表达
@@ -143,7 +143,7 @@ node_modules
         └── bar
  ```
 
- ![](./assets/pnpm/image-7.png)
+ ![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-7.png)
 
 - **暴露给项目**
   - `项目 → foo`
@@ -179,7 +179,7 @@ node_modules
 ```
 
 如你所见，即使图形现在更深（`foo > bar > qar`），但目录深度仍然相同。（追求扁平目录是为了防止嵌套带来的重复下载是项目级的，软硬链接的复用是机器级的，还能带来依赖隔离）
-![](./assets/pnpm/image-8.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-8.png)
 它与 Node 的模块解析算法完全兼容，解析模块时，Node 会忽略符号链接，并解析到包的实际位置，因此，`bar` 也可以解析其在 `bar@1.0.0/node_modules` 中的依赖项。
 关键在于 **Node 的模块解析算法会跟随符号链接到包的实际物理位置**。
 当 foo 的代码 `require('bar')` 时，Node 发现 `bar` 是个符号链接，跟随它到达 `bar@1.0.0/node_modules/bar`，然后**从这个真实位置开始向上查找依赖**。
@@ -188,7 +188,7 @@ node_modules
 ## hoist
 
 但是由于历史上有太多 npm 生态下的幽灵依赖（依赖没被声明，所以 pnpm 无法解析，导致依赖缺失），在 pnpm 生态下会直接报错，所以 pnpm 做了一个折中方案。
-![](./assets/pnpm/image-9.png)
+![](https://pub-3e7309b325c44f1aa89203b2c221c2ac.r2.dev/src/content/notes/%E5%B7%A5%E7%A8%8B%E5%8C%96/assets/pnpm/image-9.png)
 pnpm 默认开启 `hoist-pattern: ['*']`，把所有依赖**额外提升**到 `.pnpm/node_modules/` 里（图中右半紫色框）。这不是替代步骤 2-3 的符号链接，而是在它们之上加了一层**共享兜底**。
 关键在于 Node 的模块解析算法是**逐级向上**的：当 foo 的代码 `require('lodash')` 时——
 
