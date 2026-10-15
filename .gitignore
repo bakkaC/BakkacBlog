@@ -39,3 +39,9 @@ yarn-error.log*
 /src/content/**/assets/
 !/src/content/Excalidraw/assets/
 !/src/content/Excalidraw/assets/**
+
+# Keep the architecture article diagrams in the repository.
+!/src/content/notes/assets/
+/src/content/notes/assets/*
+!/src/content/notes/assets/后端架构演进/
+!/src/content/notes/assets/后端架构演进/**
