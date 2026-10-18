@@ -44,7 +44,7 @@ export function ProfileLabel({
           lineHeight: 1,
         }}
       >
-        MY STACK /DESIGN TOOL
+        MY PROFILE &amp; INTERESTS
       </text>
       <text
         x="360"

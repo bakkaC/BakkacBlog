@@ -4,6 +4,8 @@ import './FallingText.css';
 
 interface FallingTextProps {
   text?: string;
+  /** Pre-split chunks. Takes precedence over `text` so labels can contain spaces. */
+  words?: string[];
   highlightWords?: string[];
   highlightClass?: string;
   trigger?: 'auto' | 'scroll' | 'click' | 'hover';
@@ -16,9 +18,18 @@ interface FallingTextProps {
 
 const DEFAULT_HIGHLIGHT_WORDS: string[] = [];
 const LEGACY_PHYSICS_SPEED = 2;
+const WORD_SEPARATOR = '\u0000';
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 const FallingText: React.FC<FallingTextProps> = ({
   text = '',
+  words,
   highlightWords = DEFAULT_HIGHLIGHT_WORDS,
   highlightClass = 'highlighted',
   trigger = 'auto',
@@ -36,15 +47,17 @@ const FallingText: React.FC<FallingTextProps> = ({
 
   useEffect(() => {
     if (!textRef.current) return;
-    const words = text.split(' ');
-    const newHTML = words
+    const chunks = (words ?? text.split(' ')).filter(Boolean);
+    const newHTML = chunks
       .map(word => {
         const isHighlighted = highlightWords.some(hw => word.startsWith(hw));
-        return `<span class="word ${isHighlighted ? highlightClass : ''}">${word}</span>`;
+        return `<span class="word ${isHighlighted ? highlightClass : ''}">${escapeHtml(word)}</span>`;
       })
       .join(' ');
     textRef.current.innerHTML = newHTML;
-  }, [text, highlightWords, highlightClass]);
+    // Hide until Matter has taken over, so the static layout is never painted.
+    textRef.current.style.visibility = 'hidden';
+  }, [text, words?.join(WORD_SEPARATOR), highlightWords, highlightClass]);
 
   useEffect(() => {
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -148,6 +161,9 @@ const FallingText: React.FC<FallingTextProps> = ({
       elem.style.willChange = 'transform';
       elem.style.transform = `translate3d(${body.position.x}px, ${body.position.y}px, 0) translate(-50%, -50%) rotate(${body.angle}rad)`;
     });
+
+    // Reveal only after absolute transforms are applied, avoiding a first-frame flash.
+    textRef.current.style.visibility = '';
 
     const mouse = interactive ? Mouse.create(container) : null;
     const mouseConstraint = mouse
