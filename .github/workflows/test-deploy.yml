@@ -27,12 +27,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Astro 7 requires Node >= 22.22.0.
+          node-version: 22.22
           cache: 'pnpm' # 将缓存目标改为 pnpm
       # --- 修改结束 ---
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile # 使用 pnpm install
 
+      - name: Type-check
+        run: pnpm check
+
       - name: Test build website
-        run: pnpm run build # 使用 pnpm run
+        # `pnpm build` also syncs images to R2, which needs Cloudflare
+        # credentials this job has none of. Build the site only.
+        run: pnpm run build:site
