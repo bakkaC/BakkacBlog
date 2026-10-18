@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type SealVariant = 'notes' | 'thoughts' | 'blogs';
+type SealVariant = 'notes' | 'thoughts' | 'posts';
 
 interface CollectionSealProps {
   label: string;
@@ -30,7 +30,7 @@ const SEAL_STYLES: Record<
       </svg>
     ),
   },
-  blogs: {
+  posts: {
     accent: '#E85B61',
     icon: (
       <svg viewBox="0 0 256 256" aria-hidden="true" className="h-16 w-16 fill-current">

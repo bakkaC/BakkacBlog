@@ -2,7 +2,7 @@ export interface HomePostItem {
   title: string;
   href: string;
   dateLabel: string;
-  collection: 'notes' | 'thoughts' | 'blogs';
+  collection: 'notes' | 'thoughts' | 'posts';
   tags: string[];
 }
 

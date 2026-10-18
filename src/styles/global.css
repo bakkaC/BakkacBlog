@@ -25,6 +25,17 @@
     background-color: #f4f4f4;
   }
 
+  /* Shaders start blank and pop in once WebGL draws, so fade them in instead. */
+  .paper-texture-reveal {
+    transition: opacity 620ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .paper-texture-reveal {
+      transition: none;
+    }
+  }
+
   .paper-texture-background {
     position: absolute;
     inset: 0;

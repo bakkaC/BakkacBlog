@@ -1,4 +1,5 @@
 import { PaperTexture } from '@paper-design/shaders-react';
+import { usePaperTextureReveal } from '../../lib/use-paper-texture-reveal';
 
 /**
  * Paper texture for the collection pages.
@@ -8,8 +9,11 @@ import { PaperTexture } from '@paper-design/shaders-react';
  * importing the same `PaperTexture` symbol so Vite emits one shared chunk.
  */
 export default function PaperTextureBackground() {
+  const { ref, revealed } = usePaperTextureReveal();
+
   return (
     <PaperTexture
+      ref={ref}
       fit="contain"
       scale={0.9}
       blending={1}
@@ -34,7 +38,8 @@ export default function PaperTextureBackground() {
       // Keep the page's accent color as the base; the texture only adds subtle grain and shadows.
       colorPaper="#FFFFFF28"
       colorShadow="#77777772"
-      className="paper-texture-background"
+      className="paper-texture-background paper-texture-reveal"
+      style={{ opacity: revealed ? undefined : 0 }}
     />
   );
 }

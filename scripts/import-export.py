@@ -129,12 +129,12 @@ def rewrite_links(markdown: str, assets: list[tuple[str, Path]], export_dir: Pat
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Import a single-note export into src/content/{notes|blogs|thoughts}."
+        description="Import a single-note export into src/content/{notes|posts|thoughts}."
     )
     parser.add_argument("source", help="Export folder or zip file")
     parser.add_argument(
         "--to",
-        choices=["notes", "blogs", "thoughts"],
+        choices=["notes", "posts", "thoughts"],
         default="notes",
         help="Destination collection (default: notes)",
     )

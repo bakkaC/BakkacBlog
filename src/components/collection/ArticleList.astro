@@ -9,7 +9,7 @@ import { getEntryPath, withBase } from '../../lib/site-taxonomy';
 interface Props {
   title: string;
   subtitle: string;
-  entries: CollectionEntry<'notes' | 'thoughts' | 'blogs'>[];
+  entries: CollectionEntry<'notes' | 'thoughts' | 'posts'>[];
   baseUrl: string;
   rootPath: string;
   accent?: string;
@@ -44,14 +44,14 @@ const isDarkBackButton = backButtonTheme === 'dark';
 const accentThemes = [
   { path: '/notes', accent: '#60a5fa' },
   { path: '/thoughts', accent: '#fcd34d' },
-  { path: '/blog', accent: '#f87171' },
+  { path: '/posts', accent: '#f87171' },
 ];
 
 const matchedTheme = accentThemes.find((theme) => theme.path === rootPath);
 const accent = accentOverride ?? matchedTheme?.accent ?? '#60a5fa';
 const accentBackground = accent;
 
-type ContentEntry = CollectionEntry<'notes' | 'thoughts' | 'blogs'>;
+type ContentEntry = CollectionEntry<'notes' | 'thoughts' | 'posts'>;
 
 type FilesystemNode = {
   id: string;

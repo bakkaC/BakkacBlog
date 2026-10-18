@@ -1,8 +1,8 @@
 import type { ComponentPropsWithoutRef } from 'react';
 
-interface BlogMarkProps extends ComponentPropsWithoutRef<'svg'> {}
+interface PostMarkProps extends ComponentPropsWithoutRef<'svg'> {}
 
-export function BlogMark({ className, ...props }: BlogMarkProps) {
+export function PostMark({ className, ...props }: PostMarkProps) {
   return (
     <svg
       viewBox="0 0 655 252"

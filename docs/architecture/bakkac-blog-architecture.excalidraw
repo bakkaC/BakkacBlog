@@ -247,7 +247,7 @@
       "roughness": 0,
       "opacity": 100,
       "label": {
-        "text": "内容路由\n/blog /notes /thoughts"
+        "text": "内容路由\n/posts /notes /thoughts"
       },
       "roundness": {
         "type": 3,

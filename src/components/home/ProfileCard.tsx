@@ -35,7 +35,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
   const accordionItems = [
     { id: 1, title: 'Notes', bgClass: 'bg-blue-400/80', link: withBase(baseUrl, '/notes') },
     { id: 2, title: 'Thoughts', bgClass: 'bg-yellow-300/80', link: withBase(baseUrl, '/thoughts') },
-    { id: 3, title: 'Blogs', bgClass: 'bg-red-400/80', link: withBase(baseUrl, '/blog') },
+    { id: 3, title: 'Posts', bgClass: 'bg-red-400/80', link: withBase(baseUrl, '/posts') },
   ];
 
   return (

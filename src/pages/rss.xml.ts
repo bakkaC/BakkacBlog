@@ -23,10 +23,10 @@ type FeedItem = {
 export async function GET(context: APIContext) {
   const baseUrl = import.meta.env.BASE_URL;
 
-  const [notes, thoughts, blogs] = await Promise.all([
+  const [notes, thoughts, posts] = await Promise.all([
     getCollection('notes'),
     getCollection('thoughts'),
-    getCollection('blogs'),
+    getCollection('posts'),
   ]);
 
   const items: FeedItem[] = [
@@ -44,10 +44,10 @@ export async function GET(context: APIContext) {
       pubDate: parseContentDate(entry.data.date),
       categories: entry.data.tags,
     })),
-    ...blogs.map((entry) => ({
+    ...posts.map((entry) => ({
       title: entry.data.title ?? entry.id,
       description: entry.data.description,
-      link: withBase(baseUrl, `/blog/${entry.id}`),
+      link: withBase(baseUrl, `/posts/${entry.id}`),
       pubDate: parseContentDate(entry.data.date),
       categories: entry.data.tags,
     })),

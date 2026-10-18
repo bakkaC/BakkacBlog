@@ -88,7 +88,7 @@ const schemas = [websiteSchema, pageSchema].filter(Boolean);
 const navCandidates = [
   { label: 'Notes', path: '/notes' },
   { label: 'Thoughts', path: '/thoughts' },
-  { label: 'Blogs', path: '/blog' },
+  { label: 'Posts', path: '/posts' },
 ];
 const currentPath = Astro.url.pathname ?? '/';
 const navLinks = navCandidates.map((link) => {

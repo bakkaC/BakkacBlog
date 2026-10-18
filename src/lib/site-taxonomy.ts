@@ -2,19 +2,19 @@ import type { CollectionEntry } from 'astro:content';
 
 import { getContentDateTimestamp } from './content-date';
 
-export type ArticleCollection = 'notes' | 'thoughts' | 'blogs';
+export type ArticleCollection = 'notes' | 'thoughts' | 'posts';
 export type SiteEntry = CollectionEntry<ArticleCollection>;
 
 export const COLLECTION_ROOTS: Record<ArticleCollection, string> = {
   notes: '/notes',
   thoughts: '/thoughts',
-  blogs: '/blog',
+  posts: '/posts',
 };
 
 export const COLLECTION_LABELS: Record<ArticleCollection, string> = {
   notes: 'Notes',
   thoughts: 'Thoughts',
-  blogs: 'Blogs',
+  posts: 'Posts',
 };
 
 export const normalizeBase = (value: string) => (value.endsWith('/') ? value : `${value}/`);

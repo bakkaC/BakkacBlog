@@ -29,7 +29,7 @@ const workspaceRoot = process.cwd();
 const contentRoot = path.join(workspaceRoot, 'src/content');
 const externalAssetCollections = new Set([
   'archived',
-  'blogs',
+  'posts',
   'notes',
   'thoughts',
   'writing',
