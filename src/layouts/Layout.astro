@@ -152,16 +152,54 @@ const navLinks = navCandidates.map((link) => {
         set:html={JSON.stringify(schemas)}
         is:inline
       />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link rel="preconnect" href="https://db.onlinewebfonts.com" crossorigin />
+      {/*
+        The DIN stylesheet is third-party, so it must not block first paint. The
+        preload + print-media swap downloads it at high priority without making
+        the whole page wait on a remote response.
+      */}
       <link
-        rel="stylesheet"
+        rel="preload"
+        as="style"
         href="https://db.onlinewebfonts.com/c/2a2b767302dad0d292294c13d63a0c5f?family=DIN+2014"
+        data-font-stylesheet
       />
-      <link rel="icon" type="image/jpeg" href={withSiteBase('/kumiko.jpg')} />
+      <script is:inline>
+        (() => {
+          const hint = document.querySelector('link[data-font-stylesheet]');
+          if (!hint) return;
+          const sheet = document.createElement('link');
+          sheet.rel = 'stylesheet';
+          sheet.href = hint.href;
+          // A print stylesheet is fetched but not render-blocking; flip it to all
+          // once it arrives so the face applies without gating the first paint.
+          sheet.media = 'print';
+          sheet.addEventListener('load', () => {
+            sheet.media = 'all';
+          });
+          document.head.appendChild(sheet);
+        })();
+      </script>
+      <noscript>
+        <link
+          rel="stylesheet"
+          href="https://db.onlinewebfonts.com/c/2a2b767302dad0d292294c13d63a0c5f?family=DIN+2014"
+        />
+      </noscript>
+      <link rel="icon" type="image/png" href={withSiteBase('/kumiko-favicon.png')} />
       {navLinks.map((link) => (
         <link rel="prefetch" href={link.href} />
       ))}
+
+      {/*
+        Warm the shader bundle the collection pages share with home. Prefetching
+        the page HTML alone leaves the WebGL paper texture to be discovered after
+        navigation, which is the slowest part of those pages.
+
+        The URL is a placeholder resolved at bundle time, because the chunk name
+        is content-hashed and unknown while rendering.
+      */}
+      <link rel="modulepreload" href="/__PAPER_TEXTURE_CHUNK__" />
     </head>
     <body class="min-h-screen bg-background text-foreground">
       <header class="sticky top-0 z-50 bg-background/80 backdrop-blur">

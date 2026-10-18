@@ -6,6 +6,7 @@ import sitemap from '@astrojs/sitemap';
 import { fileURLToPath } from 'url';
 import { remarkWikiLinks } from './src/lib/remark-wiki-links.js';
 import { remarkMermaid } from './src/lib/remark-mermaid.js';
+import { paperChunkIntegration } from './src/lib/paper-chunk-integration.mjs';
 // @ts-check
 
 import tailwindcss from '@tailwindcss/vite';
@@ -22,6 +23,7 @@ export default defineConfig({
   integrations: [
     mdx(),
     react(),
+    paperChunkIntegration(),
     sitemap({
       filter: (page) =>
         !page.endsWith('/rss.xml') && !page.endsWith('/robots.txt'),
