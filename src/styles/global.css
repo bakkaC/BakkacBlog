@@ -21,6 +21,22 @@
 }
 
 @layer components {
+  .homepage-paper-texture {
+    background-color: #f4f4f4;
+  }
+
+  .paper-texture-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    mix-blend-mode: multiply;
+    opacity: 0.9;
+    pointer-events: none;
+  }
+
   .mono-latin-songti-cjk {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
       "Liberation Mono", "Courier New", "PingFang SC", "Hiragino Sans GB",

@@ -2,6 +2,7 @@
 import type { CollectionEntry } from 'astro:content';
 
 import { FilesystemItem } from '../ui/filesystem-item';
+import PaperTextureBackground from '../ui/PaperTextureBackground';
 import { formatContentDate, getContentDateTimestamp } from '../../lib/content-date';
 import { getEntryPath, withBase } from '../../lib/site-taxonomy';
 
@@ -33,7 +34,7 @@ const {
   headerTheme = 'light',
   backButtonTheme = 'light',
   panelClassName,
-  overlayClassName = 'bg-black/10',
+  overlayClassName = 'bg-transparent',
   hoverTextClassName = 'group-hover:text-accent',
 } = Astro.props;
 const withSiteBase = (path: string) => withBase(baseUrl, path);
@@ -223,6 +224,7 @@ const listNodes = assignEntryIndexes(inheritFolderMeta(sortTree(rootNodes)));
   class="relative min-h-[calc(100vh-80px)] overflow-hidden bg-(--accent-bg) text-stone-900"
   style={`--accent: ${accent}; --accent-bg: ${accentBackground};`}
 >
+  <PaperTextureBackground client:load />
   <div
     aria-hidden="true"
     class:list={['pointer-events-none absolute inset-0 z-0', overlayClassName]}

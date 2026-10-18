@@ -20,6 +20,7 @@
     "@astrojs/check": "^0.9.9",
     "@astrojs/react": "^5.0.7",
     "@excalidraw/excalidraw": "^0.18.1",
+    "@paper-design/shaders-react": "0.0.81",
     "@radix-ui/react-slot": "^1.2.4",
     "astro": "^6.4.4",
     "class-variance-authority": "^0.7.1",
