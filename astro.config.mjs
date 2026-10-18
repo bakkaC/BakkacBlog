@@ -20,6 +20,10 @@ export default defineConfig({
   base: siteBase,
   trailingSlash: 'never',
   output: 'static',
+  // Astro 7 defaults to JSX whitespace rules, which strips the space between
+  // adjacent inline elements and changes rendered prose. Keep the v6
+  // HTML-aware behaviour instead.
+  compressHTML: true,
   integrations: [
     mdx(),
     react(),
