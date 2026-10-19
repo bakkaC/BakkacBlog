@@ -9,5 +9,11 @@
       "@lib/*": ["./src/lib/*"],
       "@styles/*": ["./src/styles/*"]
     }
-  }
+  },
+  "contentMappers": [
+    {
+      "package": "@astrojs/ts-content-mapper",
+      "extensions": [".astro"]
+    }
+  ]
 }
