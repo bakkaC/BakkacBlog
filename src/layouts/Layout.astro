@@ -31,13 +31,15 @@ const pageDescription =
 const baseUrl = import.meta.env.BASE_URL;
 const withSiteBase = (path: string) => withBase(baseUrl, path);
 const homeHref = withSiteBase('/');
-const navAvatarSrc = withSiteBase('/kumiko.jpg');
+const navAvatarSrc = withSiteBase('/kumiko-avatar.webp');
 
 const canonicalUrl =
   canonical ??
   (Astro.site ? new URL(Astro.url.pathname, Astro.site).toString() : Astro.url.toString());
 
-const ogImagePath = image ?? '/kumiko.jpg';
+// Social previews need something larger than the 128px nav avatar, so they use
+// the favicon-sized illustration instead.
+const ogImagePath = image ?? '/kumiko-favicon.png';
 const ogImageUrl = Astro.site
   ? new URL(withSiteBase(ogImagePath), Astro.site).toString()
   : withSiteBase(ogImagePath);
@@ -152,40 +154,19 @@ const navLinks = navCandidates.map((link) => {
         set:html={JSON.stringify(schemas)}
         is:inline
       />
-      <link rel="preconnect" href="https://db.onlinewebfonts.com" crossorigin />
       {/*
-        The DIN stylesheet is third-party, so it must not block first paint. The
-        preload + print-media swap downloads it at high priority without making
-        the whole page wait on a remote response.
+        The DIN 2014 display face is self-hosted (same origin, so no DNS/TLS
+        round trip to a third party) and preloaded at high priority. `font-display:
+        swap` lives in the `@font-face` rule in `global.css`, so text paints
+        immediately in the fallback and swaps when the face arrives.
       */}
       <link
         rel="preload"
-        as="style"
-        href="https://db.onlinewebfonts.com/c/2a2b767302dad0d292294c13d63a0c5f?family=DIN+2014"
-        data-font-stylesheet
+        as="font"
+        type="font/woff2"
+        href={withSiteBase('/fonts/din-2014.woff2')}
+        crossorigin
       />
-      <script is:inline>
-        (() => {
-          const hint = document.querySelector('link[data-font-stylesheet]');
-          if (!hint) return;
-          const sheet = document.createElement('link');
-          sheet.rel = 'stylesheet';
-          sheet.href = hint.href;
-          // A print stylesheet is fetched but not render-blocking; flip it to all
-          // once it arrives so the face applies without gating the first paint.
-          sheet.media = 'print';
-          sheet.addEventListener('load', () => {
-            sheet.media = 'all';
-          });
-          document.head.appendChild(sheet);
-        })();
-      </script>
-      <noscript>
-        <link
-          rel="stylesheet"
-          href="https://db.onlinewebfonts.com/c/2a2b767302dad0d292294c13d63a0c5f?family=DIN+2014"
-        />
-      </noscript>
       <link rel="icon" type="image/png" href={withSiteBase('/kumiko-favicon.png')} />
       {navLinks.map((link) => (
         <link rel="prefetch" href={link.href} />

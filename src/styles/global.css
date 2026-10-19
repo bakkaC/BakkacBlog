@@ -2,6 +2,22 @@
 
 @plugin "tailwindcss-animate";
 
+/*
+ * DIN 2014 is self-hosted: the same-origin file is preloaded from the layout,
+ * so it costs no extra DNS/TLS round trip. `swap` keeps headings readable in
+ * the fallback immediately and swaps once the face lands.
+ *
+ * Attribution, required by the CC BY 4.0 licence the face is published under:
+ * font made from http://www.onlinewebfonts.com/fonts
+ */
+@font-face {
+  font-family: "DIN 2014";
+  src: url("/fonts/din-2014.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 @config "../../tailwind.config.mjs";
 
