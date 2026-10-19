@@ -23,6 +23,8 @@ yarn-error.log*
 # Local QA / acceptance artifacts
 /.playwright-mcp/
 /artifacts/
+/after-illustration-layer.png
+/after-layer-fix.png
 /components-preview-*.png
 /desktop-cut-*.png
 /excalidraw-modal-after.png
@@ -30,6 +32,10 @@ yarn-error.log*
 /homepage-*.png
 /mobile-*.png
 /profilecard-cut-*.png
+/stone-cuboids.png
+/stone-current.png
+/stone-piers-preview.png
+/stone-piers-repositioned.png
 /zoom-modal-after.png
 
 # Astro generated build/cache

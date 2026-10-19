@@ -9,7 +9,7 @@ export function LatestPosts({ posts }: LatestPostsProps) {
     <section>
       <div className="flex items-center gap-3 text-xs uppercase text-slate-500">
         <span>Latest Posts</span>
-        <span className="h-px flex-1 bg-slate-200" />
+        <span className="h-px flex-1 bg-slate-300" />
       </div>
 
       <div className="mt-5 space-y-3">

@@ -6,13 +6,13 @@ import BaseLayout from '../../layouts/Layout.astro';
 import { COLLECTION_LABELS, collectTagBuckets } from '../../lib/site-taxonomy';
 
 export async function getStaticPaths() {
-  const [notes, thoughts, blogs] = await Promise.all([
+  const [notes, thoughts, posts] = await Promise.all([
     getCollection('notes'),
     getCollection('thoughts'),
-    getCollection('blogs'),
+    getCollection('posts'),
   ]);
 
-  const tagBuckets = collectTagBuckets([...notes, ...thoughts, ...blogs]);
+  const tagBuckets = collectTagBuckets([...notes, ...thoughts, ...posts]);
 
   return tagBuckets.map((bucket) => ({
     params: { slug: bucket.slug },

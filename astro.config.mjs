@@ -6,6 +6,7 @@ import sitemap from '@astrojs/sitemap';
 import { fileURLToPath } from 'url';
 import { remarkWikiLinks } from './src/lib/remark-wiki-links.js';
 import { remarkMermaid } from './src/lib/remark-mermaid.js';
+import { paperChunkIntegration } from './src/lib/paper-chunk-integration.mjs';
 // @ts-check
 
 import tailwindcss from '@tailwindcss/vite';
@@ -19,9 +20,14 @@ export default defineConfig({
   base: siteBase,
   trailingSlash: 'never',
   output: 'static',
+  // Astro 7 defaults to JSX whitespace rules, which strips the space between
+  // adjacent inline elements and changes rendered prose. Keep the v6
+  // HTML-aware behaviour instead.
+  compressHTML: true,
   integrations: [
     mdx(),
     react(),
+    paperChunkIntegration(),
     sitemap({
       filter: (page) =>
         !page.endsWith('/rss.xml') && !page.endsWith('/robots.txt'),

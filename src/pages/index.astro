@@ -13,13 +13,13 @@ import {
 } from '../lib/site-taxonomy';
 
 const baseUrl = import.meta.env.BASE_URL;
-const [notes, thoughts, blogs] = await Promise.all([
+const [notes, thoughts, posts] = await Promise.all([
   getCollection('notes'),
   getCollection('thoughts'),
-  getCollection('blogs'),
+  getCollection('posts'),
 ]);
 
-const entries = sortEntriesByDate([...notes, ...thoughts, ...blogs]);
+const entries = sortEntriesByDate([...notes, ...thoughts, ...posts]);
 const tagBuckets = collectTagBuckets(entries);
 
 const latestPosts = entries.slice(0, 5).map((entry) => ({

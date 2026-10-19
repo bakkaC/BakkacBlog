@@ -4,7 +4,7 @@ import ArticleList from '../../components/collection/ArticleList.astro';
 import { getCollection } from 'astro:content';
 import { getContentDateTimestamp } from '../../lib/content-date';
 
-const entries = await getCollection('blogs');
+const entries = await getCollection('posts');
 const sorted = [...entries].sort((a, b) => {
   const aDate = getContentDateTimestamp(a.data.date);
   const bDate = getContentDateTimestamp(b.data.date);
@@ -15,12 +15,12 @@ const sorted = [...entries].sort((a, b) => {
 const baseUrl = import.meta.env.BASE_URL;
 ---
 
-<BaseLayout title="Blogs" description="随想杂记文章列表">
+<BaseLayout title="Posts" description="随想杂记文章列表">
   <ArticleList
-    title="Blog"
+    title="Posts"
     subtitle="随想杂记与生活记录"
     entries={sorted}
     baseUrl={baseUrl}
-    rootPath="/blog"
+    rootPath="/posts"
   />
 </BaseLayout>

@@ -1,6 +1,6 @@
 # 导入脚本说明（import-export.py）
 
-用于把飞书/Notion 导出的**单篇文档**快速导入到 `src/content/{notes|blogs|thoughts}`，同时整理图片到对应的 `assets` 目录，并自动改写 Markdown 图片路径。
+用于把飞书/Notion 导出的**单篇文档**快速导入到 `src/content/{notes|posts|thoughts}`，同时整理图片到对应的 `assets` 目录，并自动改写 Markdown 图片路径。
 
 ## 适用的导出结构
 
@@ -18,7 +18,7 @@
 
 ```bash
 python3 scripts/import-export.py /path/to/exported-folder --to notes
-python3 scripts/import-export.py /path/to/export.zip --to blogs
+python3 scripts/import-export.py /path/to/export.zip --to posts
 # 不写 --to 默认导入 notes
 ```
 
@@ -27,7 +27,7 @@ python3 scripts/import-export.py /path/to/export.zip --to blogs
 - 查找导出内容中的 **唯一** `.md` 源文件
 - 将内容写入目标集合目录的 `.mdx` 文件：
   - `src/content/notes/`
-  - `src/content/blogs/`
+  - `src/content/posts/`
   - `src/content/thoughts/`
 - 将图片目录复制到：
   - `src/content/<集合>/assets/<文档名>/`
@@ -57,5 +57,5 @@ python3 scripts/import-export.py /path/to/export.zip --to blogs
 ## 可扩展方向（需要的话告诉我）
 
 - 支持批量导入（一个目录内多篇文档）
-- 自动判断落入 notes/blogs/thoughts
+- 自动判断落入 notes/posts/thoughts
 - 支持“移动”而非“复制”资源

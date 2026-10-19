@@ -58,10 +58,10 @@ const thoughts = defineCollection({
   schema: baseSchema,
 });
 
-const blogs = defineCollection({
+const posts = defineCollection({
   loader: glob({
     pattern: '**/*.{md,mdx}',
-    base: './src/content/blogs',
+    base: './src/content/posts',
     generateId: generateContentId,
   }),
   schema: baseSchema,
@@ -97,7 +97,7 @@ const 八股 = defineCollection({
 export const collections = {
   notes,
   thoughts,
-  blogs,
+  posts,
   archived,
   writing,
   八股,

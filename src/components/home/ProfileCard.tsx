@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import { withBase } from '../../lib/site-taxonomy';
 import FallingText from '../FallingText';
+import Noise from '../ui/Noise';
 import { ProfileLabel } from './ProfileLabel';
+import { ProfileIllustration } from './ProfileIllustration';
 
 interface ProfileCardProps {
   baseUrl: string;
@@ -10,6 +12,20 @@ interface ProfileCardProps {
 
 export function ProfileCard({ baseUrl }: ProfileCardProps) {
   const [activeIndex, setActiveIndex] = useState(2);
+  const fallingLabels = [
+    'UI/UX',
+    'AI Agent',
+    'Motion',
+    'Fullstack Dev',
+    'Graphic Designer',
+    'Product Engineer',
+    'Anime',
+    'GalGame',
+    'Manga',
+    'Ranobe',
+    'Movie',
+    'Vocaloid',
+  ];
   const now = new Date();
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(now);
   const dayLabel = String(now.getDate()).padStart(2, '0');
@@ -17,14 +33,14 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
   const weekdayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(now);
 
   const accordionItems = [
-    { id: 1, title: 'Notes', bgClass: 'bg-blue-400', link: withBase(baseUrl, '/notes') },
-    { id: 2, title: 'Thoughts', bgClass: 'bg-yellow-300', link: withBase(baseUrl, '/thoughts') },
-    { id: 3, title: 'Blogs', bgClass: 'bg-red-400', link: withBase(baseUrl, '/blog') },
+    { id: 1, title: 'Notes', bgClass: 'bg-blue-400/80', link: withBase(baseUrl, '/notes') },
+    { id: 2, title: 'Thoughts', bgClass: 'bg-yellow-300/80', link: withBase(baseUrl, '/thoughts') },
+    { id: 3, title: 'Posts', bgClass: 'bg-red-400/80', link: withBase(baseUrl, '/posts') },
   ];
 
   return (
     <div
-      className="relative flex w-full flex-col items-center gap-20 overflow-visible bg-white p-12 sm:gap-8 sm:p-12 md:flex-row md:flex-nowrap md:items-center md:justify-between md:gap-8 md:p-8 lg:gap-12 lg:p-16"
+      className="relative flex w-full flex-col items-center gap-20 overflow-visible bg-white p-12 md:flex-row md:flex-nowrap md:items-center md:justify-between md:gap-8 md:p-8 lg:gap-12 lg:p-16"
       style={{ clipPath: 'polygon(var(--cut-size) 0, 100% 0, 100% 100%, 0 100%, 0 var(--cut-size))' }}
     >
       <svg
@@ -35,14 +51,14 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
       >
         <path d="M0 100 L100 0 L100 100 Z" fill="none" stroke="currentColor" strokeWidth="3" strokeDasharray="6 4" vectorEffect="non-scaling-stroke" />
       </svg>
-      <span className="pointer-events-none absolute right-6 top-6 h-6 w-6 border-r-2 border-t-2 border-slate-900" />
+      <span className="pointer-events-none absolute right-6 top-6 z-30 h-6 w-6 border-r-2 border-t-2 border-slate-900" />
       <span className="pointer-events-none absolute left-6 bottom-6 h-6 w-6 border-l-2 border-b-2 border-slate-900" />
       <span className="pointer-events-none absolute right-6 bottom-6 h-6 w-6 border-r-2 border-b-2 border-slate-900" />
       <div className="relative z-0 top-28 w-full md:top-32 md:max-w-xs text-black md:shrink-0">
         <div className="relative z-10 -mt-10 mb-20 flex flex-col items-start gap-2 md:absolute md:mt-0 md:-top-52 md:left-0 md:mb-0 md:w-[20rem] lg:-top-60 lg:w-104">
           <div className="max-w-xs md:max-w-60 lg:max-w-xs">
             <p className="text-xs pb-4 text-slate-800 md:text-xs md:leading-5 lg:text-sm lg:leading-6">
-              我是 Bakka，一名学生，对 全栈开发、设计、AI Agent 和各种知识都感兴趣。
+              我是马鹿🫎，对 全栈开发、设计、AI Agent 和各种知识都感兴趣。
               爱好是ACGN，音乐和影像，也会在这里记录我的思考。
             </p>
           </div>
@@ -65,7 +81,15 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         <div className="absolute z-10 inline-flex -translate-y-full items-center gap-1 pb-2 tracking-wider font-mono text-[10px]">
           {yearLabel}-{weekdayLabel}
         </div>
-        <div className="pointer-events-none absolute bottom-16 -left-12 h-20 w-[calc(100%+6rem)] bg-zinc-200 sm:bottom-18 sm:h-28 md:left-0 md:inset-y-0 md:h-auto md:w-[200vw]" />
+        <div className="absolute z-0 inline-flex -translate-y-full items-center gap-1 pb-2 tracking-wider font-mono text-[10px]">
+          <ProfileIllustration
+            className="pointer-events-none absolute z-0 aspect-316/211 h-auto w-36 translate-x-56 translate-y-2 md:w-[clamp(10rem,18vw,15rem)] md:translate-x-48 md:translate-y-2 lg:translate-x-88 lg:translate-y-2"
+          />
+        </div>
+        <div className="pointer-events-none absolute bottom-16 -left-12 h-20 w-[calc(100%+6rem)] bg-zinc-200 md:left-0 md:inset-y-0 md:h-auto md:w-[200vw]" />
+        <div className="pointer-events-none absolute bottom-8 -left-12 h-8 w-[calc(100%+6rem)] overflow-hidden bg-zinc-100/55 md:-bottom-10 md:left-0 md:h-10 md:w-[200vw] lg:-bottom-20 lg:h-20" aria-hidden="true">
+          <Noise patternRefreshInterval={0} patternAlpha={18} className="mix-blend-multiply opacity-30" />
+        </div>
         <div className="relative z-10 flex justify-center md:block p-8">
           <ProfileLabel
             monthLabel={monthLabel}
@@ -77,7 +101,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
 
       <div className="pointer-events-none absolute bottom-88 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56" aria-hidden="true">
         <FallingText
-          text="React TailwindCSS TanstackStart Codex PostgreSQL AfterEffects Figma Springboot Vite"
+          words={fallingLabels}
           highlightClass="highlighted"
           trigger="auto"
           gravity={0.56}
@@ -88,12 +112,12 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         />
       </div>
 
-      <div className="relative z-10 flex min-h-76 w-full items-center justify-center gap-3 overflow-x-auto md:ml-auto md:w-auto md:flex-1 md:items-start md:justify-end sm:gap-4 sm:min-h-120 lg:min-h-140">
+      <div className="relative z-10 flex min-h-76 w-full items-center justify-center gap-3 overflow-x-auto md:ml-auto md:w-auto md:flex-1 md:items-start md:justify-end md:gap-4 md:min-h-120 lg:min-h-140">
         {accordionItems.map((item, index) => (
           <div
             key={item.id}
-            className={`relative h-76 cursor-pointer overflow-hidden rounded-none bg-muted transition-all duration-700 ease-in-out sm:h-120 lg:h-140 ${
-              index === activeIndex ? 'w-[16rem] sm:w-88 lg:w-100' : 'w-12 sm:w-16 lg:w-15'
+            className={`relative h-76 cursor-pointer overflow-hidden rounded-none bg-transparent backdrop-blur-md backdrop-saturate-150 transition-all duration-700 ease-in-out md:h-120 lg:h-140 ${
+              index === activeIndex ? 'w-[16rem] md:w-88 lg:w-100' : 'w-12 md:w-16 lg:w-15'
             }`}
             onMouseEnter={() => setActiveIndex(index)}
             onClick={() => {
@@ -107,8 +131,8 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
             <div className={`absolute inset-0 z-0 ${item.bgClass}`} />
             <div className="pointer-events-none absolute inset-0 z-10 bg-black/10" />
             <span
-              className={`font-sans absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap text-2xl font-bold text-white transition-all duration-300 sm:text-3xl lg:text-4xl ${
-                index === activeIndex ? 'bottom-6 rotate-0' : 'bottom-16 rotate-90 sm:bottom-24'
+              className={`font-sans absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap text-2xl font-bold text-white transition-all duration-300 md:text-3xl lg:text-4xl ${
+                index === activeIndex ? 'bottom-6 rotate-0' : 'bottom-16 rotate-90 md:bottom-24'
               }`}
             >
               {item.title}

@@ -14,9 +14,9 @@ const PUBLISHED_COLLECTIONS = {
     dir: path.join(CONTENT_ROOT, 'thoughts'),
     routeBase: '/thoughts',
   },
-  blogs: {
-    dir: path.join(CONTENT_ROOT, 'blogs'),
-    routeBase: '/blog',
+  posts: {
+    dir: path.join(CONTENT_ROOT, 'posts'),
+    routeBase: '/posts',
   },
 };
 
@@ -25,8 +25,11 @@ const COLLECTION_ALIASES = new Map([
   ['notes', 'notes'],
   ['thought', 'thoughts'],
   ['thoughts', 'thoughts'],
-  ['blog', 'blogs'],
-  ['blogs', 'blogs'],
+  ['post', 'posts'],
+  ['posts', 'posts'],
+  // Keep legacy `blog:` / `blogs:` prefixes working for older content.
+  ['blog', 'posts'],
+  ['blogs', 'posts'],
 ]);
 
 const SKIP_NODE_TYPES = new Set([

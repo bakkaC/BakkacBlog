@@ -1,0 +1,848 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "mcp-excalidraw-server",
+  "elements": [
+    {
+      "id": "zone-content",
+      "type": "rectangle",
+      "x": 80,
+      "y": 180,
+      "width": 330,
+      "height": 570,
+      "backgroundColor": "#FAFAFA",
+      "strokeColor": "#7373732E",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3,
+        "value": 16
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.358Z",
+      "updatedAt": "2026-10-17T15:58:14.358Z",
+      "version": 1
+    },
+    {
+      "id": "zone-build",
+      "type": "rectangle",
+      "x": 480,
+      "y": 180,
+      "width": 420,
+      "height": 570,
+      "backgroundColor": "#EEEFFF",
+      "strokeColor": "#654ACB",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3,
+        "value": 16
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "zone-runtime",
+      "type": "rectangle",
+      "x": 970,
+      "y": 180,
+      "width": 550,
+      "height": 570,
+      "backgroundColor": "#FAFAFA",
+      "strokeColor": "#7373732E",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": {
+        "type": 3,
+        "value": 16
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "content-mdx",
+      "type": "rectangle",
+      "x": 130,
+      "y": 290,
+      "width": 230,
+      "height": 95,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "内容集合\nMDX / Markdown"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "content-public",
+      "type": "rectangle",
+      "x": 130,
+      "y": 445,
+      "width": 230,
+      "height": 95,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "静态资源\npublic/ + R2"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "content-taxonomy",
+      "type": "rectangle",
+      "x": 130,
+      "y": 600,
+      "width": 230,
+      "height": 95,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "站点约定\n标签 / Wiki 链接"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "build-core",
+      "type": "rectangle",
+      "x": 555,
+      "y": 330,
+      "width": 270,
+      "height": 130,
+      "backgroundColor": "#654ACB",
+      "strokeColor": "#654ACB",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "Astro 构建核心\n静态站点生成"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 16
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "build-plugins",
+      "type": "rectangle",
+      "x": 535,
+      "y": 535,
+      "width": 170,
+      "height": 100,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "内容处理\nMDX / Remark"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "build-integrations",
+      "type": "rectangle",
+      "x": 725,
+      "y": 535,
+      "width": 170,
+      "height": 100,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "组件集成\nReact / Tailwind"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "runtime-home",
+      "type": "rectangle",
+      "x": 1030,
+      "y": 290,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "首页与入口\n/ /wall /tags"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "runtime-content",
+      "type": "rectangle",
+      "x": 1270,
+      "y": 290,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "内容路由\n/posts /notes /thoughts"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "runtime-ui",
+      "type": "rectangle",
+      "x": 1030,
+      "y": 460,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "交互组件\nReact / Matter.js"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "runtime-render",
+      "type": "rectangle",
+      "x": 1270,
+      "y": 460,
+      "width": 200,
+      "height": 95,
+      "backgroundColor": "#EEEFFF",
+      "strokeColor": "#654ACB",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "文章渲染\nExcalidraw / Mermaid"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "deploy-pages",
+      "type": "rectangle",
+      "x": 1030,
+      "y": 625,
+      "width": 200,
+      "height": 70,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "Cloudflare Pages"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "deploy-r2",
+      "type": "rectangle",
+      "x": 1270,
+      "y": 625,
+      "width": 200,
+      "height": 70,
+      "backgroundColor": "#FFFFFF",
+      "strokeColor": "#7373735C",
+      "strokeWidth": 1,
+      "roughness": 0,
+      "opacity": 100,
+      "label": {
+        "text": "Cloudflare R2\n媒体资源"
+      },
+      "roundness": {
+        "type": 3,
+        "value": 12
+      },
+      "fillStyle": "solid",
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "title",
+      "type": "text",
+      "x": 80,
+      "y": 60,
+      "width": 900,
+      "height": 40,
+      "strokeColor": "#0A0A0A",
+      "text": "Bakkac Blog · 系统架构",
+      "fontSize": 28,
+      "fontFamily": 2,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "intro",
+      "type": "text",
+      "x": 80,
+      "y": 112,
+      "width": 1120,
+      "height": 25,
+      "strokeColor": "#404040",
+      "text": "从内容源到静态部署：Astro 构建核心连接内容处理、交互组件与 Cloudflare 运行环境",
+      "fontSize": 16,
+      "fontFamily": 2,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "label-content",
+      "type": "text",
+      "x": 110,
+      "y": 215,
+      "width": 220,
+      "height": 30,
+      "strokeColor": "#0A0A0A",
+      "text": "内容与配置",
+      "fontSize": 20,
+      "fontFamily": 2,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "label-build",
+      "type": "text",
+      "x": 510,
+      "y": 215,
+      "width": 240,
+      "height": 30,
+      "strokeColor": "#0A0A0A",
+      "text": "构建与转换",
+      "fontSize": 20,
+      "fontFamily": 2,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "label-runtime",
+      "type": "text",
+      "x": 1000,
+      "y": 215,
+      "width": 260,
+      "height": 30,
+      "strokeColor": "#0A0A0A",
+      "text": "页面与部署",
+      "fontSize": 20,
+      "fontFamily": 2,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "x": 510,
+      "y": 705,
+      "width": 380,
+      "height": 25,
+      "strokeColor": "#404040",
+      "text": "输出：可部署的静态 dist/",
+      "fontSize": 16,
+      "fontFamily": 2,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-mdx",
+      "type": "arrow",
+      "x": 367.93404031670235,
+      "y": 353.3847355465402,
+      "width": 195,
+      "height": 40,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          179.13191936659524,
+          23.14625924399826
+        ]
+      ],
+      "start": {
+        "id": "content-mdx"
+      },
+      "end": {
+        "id": "build-core"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-public",
+      "type": "arrow",
+      "x": 367.81462688260035,
+      "y": 465.59117725605944,
+      "width": 195,
+      "height": -80,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          179.3707462347993,
+          -39.30033204020879
+        ]
+      ],
+      "start": {
+        "id": "content-public"
+      },
+      "end": {
+        "id": "build-core"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-taxonomy",
+      "type": "arrow",
+      "x": 335.6708120883562,
+      "y": 596.0519549386294,
+      "width": 195,
+      "height": -205,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          232.8167916648717,
+          -132.10390987725867
+        ]
+      ],
+      "start": {
+        "id": "content-taxonomy"
+      },
+      "end": {
+        "id": "build-core"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-process",
+      "type": "arrow",
+      "x": 663.2869887083285,
+      "y": 467.50674493453687,
+      "width": 0,
+      "height": 75,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -22.100293206130686,
+          59.98651013092626
+        ]
+      ],
+      "start": {
+        "id": "build-core"
+      },
+      "end": {
+        "id": "build-plugins"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-integrate",
+      "type": "arrow",
+      "x": 735.3245755100512,
+      "y": 466.76391122424775,
+      "width": 120,
+      "height": 75,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          38.82453319042395,
+          61.4721775515045
+        ]
+      ],
+      "start": {
+        "id": "build-core"
+      },
+      "end": {
+        "id": "build-integrations"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-pages",
+      "type": "arrow",
+      "x": 832.932551728435,
+      "y": 376.32131426276135,
+      "width": 205,
+      "height": -60,
+      "strokeColor": "#654ACB",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          189.13489654313003,
+          -24.716492161886322
+        ]
+      ],
+      "start": {
+        "id": "build-core"
+      },
+      "end": {
+        "id": "runtime-home"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-routes",
+      "type": "arrow",
+      "x": 832.9715516890951,
+      "y": 382.9104937909956,
+      "width": 445,
+      "height": -60,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          429.05689662180976,
+          -36.280546405520624
+        ]
+      ],
+      "start": {
+        "id": "build-core"
+      },
+      "end": {
+        "id": "runtime-content"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-ui",
+      "type": "arrow",
+      "x": 902.7752221180683,
+      "y": 562.5310008932803,
+      "width": 205,
+      "height": 88,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          119.44955576386337,
+          -28.929189286560586
+        ]
+      ],
+      "start": {
+        "id": "build-integrations"
+      },
+      "end": {
+        "id": "runtime-ui"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-render",
+      "type": "arrow",
+      "x": 712.9576279183038,
+      "y": 575.394378448442,
+      "width": 445,
+      "height": 88,
+      "strokeColor": "#654ACB",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          549.0847441633923,
+          -56.738756896883956
+        ]
+      ],
+      "start": {
+        "id": "build-plugins"
+      },
+      "end": {
+        "id": "runtime-render"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-deploy",
+      "type": "arrow",
+      "x": 1130,
+      "y": 563,
+      "width": 0,
+      "height": 70,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          54
+        ]
+      ],
+      "start": {
+        "id": "runtime-ui"
+      },
+      "end": {
+        "id": "deploy-pages"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    },
+    {
+      "id": "arrow-assets",
+      "type": "arrow",
+      "x": 1370,
+      "y": 563,
+      "width": 0,
+      "height": 70,
+      "strokeColor": "#737373",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 0,
+      "opacity": 100,
+      "roundness": null,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          54
+        ]
+      ],
+      "start": {
+        "id": "runtime-render"
+      },
+      "end": {
+        "id": "deploy-r2"
+      },
+      "startArrowhead": null,
+      "endArrowhead": "triangle",
+      "elbowed": false,
+      "createdAt": "2026-10-17T15:58:14.359Z",
+      "updatedAt": "2026-10-17T15:58:14.359Z",
+      "version": 1
+    }
+  ],
+  "appState": {
+    "viewBackgroundColor": "#F7F6F5",
+    "gridSize": null
+  }
+}
