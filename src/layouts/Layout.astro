@@ -107,7 +107,7 @@ const navLinks = navCandidates.map((link) => {
 ---
 
 <!doctype html>
-<html lang="zh-Hans" class="bg-background text-foreground">
+<html lang="zh-Hans" class="no-js bg-background text-foreground">
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -200,8 +200,26 @@ const navLinks = navCandidates.map((link) => {
         is content-hashed and unknown while rendering.
       */}
       <link rel="modulepreload" href="/__PAPER_TEXTURE_CHUNK__" />
+      {/*
+        The loader veil must be in the markup before the browser paints its
+        first frame; it is described in full in `src/styles/global.css`.
+
+        The inline script strips the `no-js` class as early as possible so the
+        veil is only shown when the boot script can also dismiss it.
+      */}
+      <script is:inline>
+        document.documentElement.classList.remove('no-js');
+      </script>
+      <script>
+        import { dismissBootVeil } from '../lib/boot-veil';
+        dismissBootVeil();
+      </script>
     </head>
     <body class="min-h-screen bg-background text-foreground">
+      <div class="boot-veil" data-boot-veil-state="idle" aria-hidden="true">
+        <div class="boot-veil__grain"></div>
+        <div class="boot-veil__spinner"></div>
+      </div>
       <header class="sticky top-0 z-50 bg-background/80 backdrop-blur">
         <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4">
           <a href={homeHref} class="inline-flex items-center gap-3 font-sans text-base font-bold sm:text-lg">
