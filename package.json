@@ -10,7 +10,7 @@
     "build": "pnpm r2:assets && pnpm build:site",
     "build:site": "astro build",
     "preview": "astro preview",
-    "check": "tsc --noEmit --runExternalCode",
+    "check": "astro sync && tsc --noEmit --runExternalCode",
     "deploy:pages": "pnpm r2:assets && pnpm check && pnpm build:site && wrangler pages deploy dist --project-name bakkac-blog --branch main",
     "publish:site": "pnpm deploy:pages",
     "r2:assets": "node scripts/r2-sync-assets.mjs",
