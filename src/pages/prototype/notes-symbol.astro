@@ -1,0 +1,135 @@
+---
+// Throwaway UI prototype: compare two white prohibition-mark treatments for the blue Notes accordion art.
+import BaseLayout from '../../layouts/Layout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+const initialVariant = Astro.url.searchParams.get('variant') === 'B' ? 'B' : 'A';
+const variants = {
+  A: { label: 'A — 斜杠保留上半段', image: `${baseUrl}vectors/notes-cover-variant-a.svg` },
+  B: { label: 'B — 中间留空的双半圆', image: `${baseUrl}vectors/notes-cover-variant-b.svg` },
+};
+---
+
+<BaseLayout title="Notes 图案原型" description="蓝色手风琴装饰图案的两个视觉方案" noindex>
+  <main class="prototype-page" data-variant={initialVariant}>
+    <header class="prototype-heading">
+      <p>NOTES / SYMBOL STUDY</p>
+      <h1>蓝色图案 · 两个版本</h1>
+      <span>在蓝色手风琴背景中对比白色图形</span>
+    </header>
+
+    <section class="prototype-stage" aria-live="polite">
+      <div class="art-panel">
+        <img class="art-image" src={variants[initialVariant].image} alt="" />
+        <span class="panel-title">Notes</span>
+      </div>
+      <div class="variant-caption">
+        <span class="variant-name">{variants[initialVariant].label}</span>
+        <span class="variant-description">
+          {initialVariant === 'A' ? '保留圆环和右上半段斜杠，斜杠沿 45° 对角线。' : '圆环沿斜向留空，形成两个半圆形弧段。'}
+        </span>
+      </div>
+    </section>
+
+    {import.meta.env.DEV && (
+      <nav class="prototype-switcher" aria-label="切换图案版本">
+        <button type="button" data-step="-1" aria-label="上一个版本">←</button>
+        <span class="switcher-label">{variants[initialVariant].label}</span>
+        <button type="button" data-step="1" aria-label="下一个版本">→</button>
+      </nav>
+    )}
+  </main>
+
+  <style>
+    .prototype-page {
+      min-height: calc(100vh - 60px);
+      padding: clamp(1.5rem, 5vw, 4rem) 1.25rem 6rem;
+      background: #f4f4f4;
+      color: #111;
+      font-family: inherit;
+    }
+    .prototype-heading, .prototype-stage {
+      width: min(100%, 34rem);
+      margin-inline: auto;
+    }
+    .prototype-heading { margin-bottom: 1.5rem; }
+    .prototype-heading p {
+      margin: 0 0 .65rem;
+      font: 600 .7rem/1.2 ui-monospace, monospace;
+      letter-spacing: .12em;
+    }
+    .prototype-heading h1 { margin: 0 0 .4rem; font-size: clamp(1.5rem, 5vw, 2.25rem); }
+    .prototype-heading span, .variant-description { color: #555; font-size: .9rem; }
+    .art-panel {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 418 / 584;
+      overflow: hidden;
+      background: rgb(59 130 246 / .8);
+    }
+    .art-image { position: absolute; inset: 0 0 auto; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; object-position: center top; }
+    .panel-title {
+      position: absolute;
+      right: 1.25rem;
+      bottom: 1.1rem;
+      color: #fff;
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      font-weight: 700;
+    }
+    .variant-caption { display: grid; gap: .3rem; padding-top: .9rem; }
+    .variant-name { font-size: .95rem; font-weight: 700; }
+    .prototype-switcher {
+      position: fixed;
+      z-index: 50;
+      left: 50%;
+      bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      transform: translateX(-50%);
+      border: 1px solid #333;
+      border-radius: 999px;
+      padding: .4rem .6rem;
+      background: #111;
+      color: white;
+      box-shadow: 0 8px 24px #0003;
+    }
+    .prototype-switcher button {
+      display: grid;
+      width: 2rem;
+      height: 2rem;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: #333;
+      color: white;
+      font: inherit;
+      cursor: pointer;
+    }
+    .switcher-label { min-width: 12rem; text-align: center; font-size: .8rem; }
+  </style>
+
+  {import.meta.env.DEV && <script is:inline>
+    const variants = ['A', 'B'];
+    const updateVariant = (variant) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('variant', variant);
+      window.location.href = url.toString();
+    };
+    document.querySelectorAll('[data-step]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const current = new URL(window.location.href).searchParams.get('variant') === 'B' ? 1 : 0;
+        const next = (current + Number(button.dataset.step) + variants.length) % variants.length;
+        updateVariant(variants[next]);
+      });
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.target instanceof HTMLElement && (event.target.isContentEditable || ['INPUT', 'TEXTAREA'].includes(event.target.tagName))) return;
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const current = new URL(window.location.href).searchParams.get('variant') === 'B' ? 1 : 0;
+        const step = event.key === 'ArrowRight' ? 1 : -1;
+        updateVariant(variants[(current + step + variants.length) % variants.length]);
+      }
+    });
+  </script>}
+</BaseLayout>

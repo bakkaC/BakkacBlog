@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 418 418" role="img" aria-labelledby="title">
+  <title id="title">版本二：斜向留空的双半圆</title>
+  <defs>
+    <mask id="split-ring-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="418" height="418">
+      <rect width="418" height="418" fill="#000"/>
+      <circle cx="209" cy="209" r="168" fill="#fff"/>
+      <circle cx="209" cy="209" r="102" fill="#000"/>
+      <path d="M90 90 328 328" fill="none" stroke="#000" stroke-width="78" stroke-linecap="butt"/>
+    </mask>
+  </defs>
+  <circle cx="209" cy="209" r="168" fill="#fff" mask="url(#split-ring-mask)"/>
+  <g fill="#fff">
+    <path d="M22 22h16L22 38Z"/>
+    <path d="M396 396h-16l16-16Z"/>
+  </g>
+</svg>

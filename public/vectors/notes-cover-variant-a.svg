@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 418 418" role="img" aria-labelledby="title">
+  <title id="title">版本一：白色禁止符号</title>
+  <defs>
+    <clipPath id="slash-boundary">
+      <circle cx="209" cy="209" r="178"/>
+    </clipPath>
+  </defs>
+  <circle cx="209" cy="209" r="145" fill="none" stroke="#fff" stroke-width="66"/>
+  <path d="M83 83 335 335" fill="none" stroke="#fff" stroke-width="66" stroke-linecap="butt" clip-path="url(#slash-boundary)"/>
+  <g fill="#fff">
+    <path d="M22 22h16L22 38Z"/>
+    <path d="M396 396h-16l16-16Z"/>
+  </g>
+</svg>

@@ -26,15 +26,48 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
     'Movie',
   ];
   const now = new Date();
-  const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(now);
-  const dayLabel = String(now.getDate()).padStart(2, '0');
-  const yearLabel = now.getFullYear();
-  const weekdayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(now);
+  const dateParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+    weekday: 'short',
+  }).formatToParts(now);
+  const getDatePart = (type: Intl.DateTimeFormatPartTypes) =>
+    dateParts.find((part) => part.type === type)?.value ?? '';
+  const monthLabel = getDatePart('month');
+  const dayLabel = getDatePart('day');
+  const yearLabel = getDatePart('year');
+  const weekdayLabel = getDatePart('weekday');
 
   const accordionItems = [
-    { id: 1, title: 'Notes', bgClass: 'bg-blue-500/80', art: `${baseUrl}vectors/notes-cover.svg`, link: withBase(baseUrl, '/notes') },
-    { id: 2, title: 'Thoughts', bgClass: 'bg-yellow-400/80', art: `${baseUrl}vectors/london-new-york-flight.svg`, link: withBase(baseUrl, '/thoughts') },
-    { id: 3, title: 'Posts', bgClass: 'bg-red-500/80', art: `${baseUrl}vectors/brockmann.svg`, link: withBase(baseUrl, '/posts') },
+    {
+      id: 1,
+      title: 'Notes',
+      captions: ['Tech Notes', 'Learning Record'],
+      captionArt: `${baseUrl}vectors/home-notes-label.svg`,
+      bgClass: 'bg-blue-500/80',
+      art: `${baseUrl}vectors/notes-cover.svg`,
+      link: withBase(baseUrl, '/notes'),
+    },
+    {
+      id: 2,
+      title: 'Thoughts',
+      captions: ['Musings', 'Domain Articales'],
+      captionArt: `${baseUrl}vectors/home-thoughts-label.svg`,
+      bgClass: 'bg-yellow-400/80',
+      art: `${baseUrl}vectors/london-new-york-flight.svg`,
+      link: withBase(baseUrl, '/thoughts'),
+    },
+    {
+      id: 3,
+      title: 'Posts',
+      captions: ['life Memos', 'Immsaneous Diaries'],
+      captionArt: `${baseUrl}vectors/home-posts-label.svg`,
+      bgClass: 'bg-red-500/80',
+      art: `${baseUrl}vectors/brockmann.svg`,
+      link: withBase(baseUrl, '/posts'),
+    },
   ];
 
   return (
@@ -78,7 +111,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
           </div>
         </div>
         <div className="absolute z-10 inline-flex -translate-y-full items-center gap-1 pb-2 tracking-wider font-mono text-[10px]">
-          {yearLabel}-{weekdayLabel}
+          Today is a beautiful day
         </div>
         <div className="absolute z-0 inline-flex -translate-y-full items-center gap-1 pb-2 tracking-wider font-mono text-[10px]">
           <ProfileIllustration
@@ -94,7 +127,9 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
           <ProfileLabel
             monthLabel={monthLabel}
             dayLabel={dayLabel}
-            className="relative -top-7 -left-6 block h-20 w-76 max-w-full overflow-visible md:top-1.5 md:left-0 md:w-full"
+            yearLabel={yearLabel}
+            weekdayLabel={weekdayLabel}
+            className="relative -top-7 -left-6 block h-20 w-76 max-w-full overflow-visible md:top-0 md:left-0 md:w-full"
           />
         </div>
       </div>
@@ -131,7 +166,6 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
             <div className={`absolute inset-0 z-0 ${item.bgClass}`} />
             <div className="pointer-events-none absolute inset-0 z-10 bg-black/10" />
             <div
-              aria-hidden="true"
               className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex aspect-square w-full items-center justify-center transition-opacity duration-700 ease-in-out ${
                 index === activeIndex ? 'opacity-100' : 'opacity-0'
               }`}
@@ -141,7 +175,19 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
                 alt=""
                 className="h-full w-full object-contain"
               />
+              <img
+                src={item.captionArt}
+                alt={item.captions.join(', ')}
+                className="pointer-events-none absolute left-[27%] top-[11.5%] z-30 h-auto w-[65%]"
+              />
             </div>
+            <span
+              className={`pointer-events-none absolute left-[74%] top-[76%] z-30 whitespace-nowrap font-sans text-[10px] tracking-wider text-white transition-opacity duration-700 ease-in-out md:text-xs ${
+                index === activeIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              #{String(item.id).padStart(2, '0')}
+            </span>
             <span
               className={`font-sans absolute left-1/2 z-30 -translate-x-1/2 whitespace-nowrap text-2xl font-bold text-white transition-all duration-300 md:text-3xl lg:text-4xl ${
                 index === activeIndex ? 'bottom-6 rotate-0' : 'bottom-16 rotate-90 md:bottom-24'
