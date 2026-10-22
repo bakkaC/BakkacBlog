@@ -17,14 +17,12 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
     'AI Agent',
     'Motion',
     'Fullstack Dev',
-    'Graphic Designer',
     'Product Engineer',
     'Anime',
     'GalGame',
     'Manga',
     'Ranobe',
     'Movie',
-    'Vocaloid',
   ];
   const now = new Date();
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(now);
@@ -33,9 +31,9 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
   const weekdayLabel = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(now);
 
   const accordionItems = [
-    { id: 1, title: 'Notes', bgClass: 'bg-blue-400/80', link: withBase(baseUrl, '/notes') },
-    { id: 2, title: 'Thoughts', bgClass: 'bg-yellow-300/80', link: withBase(baseUrl, '/thoughts') },
-    { id: 3, title: 'Posts', bgClass: 'bg-red-400/80', link: withBase(baseUrl, '/posts') },
+    { id: 1, title: 'Notes', bgClass: 'bg-blue-500/80', art: `${baseUrl}vectors/notes-cover.svg`, link: withBase(baseUrl, '/notes') },
+    { id: 2, title: 'Thoughts', bgClass: 'bg-yellow-400/80', art: `${baseUrl}vectors/london-new-york-flight.svg`, link: withBase(baseUrl, '/thoughts') },
+    { id: 3, title: 'Posts', bgClass: 'bg-red-500/80', art: `${baseUrl}vectors/brockmann.svg`, link: withBase(baseUrl, '/posts') },
   ];
 
   return (
@@ -83,6 +81,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         </div>
         <div className="absolute z-0 inline-flex -translate-y-full items-center gap-1 pb-2 tracking-wider font-mono text-[10px]">
           <ProfileIllustration
+            baseUrl={baseUrl}
             className="pointer-events-none absolute z-0 aspect-316/211 h-auto w-36 translate-x-56 translate-y-2 md:w-[clamp(10rem,18vw,15rem)] md:translate-x-48 md:translate-y-2 lg:translate-x-88 lg:translate-y-2"
           />
         </div>
@@ -130,8 +129,20 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
           >
             <div className={`absolute inset-0 z-0 ${item.bgClass}`} />
             <div className="pointer-events-none absolute inset-0 z-10 bg-black/10" />
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex aspect-square w-full items-center justify-center transition-opacity duration-700 ease-in-out ${
+                index === activeIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              <img
+                src={item.art}
+                alt=""
+                className="h-full w-full object-contain"
+              />
+            </div>
             <span
-              className={`font-sans absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap text-2xl font-bold text-white transition-all duration-300 md:text-3xl lg:text-4xl ${
+              className={`font-sans absolute left-1/2 z-30 -translate-x-1/2 whitespace-nowrap text-2xl font-bold text-white transition-all duration-300 md:text-3xl lg:text-4xl ${
                 index === activeIndex ? 'bottom-6 rotate-0' : 'bottom-16 rotate-90 md:bottom-24'
               }`}
             >

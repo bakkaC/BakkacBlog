@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" role="img" aria-labelledby="title">
+  <title id="title">白色左下箭头与角落三角</title>
+  <path fill="#fff" d="M275 61h865v862H882V500L241 1140 59 959 699 319H275z"/>
+  <g fill="#fff">
+    <path d="M63 63h46L63 109Z"/>
+    <path d="M1137 1137h-46l46-46Z"/>
+  </g>
+</svg>

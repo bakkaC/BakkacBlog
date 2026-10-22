@@ -15,18 +15,20 @@ const MAX_WAIT = 2600;
 /** Give the compositor a beat to paint the fully-hidden state before teardown. */
 const CLEANUP_DELAY = 360;
 
+/** Keep the veil up briefly after fonts settle to catch late dev/hydration loads. */
+const FONT_SETTLE_DELAY = 160;
+
 /**
  * Resolves when the page is plausibly painted and interactive.
  *
  * We wait on Astro's `astro:page-load`, which fires after the initial
  * `client:load` islands have hydrated — the home and collection pages are
  * client-rendered, so until that happens the page is still visibly settling.
- * `document.fonts.ready` is raced in because the display face comes from a
- * third-party CDN and a late swap under the veil would be jarring.
+ * Only then do we request the display face and wait for the current font load
+ * cycle. The short settle window catches another load started by late style
+ * injection during development before the veil begins to fade.
  */
 function waitUntilReady(): Promise<void> {
-  const fontsReady = document.fonts?.ready ?? Promise.resolve();
-
   const hydrated = new Promise<void>((resolve) => {
     // Astro dispatches this once the initial islands are up. If this script
     // runs after it already fired (module scripts can be late on a warm
@@ -51,7 +53,16 @@ function waitUntilReady(): Promise<void> {
   });
 
   return Promise.race([
-    Promise.all([fontsReady, hydrated]).then(() => undefined),
+    hydrated.then(async () => {
+      if (!document.fonts) return;
+
+      await document.fonts.load('58px "DIN 2014"').catch(() => undefined);
+      await document.fonts.ready;
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, FONT_SETTLE_DELAY);
+      });
+      await document.fonts.ready;
+    }),
     new Promise<void>((resolve) => window.setTimeout(resolve, MAX_WAIT)),
   ]);
 }

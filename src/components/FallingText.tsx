@@ -18,6 +18,7 @@ interface FallingTextProps {
 
 const DEFAULT_HIGHLIGHT_WORDS: string[] = [];
 const LEGACY_PHYSICS_SPEED = 2;
+const BASE_PHYSICS_DELTA = 1000 / 60;
 const WORD_SEPARATOR = '\u0000';
 
 const escapeHtml = (value: string) =>
@@ -56,7 +57,7 @@ const FallingText: React.FC<FallingTextProps> = ({
       .join(' ');
     textRef.current.innerHTML = newHTML;
     // Hide until Matter has taken over, so the static layout is never painted.
-    textRef.current.style.visibility = 'hidden';
+    textRef.current.style.visibility = prefersReducedMotion ? '' : 'hidden';
   }, [text, words?.join(WORD_SEPARATOR), highlightWords, highlightClass]);
 
   useEffect(() => {
@@ -298,8 +299,9 @@ const FallingText: React.FC<FallingTextProps> = ({
         Mouse.clearSourceEvents(mouse);
       }
       constrainMouseTarget();
-      // The previous implementation advanced Matter once in Runner and once in its own RAF.
-      Engine.update(engine, delta * LEGACY_PHYSICS_SPEED);
+      // Preserve the committed double-speed simulation while keeping Matter's raw delta in range.
+      engine.timing.timeScale = (delta * LEGACY_PHYSICS_SPEED) / BASE_PHYSICS_DELTA;
+      Engine.update(engine, BASE_PHYSICS_DELTA);
       // Static walls/floor handle normal physics. Manual clamping is only
       // needed while dragging, when the mouse constraint can pull through them.
       if (isPointerDown) {
