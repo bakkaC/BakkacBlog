@@ -17,6 +17,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
     'AI Agent',
     'Motion',
     'Fullstack Dev',
+    'Graphic Designer',
     'Product Engineer',
     'Anime',
     'GalGame',
