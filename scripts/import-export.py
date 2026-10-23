@@ -33,7 +33,7 @@ def extract_source(source: Path) -> tuple[Path, tempfile.TemporaryDirectory | No
     if source.is_dir():
         return source, None
     if source.is_file() and source.suffix.lower() == ".zip":
-        temp_dir = tempfile.TemporaryDirectory(prefix="bakka-import-")
+        temp_dir = tempfile.TemporaryDirectory(prefix="bakkac-import-")
         with zipfile.ZipFile(source, "r") as zip_ref:
             zip_ref.extractall(temp_dir.name)
         export_dir = pick_export_dir(Path(temp_dir.name))

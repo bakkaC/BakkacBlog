@@ -47,7 +47,7 @@ export function ProfileLabel({
       >
         {weekdayLabel}
       </text>
-      <line x1="180" y1="4" x2="180" y2="72" stroke="currentColor" strokeWidth="4" />
+      <line x1="180" y1="4" x2="180" y2="72" stroke="currentColor" strokeWidth="2" />
       <text
         x="200"
         y="4"

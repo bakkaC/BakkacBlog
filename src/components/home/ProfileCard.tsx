@@ -116,7 +116,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         <div className="absolute z-0 inline-flex -translate-y-full items-center gap-1 pb-2 tracking-wider font-mono text-[10px]">
           <ProfileIllustration
             baseUrl={baseUrl}
-            className="pointer-events-none absolute z-0 aspect-316/211 h-auto w-36 translate-x-56 translate-y-2 md:w-[clamp(10rem,18vw,15rem)] md:translate-x-48 md:translate-y-2 lg:translate-x-88 lg:translate-y-2"
+            className="pointer-events-none absolute z-0 aspect-316/211 h-auto w-36 translate-x-52 translate-y-2 md:w-[clamp(10rem,18vw,15rem)] md:translate-x-48 md:translate-y-2 lg:translate-x-88 lg:translate-y-2"
           />
         </div>
         <div className="pointer-events-none absolute bottom-16 -left-12 h-20 w-[calc(100%+6rem)] bg-zinc-200 md:left-0 md:inset-y-0 md:h-auto md:w-[200vw]" />

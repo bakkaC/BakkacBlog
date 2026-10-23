@@ -58,7 +58,7 @@ export async function GET(context: APIContext) {
   });
 
   return rss({
-    title: "Bakka's Blog",
+    title: "Bakkac's Blog",
     description: '记录前端开发、工程实践与随想杂记',
     site: context.site ?? new URL('https://bakkac.github.io'),
     items: items.map((item) => ({
