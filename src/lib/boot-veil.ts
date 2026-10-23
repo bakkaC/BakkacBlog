@@ -24,9 +24,11 @@ const FONT_SETTLE_DELAY = 160;
  * We wait on Astro's `astro:page-load`, which fires after the initial
  * `client:load` islands have hydrated — the home and collection pages are
  * client-rendered, so until that happens the page is still visibly settling.
- * Only then do we request the display face and wait for the current font load
- * cycle. The short settle window catches another load started by late style
- * injection during development before the veil begins to fade.
+ * Only then do we request the two self-hosted faces and wait for the current
+ * font load cycle. Outfit is loaded at the size the date label renders it, so
+ * the veil lifts on the real face instead of swapping under it. The short
+ * settle window catches another load started by late style injection during
+ * development before the veil begins to fade.
  */
 function waitUntilReady(): Promise<void> {
   const hydrated = new Promise<void>((resolve) => {
@@ -56,7 +58,11 @@ function waitUntilReady(): Promise<void> {
     hydrated.then(async () => {
       if (!document.fonts) return;
 
-      await document.fonts.load('58px "DIN 2014"').catch(() => undefined);
+      await Promise.all([
+        document.fonts.load('58px "DIN 2014"').catch(() => undefined),
+        document.fonts.load('500 58px "Outfit"').catch(() => undefined),
+        document.fonts.load('16px "Outfit"').catch(() => undefined),
+      ]);
       await document.fonts.ready;
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, FONT_SETTLE_DELAY);

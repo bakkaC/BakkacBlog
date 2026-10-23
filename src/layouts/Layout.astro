@@ -155,16 +155,27 @@ const navLinks = navCandidates.map((link) => {
         is:inline
       />
       {/*
-        The DIN 2014 display face is self-hosted (same origin, so no DNS/TLS
-        round trip to a third party) and preloaded at high priority. `font-display:
-        swap` lives in the `@font-face` rule in `global.css`, so text paints
-        immediately in the fallback and swaps when the face arrives.
+        Both faces are self-hosted (same origin, so no DNS/TLS round trip to a
+        third party) and preloaded at high priority. `font-display: swap` lives
+        in the `@font-face` rules in `global.css`, so text paints immediately in
+        the fallback and swaps when the face arrives.
+
+        Only Outfit's `latin` slice is preloaded; its `latin-ext` slice and the
+        system CJK fallback are left to the CSS `unicode-range` checks so we
+        never preload a file the current page cannot use.
       */}
       <link
         rel="preload"
         as="font"
         type="font/woff2"
         href={withSiteBase('/fonts/din-2014.woff2')}
+        crossorigin
+      />
+      <link
+        rel="preload"
+        as="font"
+        type="font/woff2"
+        href={withSiteBase('/fonts/outfit-latin.woff2')}
         crossorigin
       />
       <link rel="icon" type="image/png" href={withSiteBase('/kumiko-favicon.png')} />

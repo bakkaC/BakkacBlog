@@ -22,6 +22,7 @@ yarn-error.log*
 
 # Local QA / acceptance artifacts
 /.playwright-mcp/
+/.workbuddy/
 /artifacts/
 /after-illustration-layer.png
 /after-layer-fix.png
