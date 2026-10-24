@@ -10,6 +10,21 @@ interface ProfileCardProps {
   baseUrl: string;
 }
 
+/**
+ * The colour-changing accent lives only on the `BLOG` badge: a full-bleed
+ * colour band gave the card a strong contrast but broke its coordination, and
+ * the same hue on a patch this small reads as an intentional highlight. The fill
+ * keeps the open accordion's own hue and chroma, so the black lettering stays
+ * legible on all three. Stated in `oklch` because lightness is the knob each
+ * hue needs its own value for: yellow reads darker than red or blue at the same
+ * number, so it carries an override.
+ */
+const ACCENT_TINT_LIGHTNESS = '68%';
+/** Yellow reads a step darker than the other two at the same lightness. */
+const ACCENT_TINT_LIGHTNESS_YELLOW = '78%';
+const accentTint = (tint: { hue: string; chroma: string; lightness?: string }) =>
+  `oklch(${tint.lightness ?? ACCENT_TINT_LIGHTNESS} ${tint.chroma} ${tint.hue})`;
+
 export function ProfileCard({ baseUrl }: ProfileCardProps) {
   const [activeIndex, setActiveIndex] = useState(2);
   const fallingLabels = [
@@ -47,6 +62,8 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
       captions: ['Tech Notes', 'Learning Record'],
       captionArt: `${baseUrl}vectors/home-notes-label.svg`,
       bgClass: 'bg-blue-500/80',
+      /** Hue and chroma of `blue-500`. */
+      tint: { hue: '259.8', chroma: '0.188' },
       art: `${baseUrl}vectors/notes-cover.svg`,
       link: withBase(baseUrl, '/notes'),
     },
@@ -56,6 +73,8 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
       captions: ['Musings', 'Domain Articales'],
       captionArt: `${baseUrl}vectors/home-thoughts-label.svg`,
       bgClass: 'bg-yellow-400/80',
+      /** Hue and chroma of `yellow-400`. */
+      tint: { hue: '91.9', chroma: '0.173', lightness: ACCENT_TINT_LIGHTNESS_YELLOW },
       art: `${baseUrl}vectors/london-new-york-flight.svg`,
       link: withBase(baseUrl, '/thoughts'),
     },
@@ -65,10 +84,14 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
       captions: ['life Memos', 'Immsaneous Diaries'],
       captionArt: `${baseUrl}vectors/home-posts-label.svg`,
       bgClass: 'bg-red-500/80',
+      /** Hue and chroma of `red-500`. */
+      tint: { hue: '25.3', chroma: '0.208' },
       art: `${baseUrl}vectors/brockmann.svg`,
       link: withBase(baseUrl, '/posts'),
     },
   ];
+
+  const activeTint = accordionItems[activeIndex].tint;
 
   return (
     <div
@@ -129,6 +152,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
             dayLabel={dayLabel}
             yearLabel={yearLabel}
             weekdayLabel={weekdayLabel}
+            badgeFill={accentTint(activeTint)}
             className="relative -top-7 -left-6 block h-20 w-76 max-w-full overflow-visible md:top-0 md:left-0 md:w-full"
           />
         </div>
