@@ -158,7 +158,8 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute bottom-88 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56" aria-hidden="true">
+      {/* Anchored to the accordion's top edge, so the words still land on the panels after the height change. */}
+      <div className="pointer-events-none absolute bottom-76 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56" aria-hidden="true">
         <FallingText
           words={fallingLabels}
           highlightClass="highlighted"
@@ -171,11 +172,12 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
         />
       </div>
 
-      <div className="relative z-10 flex min-h-76 w-full items-center justify-center gap-3 overflow-x-auto md:ml-auto md:w-auto md:flex-1 md:items-start md:justify-end md:gap-4 md:min-h-120 lg:min-h-140">
+      {/* Mobile: pull past the card's own padding so the panels meet the corner marks. Width must grow with the negative margins, or `w-full` just shifts the box left. */}
+      <div className="relative z-10 -mx-6 -mb-6 flex min-h-70 w-[calc(100%+3rem)] items-center justify-center gap-3 overflow-x-auto md:mx-0 md:ml-auto md:mb-0 md:w-auto md:flex-1 md:items-start md:justify-end md:gap-4 md:min-h-120 lg:min-h-140">
         {accordionItems.map((item, index) => (
           <div
             key={item.id}
-            className={`relative h-76 cursor-pointer overflow-hidden rounded-none bg-transparent backdrop-blur-md backdrop-saturate-150 transition-all duration-700 ease-in-out md:h-120 lg:h-140 ${
+            className={`relative h-70 cursor-pointer overflow-hidden rounded-none bg-transparent backdrop-blur-md backdrop-saturate-150 transition-all duration-700 ease-in-out md:h-120 lg:h-140 ${
               index === activeIndex ? 'w-[16rem] md:w-88 lg:w-100' : 'w-12 md:w-16 lg:w-15'
             }`}
             onMouseEnter={() => setActiveIndex(index)}
@@ -189,6 +191,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
           >
             <div className={`absolute inset-0 z-0 ${item.bgClass}`} />
             <div className="pointer-events-none absolute inset-0 z-10 bg-black/10" />
+            {/* `max-h-full` keeps the square art letterboxed inside the shorter mobile panel instead of being clipped. */}
             <div
               className={`pointer-events-none absolute inset-x-0 top-0 z-20 flex aspect-square w-full items-center justify-center transition-opacity duration-700 ease-in-out ${
                 index === activeIndex ? 'opacity-100' : 'opacity-0'
@@ -214,7 +217,7 @@ export function ProfileCard({ baseUrl }: ProfileCardProps) {
             </span>
             <span
               className={`font-sans absolute left-1/2 z-30 -translate-x-1/2 whitespace-nowrap text-2xl font-bold text-white transition-all duration-300 md:text-3xl lg:text-4xl ${
-                index === activeIndex ? 'bottom-6 rotate-0' : 'bottom-16 rotate-90 md:bottom-24'
+                index === activeIndex ? 'bottom-[8%] rotate-0 md:bottom-6' : 'bottom-[21%] rotate-90 md:bottom-24'
               }`}
             >
               {item.title}
