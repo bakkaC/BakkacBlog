@@ -216,6 +216,11 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
   const [introPlaying, setIntroPlaying] = useState(false);
   /** Snap into folded pose without playing the fold transition. */
   const [foldInstant, setFoldInstant] = useState(false);
+  /*
+    FallingText stays mounted through the fold flip and only unmounts once the
+    card has landed folded — avoids a pop-out the moment the user clicks fold.
+  */
+  const [fallingActive, setFallingActive] = useState(false);
   const earTimerRef = useRef<number | null>(null);
   const introTimerRef = useRef<number | null>(null);
   const beginUnfoldRef = useRef<() => void>(() => {});
@@ -350,6 +355,19 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
     const id = window.requestAnimationFrame(() => setEarOpen(true));
     return () => window.cancelAnimationFrame(id);
   }, [foldSettled, introPlaying]);
+
+  // Start FallingText only once the sheet is fully open after intro/unfold.
+  useEffect(() => {
+    if (!stageReady || introPlaying) return;
+    if (!folded && !holdRightHalf && leftEarOpen) {
+      setFallingActive(true);
+    }
+  }, [stageReady, introPlaying, folded, holdRightHalf, leftEarOpen]);
+
+  // Keep it through the fold flip; drop only after the card has landed folded.
+  useEffect(() => {
+    if (foldSettled) setFallingActive(false);
+  }, [foldSettled]);
 
   const finishUnfoldReveal = () => {
     // Reveal the full sheet under the still-opaque landed leaf, then open the
@@ -517,15 +535,10 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
         </div>
       </div>
 
-      {opts.motion &&
-      stageReady &&
-      !introPlaying &&
-      !folded &&
-      !holdRightHalf &&
-      leftEarOpen ? (
+      {opts.motion && fallingActive ? (
         /*
-          Mount only after the card has finished unfolding so the fall starts
-          on a full, unclipped sheet — not mid-intro / mid-flip.
+          Armed after unfold; stays mounted for the whole fold flip and only
+          clears once foldSettled — so clicking fold does not pop the words away.
         */
         <div
           className="pointer-events-none absolute bottom-76 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56"
