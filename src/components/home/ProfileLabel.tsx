@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from 'react';
+import { forwardRef, type ComponentPropsWithoutRef } from 'react';
 
 import { BLOG_LETTERS, BLOG_WORDMARK_BOUNDS } from './blog-wordmark';
 
@@ -262,21 +262,26 @@ function buildBarcode(seed: string): BarcodeBar[] {
   return bars;
 }
 
-export function ProfileLabel({
-  monthLabel,
-  dayLabel,
-  yearLabel,
-  weekdayLabel,
-  badgeFill,
-  transform = DEFAULT_PROFILE_LABEL_TRANSFORM,
-  className = 'block h-20 w-full overflow-visible',
-  ...props
-}: ProfileLabelProps) {
+export const ProfileLabel = forwardRef<SVGSVGElement, ProfileLabelProps>(
+  function ProfileLabel(
+    {
+      monthLabel,
+      dayLabel,
+      yearLabel,
+      weekdayLabel,
+      badgeFill,
+      transform = DEFAULT_PROFILE_LABEL_TRANSFORM,
+      className = 'block h-20 w-full overflow-visible',
+      ...props
+    },
+    ref,
+  ) {
   const dateLabel = `${monthLabel}.${dayLabel}`;
   const barcode = buildBarcode(`${yearLabel}${monthLabel}${dayLabel}`);
 
   return (
     <svg
+      ref={ref}
       viewBox="0 0 320 84"
       className={className}
       aria-label="Profile label"
@@ -484,4 +489,5 @@ export function ProfileLabel({
       </g>
     </svg>
   );
-}
+},
+);

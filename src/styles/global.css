@@ -384,7 +384,7 @@
     z-index: 40;
     inset: 0;
     overflow: hidden;
-    opacity: 0.6;
+    opacity: 0.32;
   }
 
   @media (max-width: 767px) {

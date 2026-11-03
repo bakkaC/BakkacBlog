@@ -832,9 +832,25 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                       #{String(item.id).padStart(2, '0')}
                     </span>
                   </span>
-                  <span className="mt-2.5 flex min-w-0 items-baseline gap-2">
-                    <span className="min-w-0 max-w-[58%] shrink truncate text-[13px] font-semibold leading-none md:text-sm lg:text-[15px]">
-                      {item.latest.title}
+                  <span className="mt-2.5 flex min-w-0 items-center gap-2">
+                    <span className="flex min-w-0 max-w-[58%] shrink items-center gap-1">
+                      <span className="min-w-0 truncate text-[13px] font-semibold leading-none md:text-sm lg:text-[15px]">
+                        {item.latest.title}
+                      </span>
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        className="size-3.5 shrink-0 text-white md:size-4"
+                      >
+                        <path
+                          d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
                     </span>
                     {item.latest.tags.length > 0 ? (
                       <span className="min-w-0 flex-1 truncate text-right font-sans text-[9px] leading-none text-white md:text-[10px]">
@@ -1106,6 +1122,7 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
           )}
         </div>
       </div>
+
     </div>
   );
 }
