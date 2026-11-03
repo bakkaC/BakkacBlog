@@ -2,7 +2,15 @@ import type { ComponentPropsWithoutRef } from 'react';
 
 import { BLOG_LETTERS, BLOG_WORDMARK_BOUNDS } from './blog-wordmark';
 
-interface ProfileLabelProps extends ComponentPropsWithoutRef<'svg'> {
+export interface ProfileLabelTransform {
+  /** Clockwise angle in degrees. */
+  angle: number;
+}
+
+interface ProfileLabelProps extends Omit<
+  ComponentPropsWithoutRef<'svg'>,
+  'transform'
+> {
   monthLabel: string;
   dayLabel: string;
   yearLabel: string;
@@ -12,7 +20,13 @@ interface ProfileLabelProps extends ComponentPropsWithoutRef<'svg'> {
    * passes the open accordion's colour so the badge tracks the hovered column.
    */
   badgeFill?: string;
+  /** Decorative tilt for the whole label. */
+  transform?: ProfileLabelTransform;
 }
+
+export const DEFAULT_PROFILE_LABEL_TRANSFORM: ProfileLabelTransform = {
+  angle: 0,
+};
 
 /**
  * The date block is a fixed rectangle: the barcode, the date and the header all
@@ -50,7 +64,8 @@ const HEADER_BASELINE = BLOCK_HEIGHT;
 const HEADER_ASCENT = 10.65;
 /** Midpoint of the free band, shifted down by half the ink so the ink centres. */
 const DATE_BASELINE =
-  (BARCODE_Y + BARCODE_HEIGHT + HEADER_BASELINE - HEADER_ASCENT) / 2 + (DATE_ASCENT - DATE_DESCENT) / 2;
+  (BARCODE_Y + BARCODE_HEIGHT + HEADER_BASELINE - HEADER_ASCENT) / 2 +
+  (DATE_ASCENT - DATE_DESCENT) / 2;
 
 /** Dashed rule, on the header's optical middle. */
 const RULE_Y = HEADER_BASELINE - HEADER_ASCENT / 2;
@@ -138,7 +153,8 @@ const BADGE_TEXT_HEIGHT = 6.1;
  * their advances, so this is the only knob the crowding depends on.
  */
 const BADGE_TEXT_TRACKING = 0;
-const BADGE_TRACKED_WIDTH = BLOG_WORDMARK_BOUNDS.width + BADGE_TEXT_TRACKING * (BLOG_LETTERS.length - 1);
+const BADGE_TRACKED_WIDTH =
+  BLOG_WORDMARK_BOUNDS.width + BADGE_TEXT_TRACKING * (BLOG_LETTERS.length - 1);
 const BADGE_TEXT_X = BADGE_X + (BADGE_WIDTH - BADGE_TEXT_WIDTH) / 2;
 const BADGE_TEXT_Y = BADGE_Y + (BADGE_HEIGHT - BADGE_TEXT_HEIGHT) / 2;
 const BADGE_TEXT_SCALE_X = BADGE_TEXT_WIDTH / BADGE_TRACKED_WIDTH;
@@ -148,14 +164,19 @@ const BADGE_TEXT_SCALE_Y = BADGE_TEXT_HEIGHT / BLOG_WORDMARK_BOUNDS.height;
  * along by its advance plus the tracking, so widening the gaps never distorts
  * the glyph shapes.
  */
-const BLOG_LETTER_OFFSETS = BLOG_LETTERS.reduce<number[]>((offsets, letter, index) => {
-  if (index === 0) {
-    offsets.push(0);
+const BLOG_LETTER_OFFSETS = BLOG_LETTERS.reduce<number[]>(
+  (offsets, letter, index) => {
+    if (index === 0) {
+      offsets.push(0);
+      return offsets;
+    }
+    offsets.push(
+      offsets[index - 1] + BLOG_LETTERS[index - 1].advance + BADGE_TEXT_TRACKING
+    );
     return offsets;
-  }
-  offsets.push(offsets[index - 1] + BLOG_LETTERS[index - 1].advance + BADGE_TEXT_TRACKING);
-  return offsets;
-}, []);
+  },
+  []
+);
 
 const CAPTION_X = 212.2;
 const CAPTION_BASELINE = 72.4;
@@ -164,7 +185,8 @@ const CAPTION_FONT_SIZE = 13;
 const DOWN_ARROW_X = 391.4;
 const DOWN_ARROW_FONT_SIZE = 15.5;
 
-const RULE_LENGTH = BLOCK_WIDTH - WEEKDAY_TEXT_WIDTH - YEAR_TEXT_WIDTH - RULE_GAP * 2;
+const RULE_LENGTH =
+  BLOCK_WIDTH - WEEKDAY_TEXT_WIDTH - YEAR_TEXT_WIDTH - RULE_GAP * 2;
 /**
  * The rule has to break into an exact number of dashes: a fixed `5 4` pattern
  * stops wherever the line does and leaves a partial dash at the end, which reads
@@ -246,6 +268,7 @@ export function ProfileLabel({
   yearLabel,
   weekdayLabel,
   badgeFill,
+  transform = DEFAULT_PROFILE_LABEL_TRANSFORM,
   className = 'block h-20 w-full overflow-visible',
   ...props
 }: ProfileLabelProps) {
@@ -253,179 +276,212 @@ export function ProfileLabel({
   const barcode = buildBarcode(`${yearLabel}${monthLabel}${dayLabel}`);
 
   return (
-    <svg viewBox="0 0 320 84" className={className} aria-label="Profile label" {...props}>
-      <g aria-hidden="true" fill="currentColor" opacity="0.75" shapeRendering="crispEdges">
-        {barcode.map((bar) => (
-          <rect
-            key={bar.x}
-            x={bar.x}
-            y={BARCODE_Y}
-            width={bar.width}
-            height={BARCODE_HEIGHT}
-          />
-        ))}
-      </g>
-      {/*
-        `textLength` pins the date to the frame: month names differ in width
-        (`Jul.28` is ~24 units narrower than `Sep.09`), so without it the right
-        edge would drift day to day. `lengthAdjust="spacing"` makes up the
-        difference in tracking only, leaving the glyph shapes untouched.
-      */}
-      <text
-        x="0"
-        y={DATE_BASELINE}
-        textLength={BLOCK_WIDTH}
-        lengthAdjust="spacing"
-        fill="currentColor"
-        style={{
-          fontFamily: '"Outfit", sans-serif',
-          fontSize: `${DATE_FONT_SIZE}px`,
-          fontWeight: 500,
-          letterSpacing: '-0.045em',
-          lineHeight: 1,
-        }}
-      >
-        {dateLabel}
-      </text>
-      <text
-        x="0"
-        y={HEADER_BASELINE}
-        fill="currentColor"
-        style={{
-          fontFamily: '"Outfit", sans-serif',
-          fontSize: `${HEADER_FONT_SIZE}px`,
-          fontWeight: 500,
-          lineHeight: 1,
-        }}
-      >
-        {yearLabel}
-      </text>
-      <line
-        x1={YEAR_TEXT_WIDTH + RULE_GAP}
-        y1={RULE_Y}
-        x2={BLOCK_WIDTH - WEEKDAY_TEXT_WIDTH - RULE_GAP}
-        y2={RULE_Y}
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeDasharray={RULE_DASHARRAY}
-      />
-      <text
-        x={BLOCK_WIDTH}
-        y={HEADER_BASELINE}
-        textAnchor="end"
-        fill="currentColor"
-        style={{
-          fontFamily: '"Outfit", sans-serif',
-          fontSize: `${WEEKDAY_FONT_SIZE}px`,
-          fontWeight: 500,
-          lineHeight: 1,
-        }}
-      >
-        {weekdayLabel}
-      </text>
-
-      <line
-        x1={DIVIDER_X}
-        y1={DIVIDER_TOP}
-        x2={DIVIDER_X}
-        y2={DIVIDER_BOTTOM}
-        stroke="currentColor"
-        strokeWidth={DIVIDER_WIDTH}
-      />
-      <g
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={ARROW_STROKE}
-        strokeLinecap="butt"
-        strokeLinejoin="miter"
-      >
-        {Array.from({ length: ARROW_COUNT }, (_, index) => (
-          <g key={index} transform={`translate(${ARROW_X + index * ARROW_PITCH} ${ARROW_Y})`}>
-            {/*
-              Shaft, then the two head strokes at the tip. Inset by half the
-              stroke so the *ink* fills the measured 7.6 × 7.2 box instead of
-              spilling half a stroke past it.
-            */}
-            <path
-              d={`M${ARROW_STROKE / 2} ${ARROW_HEIGHT - ARROW_STROKE / 2} L${
-                ARROW_WIDTH - ARROW_STROKE / 2
-              } ${ARROW_STROKE / 2} M${ARROW_WIDTH - ARROW_HEAD} ${ARROW_STROKE / 2} H${
-                ARROW_WIDTH - ARROW_STROKE / 2
-              } V${ARROW_HEIGHT - ARROW_STROKE / 2}`}
-            />
-          </g>
-        ))}
-      </g>
-      <g aria-hidden="true">
-        <rect
-          x={BADGE_X}
-          y={BADGE_Y}
-          width={BADGE_WIDTH}
-          height={BADGE_HEIGHT}
-          fill={badgeFill ?? 'none'}
-          stroke="currentColor"
-          strokeWidth={BADGE_STROKE}
-        />
+    <svg
+      viewBox="0 0 320 84"
+      className={className}
+      aria-label="Profile label"
+      {...props}
+    >
+      <g transform={`rotate(${transform.angle} 160 42)`}>
         <g
-          transform={`translate(${BADGE_TEXT_X} ${BADGE_TEXT_Y}) scale(${BADGE_TEXT_SCALE_X} ${BADGE_TEXT_SCALE_Y})`}
+          aria-hidden="true"
           fill="currentColor"
-          fillRule="nonzero"
+          opacity="0.75"
+          shapeRendering="crispEdges"
         >
-          {BLOG_LETTERS.map((letter, index) => (
-            <path
-              key={letter.d.slice(0, 12)}
-              d={letter.d}
-              transform={`translate(${BLOG_LETTER_OFFSETS[index] - BLOG_WORDMARK_BOUNDS.x} ${-BLOG_WORDMARK_BOUNDS.y})`}
+          {barcode.map((bar) => (
+            <rect
+              key={bar.x}
+              x={bar.x}
+              y={BARCODE_Y}
+              width={bar.width}
+              height={BARCODE_HEIGHT}
             />
           ))}
         </g>
+        {/*
+          `textLength` pins the date to the frame: month names differ in width
+          (`Jul.28` is ~24 units narrower than `Sep.09`), so without it the right
+          edge would drift day to day. `lengthAdjust="spacing"` makes up the
+          difference in tracking only, leaving the glyph shapes untouched.
+        */}
+        <text
+          x="0"
+          y={DATE_BASELINE}
+          textLength={BLOCK_WIDTH}
+          lengthAdjust="spacing"
+          fill="currentColor"
+          style={{
+            fontFamily: '"Outfit", sans-serif',
+            fontSize: `${DATE_FONT_SIZE}px`,
+            fontWeight: 500,
+            letterSpacing: '-0.045em',
+            lineHeight: 1,
+          }}
+        >
+          {dateLabel}
+        </text>
+        <text
+          x="0"
+          y={HEADER_BASELINE}
+          fill="currentColor"
+          style={{
+            fontFamily: '"Outfit", sans-serif',
+            fontSize: `${HEADER_FONT_SIZE}px`,
+            fontWeight: 500,
+            lineHeight: 1,
+          }}
+        >
+          {yearLabel}
+        </text>
+        <line
+          x1={YEAR_TEXT_WIDTH + RULE_GAP}
+          y1={RULE_Y}
+          x2={BLOCK_WIDTH - WEEKDAY_TEXT_WIDTH - RULE_GAP}
+          y2={RULE_Y}
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeDasharray={RULE_DASHARRAY}
+        />
+        <text
+          x={BLOCK_WIDTH}
+          y={HEADER_BASELINE}
+          textAnchor="end"
+          fill="currentColor"
+          style={{
+            fontFamily: '"Outfit", sans-serif',
+            fontSize: `${WEEKDAY_FONT_SIZE}px`,
+            fontWeight: 500,
+            lineHeight: 1,
+          }}
+        >
+          {weekdayLabel}
+        </text>
+
+        <line
+          x1={DIVIDER_X}
+          y1={DIVIDER_TOP}
+          x2={DIVIDER_X}
+          y2={DIVIDER_BOTTOM}
+          stroke="currentColor"
+          strokeWidth={DIVIDER_WIDTH}
+        />
+        <g
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={ARROW_STROKE}
+          strokeLinecap="butt"
+          strokeLinejoin="miter"
+        >
+          {Array.from({ length: ARROW_COUNT }, (_, index) => (
+            <g
+              key={index}
+              transform={`translate(${ARROW_X + index * ARROW_PITCH} ${ARROW_Y})`}
+            >
+              {/*
+                Shaft, then the two head strokes at the tip. Inset by half the
+                stroke so the *ink* fills the measured 7.6 × 7.2 box instead of
+                spilling half a stroke past it.
+              */}
+              <path
+                d={`M${ARROW_STROKE / 2} ${ARROW_HEIGHT - ARROW_STROKE / 2} L${
+                  ARROW_WIDTH - ARROW_STROKE / 2
+                } ${ARROW_STROKE / 2} M${ARROW_WIDTH - ARROW_HEAD} ${ARROW_STROKE / 2} H${
+                  ARROW_WIDTH - ARROW_STROKE / 2
+                } V${ARROW_HEIGHT - ARROW_STROKE / 2}`}
+              />
+            </g>
+          ))}
+        </g>
+        <g aria-hidden="true">
+          <rect
+            x={BADGE_X}
+            y={BADGE_Y}
+            width={BADGE_WIDTH}
+            height={BADGE_HEIGHT}
+            fill={badgeFill ?? 'none'}
+            stroke="currentColor"
+            strokeWidth={BADGE_STROKE}
+          />
+          <g
+            transform={`translate(${BADGE_TEXT_X} ${BADGE_TEXT_Y}) scale(${BADGE_TEXT_SCALE_X} ${BADGE_TEXT_SCALE_Y})`}
+            fill="currentColor"
+            fillRule="nonzero"
+          >
+            {BLOG_LETTERS.map((letter, index) => (
+              <path
+                key={letter.d.slice(0, 12)}
+                d={letter.d}
+                transform={`translate(${BLOG_LETTER_OFFSETS[index] - BLOG_WORDMARK_BOUNDS.x} ${-BLOG_WORDMARK_BOUNDS.y})`}
+              />
+            ))}
+          </g>
+        </g>
+        <text
+          x={NAME_X}
+          y={NAME_BASELINE}
+          fill="currentColor"
+          style={{
+            fontFamily: '"Outfit", sans-serif',
+            fontSize: `${NAME_FONT_SIZE}px`,
+            fontWeight: 500,
+            lineHeight: 1,
+          }}
+        >
+          @Bakkac
+        </text>
+        <g aria-hidden="true">
+          <rect
+            x={CHIP_X}
+            y={CHIP_Y}
+            width={CHIP_SIZE}
+            height={CHIP_SIZE}
+            fill="#ef4444"
+          />
+          <rect
+            x={CHIP_X + CHIP_STEP}
+            y={CHIP_Y}
+            width={CHIP_SIZE}
+            height={CHIP_SIZE}
+            fill="#facc15"
+          />
+          <rect
+            x={CHIP_X + CHIP_STEP * 2}
+            y={CHIP_Y}
+            width={CHIP_SIZE}
+            height={CHIP_SIZE}
+            fill="#2563eb"
+          />
+        </g>
+        <text
+          x={CAPTION_X}
+          y={CAPTION_BASELINE}
+          fill="currentColor"
+          style={{
+            fontFamily: '"Outfit", sans-serif',
+            fontSize: `${CAPTION_FONT_SIZE}px`,
+            fontWeight: 500,
+            letterSpacing: '0.01em',
+            lineHeight: 1,
+          }}
+        >
+          MY PROFILE &amp; INTERESTS
+        </text>
+        <text
+          x={DOWN_ARROW_X}
+          y={CAPTION_BASELINE}
+          textAnchor="end"
+          fill="currentColor"
+          style={{
+            fontFamily: '"Outfit", sans-serif',
+            fontSize: `${DOWN_ARROW_FONT_SIZE}px`,
+            lineHeight: 1,
+          }}
+        >
+          ↓
+        </text>
       </g>
-      <text
-        x={NAME_X}
-        y={NAME_BASELINE}
-        fill="currentColor"
-        style={{
-          fontFamily: '"Outfit", sans-serif',
-          fontSize: `${NAME_FONT_SIZE}px`,
-          fontWeight: 500,
-          lineHeight: 1,
-        }}
-      >
-        @Bakkac
-      </text>
-      <g aria-hidden="true">
-        <rect x={CHIP_X} y={CHIP_Y} width={CHIP_SIZE} height={CHIP_SIZE} fill="#ef4444" />
-        <rect x={CHIP_X + CHIP_STEP} y={CHIP_Y} width={CHIP_SIZE} height={CHIP_SIZE} fill="#facc15" />
-        <rect x={CHIP_X + CHIP_STEP * 2} y={CHIP_Y} width={CHIP_SIZE} height={CHIP_SIZE} fill="#2563eb" />
-      </g>
-      <text
-        x={CAPTION_X}
-        y={CAPTION_BASELINE}
-        fill="currentColor"
-        style={{
-          fontFamily: '"Outfit", sans-serif',
-          fontSize: `${CAPTION_FONT_SIZE}px`,
-          fontWeight: 500,
-          letterSpacing: '0.01em',
-          lineHeight: 1,
-        }}
-      >
-        MY PROFILE &amp; INTERESTS
-      </text>
-      <text
-        x={DOWN_ARROW_X}
-        y={CAPTION_BASELINE}
-        textAnchor="end"
-        fill="currentColor"
-        style={{
-          fontFamily: '"Outfit", sans-serif',
-          fontSize: `${DOWN_ARROW_FONT_SIZE}px`,
-          lineHeight: 1,
-        }}
-      >
-        ↓
-      </text>
     </svg>
   );
 }

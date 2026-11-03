@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { PaperTexture } from '@paper-design/shaders-react';
-import { PostMark } from '../home/PostMark';
 import { Categories } from '../home/Categories';
 import { LatestPosts } from '../home/LatestPosts';
 import { ProfileCard } from '../home/ProfileCard';
@@ -78,7 +77,6 @@ export default function HomePage({
             >
               <polygon points="1,1 1,23 23,1" fill="currentColor" stroke="black" strokeWidth="0.8" />
             </svg> */}
-            <PostMark className="pointer-events-none absolute left-22 top-4 z-20 w-28 translate-x-0 text-slate-900 sm:left-26 sm:top-6 sm:w-32 md:left-28 md:top-5 md:w-32 lg:left-36 lg:top-8 lg:w-44" />
             <ProfileCard baseUrl={baseUrl} />
           </div>
 
