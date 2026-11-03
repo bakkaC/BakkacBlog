@@ -76,6 +76,24 @@ export const formatContentDate = (value?: string | Date) => {
   }).format(parsed);
 };
 
+/** Compact archival stamp: `2026.03.27`. */
+export const formatDottedDate = (value?: string | Date) => {
+  const parsed = parseContentDate(value);
+  if (!parsed) return '';
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SHANGHAI_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(parsed);
+
+  const year = parts.find((part) => part.type === 'year')?.value ?? '';
+  const month = parts.find((part) => part.type === 'month')?.value ?? '';
+  const day = parts.find((part) => part.type === 'day')?.value ?? '';
+  return year && month && day ? `${year}.${month}.${day}` : '';
+};
+
 export const formatSchemaDate = (value?: string | Date) => {
   const normalized = normalizeContentDate(value);
   if (!normalized) return undefined;

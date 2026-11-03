@@ -1,16 +1,36 @@
-import { useEffect, useRef, useState, type TransitionEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type TransitionEvent } from 'react';
 
 import { useProfileLabelTransform } from '../../lib/profile-label-transform';
 import { withBase } from '../../lib/site-taxonomy';
 import FallingText from '../FallingText';
 import Noise from '../ui/Noise';
+import type { HomeAccordionLatestByCollection } from './types';
 import { ProfileLabel } from './ProfileLabel';
 import { ProfileIllustration } from './ProfileIllustration';
 
 import { PostMark } from './PostMark';
 
+/** Uniform visual scale for the whole card (fonts, art, gaps, hit targets). */
+/** Desktop-only visual shrink; mobile stays at 1. */
+const PROFILE_CARD_SCALE_DESKTOP = 0.92;
+const PROFILE_CARD_SCALE_MOBILE = 1;
+/** Matches Tailwind `md`. */
+const PROFILE_CARD_SCALE_MQ = '(min-width: 768px)';
+/** Mobile flip back — a hair darker than page paper (#f4f4f4), lighter than zinc-200. */
+const PROFILE_CARD_MOBILE_BACK = '#f1f1f3';
+/** Live profile card tilt (clockwise). */
+const PROFILE_CARD_TILT_DEG = 1;
+/** Gray underlay tilt (counter-clockwise) — a bit more than the live card. */
+const PROFILE_UNDERLAY_TILT_DEG = 3;
+/**
+ * Room for the tilt AABB so rotated corners are not clipped by the height
+ * shell. Sized for the larger underlay angle.
+ */
+const PROFILE_CARD_TILT_PAD_PX = 36;
+
 interface ProfileCardProps {
   baseUrl: string;
+  accordionLatest: HomeAccordionLatestByCollection;
   onFoldChange?: (folded: boolean) => void;
 }
 
@@ -109,16 +129,22 @@ function AccordionPaperclip({ clipId }: { clipId: string }) {
 function DogEarHit({
   folded,
   onToggle,
+  mode = 'fold',
 }: {
   folded: boolean;
   onToggle: () => void;
+  /** Desktop half-fold vs mobile full-card flip. */
+  mode?: 'fold' | 'flip';
 }) {
+  const openLabel = mode === 'flip' ? '翻转名片' : '对折名片';
+  const closedLabel = mode === 'flip' ? '翻回正面' : '展开名片';
+
   return (
     <button
       type="button"
       aria-expanded={!folded}
       aria-controls="profile-card-panel"
-      aria-label={folded ? '展开名片' : '对折名片'}
+      aria-label={folded ? closedLabel : openLabel}
       onClick={onToggle}
       className={`absolute top-0 z-50 cursor-pointer border-0 bg-transparent p-0 ${
         folded ? 'right-0 left-auto' : 'left-0'
@@ -147,7 +173,16 @@ const INTRO_HOLD_MS = 720;
  * crease marches diagonally as the square grows. Top-left uses `--left-ear-open`;
  * top-right uses `--ear-open`.
  */
-function DogEarMark({ corner, className = '' }: { corner: DogEarCorner; className?: string }) {
+function DogEarMark({
+  corner,
+  className = '',
+  tipColor = '#fff',
+}: {
+  corner: DogEarCorner;
+  className?: string;
+  /** Match the sheet this tip sits on (white front / grain back). */
+  tipColor?: string;
+}) {
   const isTopLeft = corner === 'top-left';
 
   return (
@@ -164,7 +199,7 @@ function DogEarMark({ corner, className = '' }: { corner: DogEarCorner; classNam
           clipPath: isTopLeft
             ? 'polygon(100% 0, 100% 100%, 0 100%)'
             : 'polygon(0 0, 100% 100%, 0 100%)',
-          background: '#fff',
+          background: tipColor,
         }}
       />
       <svg
@@ -193,7 +228,26 @@ function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
+/** Quiet WIP stamp for card backs — leaves room for future back-face content. */
+function ProfileCardBackWipMark({ className = '' }: { className?: string }) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 flex items-center justify-center px-6 ${className}`}
+    >
+      <span
+        className="inline-flex items-center border border-dashed border-zinc-500/80 px-4 py-2 text-base font-medium text-black md:text-lg"
+        style={{
+          fontFamily:
+            '"Songti SC", "Songti TC", "Noto Serif SC", "Source Han Serif SC", SimSun, serif',
+        }}
+      >
+        WIP · 开发中
+      </span>
+    </div>
+  );
+}
+
+export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileCardProps) {
   const [folded, setFolded] = useState(false);
   /*
     After the 3D leaf lands, raise the residual sheet and peel the top-right
@@ -224,6 +278,12 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
   const earTimerRef = useRef<number | null>(null);
   const introTimerRef = useRef<number | null>(null);
   const beginUnfoldRef = useRef<() => void>(() => {});
+  /** Unscaled card root; wrapper height is offsetHeight × cardScale. */
+  const scaleRef = useRef<HTMLDivElement>(null);
+  const [scaleLayoutHeight, setScaleLayoutHeight] = useState<number>();
+  const [cardScale, setCardScale] = useState(PROFILE_CARD_SCALE_MOBILE);
+  /** `md+` keeps the underlay stack + half-fold; below that is upright full-card flip. */
+  const [isMdUp, setIsMdUp] = useState(false);
   const [activeIndex, setActiveIndex] = useState(2);
   const labelTransform = useProfileLabelTransform();
   const fallingLabels = [
@@ -266,6 +326,7 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
       tint: { hue: '259.8', chroma: '0.188' },
       art: `${baseUrl}vectors/notes-cover.svg`,
       link: withBase(baseUrl, '/notes'),
+      latest: accordionLatest.notes,
     },
     {
       id: 2,
@@ -278,6 +339,7 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
       tint: { hue: '91.9', chroma: '0.173', lightness: ACCENT_TINT_LIGHTNESS_YELLOW },
       art: `${baseUrl}vectors/london-new-york-flight.svg`,
       link: withBase(baseUrl, '/thoughts'),
+      latest: accordionLatest.thoughts,
     },
     {
       id: 3,
@@ -290,6 +352,7 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
       tint: { hue: '25.3', chroma: '0.208' },
       art: `${baseUrl}vectors/brockmann.svg`,
       link: withBase(baseUrl, '/posts'),
+      latest: accordionLatest.posts,
     },
   ];
 
@@ -322,6 +385,51 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
   }, [folded, onFoldChange]);
 
   useEffect(() => {
+    const media = window.matchMedia(PROFILE_CARD_SCALE_MQ);
+    const sync = () => {
+      setIsMdUp(media.matches);
+      setCardScale(media.matches ? PROFILE_CARD_SCALE_DESKTOP : PROFILE_CARD_SCALE_MOBILE);
+    };
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  /*
+    `transform: scale` does not shrink layout box. Measure the unscaled card and
+    pin the outer wrapper to scaled height so the latest-posts block sits snug.
+  */
+  useLayoutEffect(() => {
+    const node = scaleRef.current;
+    if (!node || !stageReady) return;
+
+    const sync = () => {
+      setScaleLayoutHeight(node.offsetHeight * cardScale);
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [stageReady, folded, foldSettled, holdRightHalf, leftEarOpen, earOpen, cardScale, isMdUp]);
+
+  useEffect(() => {
+    // Mobile: keep foldSettled in lockstep; ear peels after the flip lands
+    // (handleFoldTransitionEnd + fallback timer below).
+    if (!isMdUp) {
+      setFoldSettled(folded);
+      if (!folded) {
+        setEarOpen(false);
+        return;
+      }
+      setLeftEarOpen(false);
+      if (introPlaying) return;
+      if (prefersReducedMotion()) {
+        setEarOpen(true);
+        return;
+      }
+      const timer = window.setTimeout(() => setEarOpen(true), FOLD_MS + 40);
+      return () => window.clearTimeout(timer);
+    }
     if (!folded) {
       setFoldSettled(false);
       setEarOpen(false);
@@ -338,9 +446,10 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
     // Fallback if transitionend is missed (tab backgrounded, etc.).
     const timer = window.setTimeout(() => setFoldSettled(true), 900);
     return () => window.clearTimeout(timer);
-  }, [folded, introPlaying]);
+  }, [folded, introPlaying, isMdUp]);
 
   useEffect(() => {
+    if (!isMdUp) return;
     if (!foldSettled) {
       setEarOpen(false);
       return;
@@ -354,15 +463,19 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
     // Next frame so the closed-ear clip-path paints before we open it.
     const id = window.requestAnimationFrame(() => setEarOpen(true));
     return () => window.cancelAnimationFrame(id);
-  }, [foldSettled, introPlaying]);
+  }, [foldSettled, introPlaying, isMdUp]);
 
   // Start FallingText only once the sheet is fully open after intro/unfold.
   useEffect(() => {
     if (!stageReady || introPlaying) return;
+    if (!isMdUp) {
+      if (!folded) setFallingActive(true);
+      return;
+    }
     if (!folded && !holdRightHalf && leftEarOpen) {
       setFallingActive(true);
     }
-  }, [stageReady, introPlaying, folded, holdRightHalf, leftEarOpen]);
+  }, [stageReady, introPlaying, folded, holdRightHalf, leftEarOpen, isMdUp]);
 
   // Keep it through the fold flip; drop only after the card has landed folded.
   useEffect(() => {
@@ -382,6 +495,10 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
   };
 
   const beginUnfold = () => {
+    if (!isMdUp) {
+      setFolded(false);
+      return;
+    }
     setHoldRightHalf(true);
     setFoldSettled(false);
     requestAnimationFrame(() => {
@@ -404,6 +521,21 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
   const toggleFold = () => {
     if (introPlaying) return;
     clearEarTimer();
+    if (!isMdUp) {
+      if (folded) {
+        // Close the back-face ear first, then flip to the front.
+        if (earOpen && !prefersReducedMotion()) {
+          setEarOpen(false);
+          earTimerRef.current = window.setTimeout(beginUnfold, DOG_EAR_MS);
+          return;
+        }
+        beginUnfold();
+        return;
+      }
+      setLeftEarOpen(false);
+      beginFold();
+      return;
+    }
     if (folded) {
       // Close the top-right ear first, then reverse the card flip.
       if (earOpen && !prefersReducedMotion()) {
@@ -423,23 +555,54 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
     beginFold();
   };
 
-  // Every load: mount already folded with the right ear open, then auto-unfold.
+  // Every load: mount already folded / flipped, then auto-open.
   useEffect(() => {
     let cancelled = false;
+    const md = window.matchMedia(PROFILE_CARD_SCALE_MQ).matches;
+    setIsMdUp(md);
+    setCardScale(md ? PROFILE_CARD_SCALE_DESKTOP : PROFILE_CARD_SCALE_MOBILE);
 
     if (prefersReducedMotion()) {
+      setLeftEarOpen(true);
       setStageReady(true);
       return;
     }
 
-    // Skip the folded-ear grow — start from "ear already peeled".
     setFoldInstant(true);
     setLeftEarOpen(false);
-    setEarOpen(true);
-    setFoldSettled(true);
     setFolded(true);
     setIntroPlaying(true);
     setStageReady(true);
+
+    if (!md) {
+      // Mobile: start on the grain back with ear already peeled, then flip open.
+      setEarOpen(true);
+      setFoldSettled(true);
+      const frame = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          if (cancelled) return;
+          setFoldInstant(false);
+          introTimerRef.current = window.setTimeout(() => {
+            setEarOpen(false);
+            introTimerRef.current = window.setTimeout(() => {
+              beginUnfoldRef.current();
+              introTimerRef.current = window.setTimeout(() => {
+                setIntroPlaying(false);
+              }, FOLD_MS + 40);
+            }, DOG_EAR_MS);
+          }, INTRO_HOLD_MS);
+        });
+      });
+      return () => {
+        cancelled = true;
+        window.cancelAnimationFrame(frame);
+        clearIntroTimer();
+      };
+    }
+
+    // Desktop: skip the folded-ear grow — start from "ear already peeled".
+    setEarOpen(true);
+    setFoldSettled(true);
 
     const frame = window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -467,6 +630,15 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
   const handleFoldTransitionEnd = (event: TransitionEvent<HTMLDivElement>) => {
     if (event.propertyName !== 'transform') return;
     if (event.target !== event.currentTarget) return;
+    if (!isMdUp) {
+      if (folded) {
+        // Peel the back-face ear after the flip lands.
+        requestAnimationFrame(() => setEarOpen(true));
+        return;
+      }
+      setLeftEarOpen(true);
+      return;
+    }
     if (folded) {
       setFoldSettled(true);
       return;
@@ -623,13 +795,55 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
                   />
                 </div>
               </div>
+              {/*
+                Mobile keeps only the # mark — the LATEST teaser needs the wider
+                open panel and reads as clutter under ~768px. When a latest
+                entry exists, hide this # from `md` up so the teaser owns it.
+              */}
               <span
-                className={`pointer-events-none absolute left-[74%] top-[76%] z-30 whitespace-nowrap font-sans text-[10px] tracking-wider text-white transition-opacity duration-700 ease-in-out md:text-xs ${
-                  index === activeIndex ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`pointer-events-none absolute left-[74%] top-[76%] z-30 whitespace-nowrap font-sans text-[10px] text-white transition-opacity duration-700 ease-in-out md:text-xs ${
+                  item.latest ? 'md:hidden' : ''
+                } ${index === activeIndex ? 'opacity-100' : 'opacity-0'}`}
               >
                 #{String(item.id).padStart(2, '0')}
               </span>
+              {item.latest ? (
+                <a
+                  href={item.latest.href}
+                  onClick={(event) => event.stopPropagation()}
+                  aria-label={`最新：${item.latest.title}`}
+                  className={`absolute inset-x-[8%] top-[72%] z-30 hidden overflow-hidden text-left text-white transition-opacity duration-300 ease-in-out md:block ${
+                    /*
+                      Full panel inset so the divider runs edge-to-edge. Nowrap +
+                      truncate keep collapse from reflowing while the panel clips.
+                    */
+                    index === activeIndex
+                      ? 'md:pointer-events-auto md:opacity-100'
+                      : 'md:pointer-events-none md:opacity-0'
+                  }`}
+                >
+                  <span className="flex w-full items-baseline justify-between gap-3 whitespace-nowrap border-b-2 border-dashed border-white/40 pb-1 text-white">
+                    <span className="flex items-baseline gap-x-1 font-sans text-[9px] font-medium leading-none md:text-[10px]">
+                      <span>LATEST</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{item.latest.dateLabel}</span>
+                    </span>
+                    <span className="shrink-0 font-sans text-[10px] leading-none md:text-xs">
+                      #{String(item.id).padStart(2, '0')}
+                    </span>
+                  </span>
+                  <span className="mt-2.5 flex min-w-0 items-baseline gap-2">
+                    <span className="min-w-0 max-w-[58%] shrink truncate text-[13px] font-semibold leading-none md:text-sm lg:text-[15px]">
+                      {item.latest.title}
+                    </span>
+                    {item.latest.tags.length > 0 ? (
+                      <span className="min-w-0 flex-1 truncate text-right font-sans text-[9px] leading-none text-white md:text-[10px]">
+                        {item.latest.tags.map((tag) => `#${tag}`).join(' · ')}
+                      </span>
+                    ) : null}
+                  </span>
+                </a>
+              ) : null}
               {/*
                 Collapsed-only script watermark: static upright-to-vertical pose,
                 no rotate tween. Sized from panel height so expanding width does
@@ -668,54 +882,228 @@ export function ProfileCard({ baseUrl, onFoldChange }: ProfileCardProps) {
     </>
   );
 
+  const tiltPad = isMdUp ? PROFILE_CARD_TILT_PAD_PX * cardScale : 0;
+  const shellHeight =
+    scaleLayoutHeight == null ? undefined : scaleLayoutHeight + tiltPad * 2;
+  const cardTiltDeg = isMdUp ? PROFILE_CARD_TILT_DEG : 0;
+
+  const renderFrontSheet = (opts: {
+    motion: boolean;
+    clipPrefix: string;
+    showIllustration?: boolean;
+  }) => (
+    <div className="profile-card-sheet relative flex w-full flex-col items-center gap-20 overflow-visible bg-white p-12 md:flex-row md:flex-nowrap md:items-center md:justify-between md:gap-8 md:p-8 lg:gap-12 lg:p-16">
+      {renderCardInterior(opts)}
+    </div>
+  );
+
   return (
     /*
-      Left-to-right fold: both halves share the same interior. The left leaf
-      peels around the midline; after the flip the left stage is empty page
-      background and the right stage is covered by the paper underside.
+      Scale shell: desktop shrinks to 0.9; mobile stays 1. Outer height tracks
+      the scaled box (+ tilt pad on desktop) so following sections clear the stack.
     */
     <div
-      id="profile-card-panel"
-      className={`profile-card-stage relative [perspective:1600px] ${
-        stageReady ? '' : 'invisible'
-      } ${folded ? 'profile-card-stage--folded' : ''} ${
-        foldSettled ? 'profile-card-stage--underside-settled' : ''
-      } ${earOpen ? 'profile-card-stage--ear-open' : ''} ${
-        leftEarOpen ? 'profile-card-stage--left-ear-open' : ''
-      } ${holdRightHalf ? 'profile-card-stage--hold-right-half' : ''} ${
-        foldInstant ? 'profile-card-stage--fold-instant' : ''
-      }`}
+      className="relative w-full overflow-visible"
+      style={{ height: shellHeight, paddingTop: tiltPad }}
     >
-      <DogEarHit folded={folded} onToggle={toggleFold} />
-
-      {/* Residual sheet: under the leaf while flipping; ear-peek above after settle. */}
-      <div className="profile-card-pane profile-card-pane--right" aria-hidden={folded}>
-        <div className="profile-card-pane__content">
-          <div className="profile-card-sheet relative flex w-full flex-col items-center gap-20 overflow-visible bg-white p-12 md:flex-row md:flex-nowrap md:items-center md:justify-between md:gap-8 md:p-8 lg:gap-12 lg:p-16">
-            {renderCardInterior({ motion: true, clipPrefix: 'sheet-', showIllustration: true })}
-          </div>
-        </div>
-      </div>
-
-      {/* Left folding leaf — stays mounted so the peel animation remains visible. */}
       <div
-        className="profile-card-fold"
-        aria-hidden="true"
-        onTransitionEnd={handleFoldTransitionEnd}
+        ref={scaleRef}
+        className={`relative w-full origin-top ${stageReady ? '' : 'invisible'}`}
+        style={{
+          transform: `scale(${cardScale})`,
+          transformOrigin: 'top center',
+        }}
       >
-        <div className="profile-card-fold__face profile-card-fold__face--front">
-          <div className="profile-card-pane__content">
-            <div className="profile-card-sheet relative flex w-full flex-col items-center gap-20 overflow-visible bg-white p-12 md:flex-row md:flex-nowrap md:items-center md:justify-between md:gap-8 md:p-8 lg:gap-12 lg:p-16">
-              {renderCardInterior({
-                motion: false,
-                clipPrefix: 'fold-',
-                showIllustration: !foldSettled,
-              })}
+        <div className="relative w-full">
+          {/*
+            Desktop only: underlay −3° under the live +1° card. Mobile drops the
+            under-sheet and stays upright — the grain/lineart move to the flip back.
+          */}
+          {isMdUp ? (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-0 overflow-visible"
+              style={{
+                transform: `rotate(${-PROFILE_UNDERLAY_TILT_DEG}deg)`,
+                transformOrigin: 'center center',
+                /* drop-shadow follows the notched silhouette. */
+                filter: 'drop-shadow(10px 14px 14px rgba(15, 23, 42, 0.22))',
+              }}
+            >
+              {/*
+                Static dog-ear sheet — same open left-ear polygon as the live card,
+                no animation. Tip + crease are just the folded corner graphics.
+              */}
+              <div
+                className="absolute inset-0 overflow-hidden bg-zinc-100"
+                style={{
+                  clipPath:
+                    'polygon(var(--cut-size) 0, 100% 0, 100% 100%, 0 100%, 0 var(--cut-size))',
+                }}
+              >
+                <Noise
+                  patternRefreshInterval={0}
+                  patternAlpha={22}
+                  className="mix-blend-multiply opacity-40"
+                />
+                {/*
+                  Line art on the under-sheet's left half — visible in the left
+                  panel when the live card is folded away, and in tilt peeks.
+                */}
+                <img
+                  src={`${baseUrl}vectors/home-underlay-lineart.png`}
+                  alt=""
+                  draggable={false}
+                  className="pointer-events-none absolute top-[8%] left-[3%] w-[56%] max-w-none select-none object-contain opacity-80 md:top-[6%] md:w-[50%] lg:w-[46%]"
+                />
+              </div>
+              <span
+                className="absolute top-0 left-0 z-10 bg-white"
+                style={{
+                  width: 'var(--cut-size)',
+                  height: 'var(--cut-size)',
+                  clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                }}
+              />
+              <svg
+                className="absolute top-0 left-0 z-10 text-zinc-300"
+                style={{ width: 'var(--cut-size)', height: 'var(--cut-size)' }}
+                viewBox="0 0 100 100"
+              >
+                <path
+                  d="M0 100 L100 0 L100 100 Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeDasharray="6 4"
+                  vectorEffect="non-scaling-stroke"
+                />
+              </svg>
             </div>
-          </div>
-        </div>
-        <div className="profile-card-fold__face profile-card-fold__face--back">
-          <DogEarMark corner="top-right" />
+          ) : null}
+
+          {!isMdUp ? (
+            /*
+              Mobile: upright full-card Y-flip. Front is the live sheet; back is
+              the former underlay grain with line art in the upper half.
+            */
+            <div
+              id="profile-card-panel"
+              className={`profile-card-mobile-flip relative z-10 ${
+                leftEarOpen ? 'profile-card-stage--left-ear-open' : ''
+              } ${earOpen ? 'profile-card-stage--ear-open' : ''} ${
+                foldInstant ? 'profile-card-stage--fold-instant' : ''
+              }`}
+            >
+              <div
+                className={`profile-card-mobile-flip__inner ${folded ? 'is-flipped' : ''} ${
+                  foldInstant ? 'is-instant' : ''
+                }`}
+                onTransitionEnd={handleFoldTransitionEnd}
+              >
+                <div
+                  className="profile-card-mobile-flip__face profile-card-mobile-flip__face--front"
+                  aria-hidden={folded}
+                >
+                  <DogEarHit folded={false} onToggle={toggleFold} mode="flip" />
+                  {renderFrontSheet({
+                    motion: true,
+                    clipPrefix: 'sheet-',
+                    showIllustration: true,
+                  })}
+                </div>
+                <div
+                  className="profile-card-mobile-flip__face profile-card-mobile-flip__face--back"
+                  aria-hidden={!folded}
+                >
+                  {/*
+                    Grain sheet clips a top-right notch as the ear opens. Tip
+                    matches the back fill so there is no white triangle — only
+                    the dashed crease + page showing through the cut.
+                  */}
+                  <div
+                    className="profile-card-mobile-back-sheet absolute inset-0 overflow-hidden"
+                    style={{ background: PROFILE_CARD_MOBILE_BACK }}
+                  >
+                    <Noise
+                      patternRefreshInterval={0}
+                      patternAlpha={22}
+                      className="mix-blend-multiply opacity-40"
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 top-0 flex h-[58%] items-start justify-center px-3 pt-3">
+                      <img
+                        src={`${baseUrl}vectors/home-underlay-lineart.png`}
+                        alt=""
+                        draggable={false}
+                        className="h-full w-full max-w-none select-none object-contain object-top opacity-80"
+                      />
+                    </div>
+                    <ProfileCardBackWipMark />
+                  </div>
+                  <DogEarHit folded onToggle={toggleFold} mode="flip" />
+                  <DogEarMark corner="top-right" tipColor={PROFILE_CARD_MOBILE_BACK} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            /*
+              Left-to-right fold: both halves share the same interior. The left leaf
+              peels around the midline; after the flip the left stage is empty page
+              background and the right stage is covered by the paper underside.
+            */
+            <div
+              className="relative z-10"
+              style={{
+                transform: `rotate(${cardTiltDeg}deg)`,
+                transformOrigin: 'center center',
+              }}
+            >
+              <div
+                id="profile-card-panel"
+                className={`profile-card-stage relative [perspective:1600px] ${
+                  folded ? 'profile-card-stage--folded' : ''
+                } ${foldSettled ? 'profile-card-stage--underside-settled' : ''} ${
+                  earOpen ? 'profile-card-stage--ear-open' : ''
+                } ${leftEarOpen ? 'profile-card-stage--left-ear-open' : ''} ${
+                  holdRightHalf ? 'profile-card-stage--hold-right-half' : ''
+                } ${foldInstant ? 'profile-card-stage--fold-instant' : ''}`}
+              >
+                <DogEarHit folded={folded} onToggle={toggleFold} />
+
+                {/* Residual sheet: under the leaf while flipping; ear-peek above after settle. */}
+                <div className="profile-card-pane profile-card-pane--right" aria-hidden={folded}>
+                  <div className="profile-card-pane__content">
+                    {renderFrontSheet({
+                      motion: true,
+                      clipPrefix: 'sheet-',
+                      showIllustration: true,
+                    })}
+                  </div>
+                </div>
+
+                {/* Left folding leaf — stays mounted so the peel animation remains visible. */}
+                <div
+                  className="profile-card-fold"
+                  aria-hidden="true"
+                  onTransitionEnd={handleFoldTransitionEnd}
+                >
+                  <div className="profile-card-fold__face profile-card-fold__face--front">
+                    <div className="profile-card-pane__content">
+                      {renderFrontSheet({
+                        motion: false,
+                        clipPrefix: 'fold-',
+                        showIllustration: !foldSettled,
+                      })}
+                    </div>
+                  </div>
+                  <div className="profile-card-fold__face profile-card-fold__face--back">
+                    <DogEarMark corner="top-right" />
+                    <ProfileCardBackWipMark />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
