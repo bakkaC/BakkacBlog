@@ -688,6 +688,18 @@
     display: none;
   }
 
+  /*
+    ProfileCard SSR starts `invisible` so the open pose cannot flash before the
+    folded intro snap. If the veil has already lifted (or never mounted) and
+    hydration is late/failed, that would leave a blank page under the header —
+    force the card visible whenever the loader is no longer actively covering.
+  */
+  body:not(:has(.boot-veil[data-boot-veil-state="idle"]))
+    .homepage-paper-texture
+    .origin-top.invisible {
+    visibility: visible;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .boot-veil__spinner {
       animation: none;

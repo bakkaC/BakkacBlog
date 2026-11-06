@@ -6,10 +6,10 @@ import { join } from 'node:path';
  * the paper-texture chunk.
  *
  * Home and the collection pages both import `PaperTexture`, so Vite emits it as
- * one shared chunk, and preloading it from the layout warms it for every page.
- * The filename is content-hashed, so the layout emits a placeholder and this
- * integration fills it in on `astro:build:done`, once both the JS bundle and the
- * page HTML have been written.
+ * one shared chunk. The layout prefetches it (low priority) so navigation to
+ * collection pages is warm without racing the homepage LCP image. The filename
+ * is content-hashed, so the layout emits a placeholder and this integration
+ * fills it in on `astro:build:done`.
  */
 
 const PLACEHOLDER = '/__PAPER_TEXTURE_CHUNK__';

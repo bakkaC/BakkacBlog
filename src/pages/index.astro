@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 
 import BaseLayout from '../layouts/Layout.astro';
 import HomePage from '../components/pages/HomePage';
+import HomePaperTexture from '../components/home/HomePaperTexture';
 import { formatContentDate, formatDottedDate } from '../lib/content-date';
 import {
   COLLECTION_ROOTS,
@@ -54,14 +55,27 @@ const categories = tagBuckets.slice(0, 28).map((bucket) => ({
   count: bucket.count,
   href: withBase(baseUrl, `/tag/${bucket.slug}`),
 }));
+
+/*
+  Do not head-preload the heavy homepage art. The boot veil is the first
+  screen; images are discovered from `img[data-boot-critical]` and decoded
+  under it. Head preloads with high priority previously blocked that veil.
+*/
 ---
 
 <BaseLayout>
-  <HomePage
-    baseUrl={baseUrl}
-    latestPosts={latestPosts}
-    accordionLatest={accordionLatest}
-    categories={categories}
-    client:load
-  />
+  <div class="homepage-paper-texture relative min-h-[calc(100vh-60px)] overflow-x-clip overflow-y-visible">
+    {/*
+      Load under the boot veil so WebGL + ProfileCard are ready before reveal.
+      Flat `#F4F4F4` wash covers the gap until the shader paints.
+    */}
+    <HomePaperTexture client:load />
+    <HomePage
+      baseUrl={baseUrl}
+      latestPosts={latestPosts}
+      accordionLatest={accordionLatest}
+      categories={categories}
+      client:load
+    />
+  </div>
 </BaseLayout>

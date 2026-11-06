@@ -224,7 +224,7 @@ const listNodes = assignEntryIndexes(inheritFolderMeta(sortTree(rootNodes)));
   class="relative min-h-[calc(100vh-80px)] overflow-hidden bg-(--accent-bg) text-stone-900"
   style={`--accent: ${accent}; --accent-bg: ${accentBackground};`}
 >
-  <PaperTextureBackground client:load />
+  <PaperTextureBackground client:idle />
   <div
     aria-hidden="true"
     class:list={['pointer-events-none absolute inset-0 z-0', overlayClassName]}

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { remarkWikiLinks } from './src/lib/remark-wiki-links.js';
 import { remarkMermaid } from './src/lib/remark-mermaid.js';
 import { paperChunkIntegration } from './src/lib/paper-chunk-integration.mjs';
+import { asyncCssIntegration } from './src/lib/async-css-integration.mjs';
 // @ts-check
 
 import tailwindcss from '@tailwindcss/vite';
@@ -27,6 +28,7 @@ export default defineConfig({
   integrations: [
     mdx(),
     react(),
+    asyncCssIntegration(),
     paperChunkIntegration(),
     sitemap({
       filter: (page) =>
@@ -42,6 +44,13 @@ export default defineConfig({
         '@lib': `${srcDir}/lib`,
         '@styles': `${srcDir}/styles`,
       },
+    },
+    optimizeDeps: {
+      // Keep the shader package in the prebundle so mid-session HMR cannot
+      // drop `@paper-design_shaders-react.js` and leave islands with a 504
+      // "Outdated Optimize Dep" (which then cascades into `_jsxDEV is not a
+      // function` on HomePage).
+      include: ['@paper-design/shaders-react', 'react', 'react-dom', 'react/jsx-dev-runtime'],
     },
   },
   markdown: {

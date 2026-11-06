@@ -1,8 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState, type TransitionEvent } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type TransitionEvent,
+} from 'react';
 
+import { BOOT_READY, BOOT_STAGE_ARMED } from '../../lib/boot-veil';
 import { useProfileLabelTransform } from '../../lib/profile-label-transform';
 import { withBase } from '../../lib/site-taxonomy';
-import FallingText from '../FallingText';
 import Noise from '../ui/Noise';
 import type { HomeAccordionLatestByCollection } from './types';
 import { ProfileLabel } from './ProfileLabel';
@@ -10,9 +18,31 @@ import { ProfileIllustration } from './ProfileIllustration';
 
 import { PostMark } from './PostMark';
 
-/** Uniform visual scale for the whole card (fonts, art, gaps, hit targets). */
-/** Desktop-only visual shrink; mobile stays at 1. */
-const PROFILE_CARD_SCALE_DESKTOP = 0.92;
+/** Physics text only arms after unfold — keep matter-js off the first paint. */
+const FallingText = lazy(() => import('../FallingText'));
+
+function signalStageArmed(): void {
+  document.documentElement.dataset.bootStageArmed = '1';
+  document.dispatchEvent(new CustomEvent(BOOT_STAGE_ARMED));
+}
+
+function waitForBootReady(): Promise<void> {
+  const veil = document.querySelector<HTMLElement>('.boot-veil');
+  if (!veil || veil.dataset.bootVeilState === 'done') {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    document.addEventListener(BOOT_READY, () => resolve(), { once: true });
+  });
+}
+
+/**
+ * Uniform visual scale for the whole card (fonts, art, gaps, hit targets).
+ * Keep desktop at 1 — non-1 `transform: scale` subpixel-rasters type and
+ * makes accordion labels look soft. Prefer tighter padding/width if the card
+ * ever needs to feel smaller again.
+ */
+const PROFILE_CARD_SCALE_DESKTOP = 1;
 const PROFILE_CARD_SCALE_MOBILE = 1;
 /** Matches Tailwind `md`. */
 const PROFILE_CARD_SCALE_MQ = '(min-width: 768px)';
@@ -232,7 +262,7 @@ function prefersReducedMotion() {
 function ProfileCardBackWipMark({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`pointer-events-none absolute inset-0 flex items-center justify-center px-6 ${className}`}
+      className={`pointer-events-none absolute inset-x-0 top-[72%] flex justify-center px-6 md:inset-0 md:top-auto md:h-full md:items-center ${className}`}
     >
       <span
         className="inline-flex items-center border border-dashed border-zinc-500/80 px-4 py-2 text-base font-medium text-black md:text-lg"
@@ -555,9 +585,15 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
     beginFold();
   };
 
-  // Every load: mount already folded / flipped, then auto-open.
-  useEffect(() => {
-    let cancelled = false;
+  /*
+    Boot sequence (under the loader veil, then after it lifts):
+    1. Arm in useLayoutEffect — snap folded pose + clear `invisible` before
+       the browser paints the hydrated frame (SSR starts invisible so the open
+       pose cannot flash; without layout-phase arming the veil can lift onto a
+       blank page).
+    2. Play — once `bakkac:boot-ready` fires, run the unfold demo.
+  */
+  useLayoutEffect(() => {
     const md = window.matchMedia(PROFILE_CARD_SCALE_MQ).matches;
     setIsMdUp(md);
     setCardScale(md ? PROFILE_CARD_SCALE_DESKTOP : PROFILE_CARD_SCALE_MOBILE);
@@ -565,6 +601,7 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
     if (prefersReducedMotion()) {
       setLeftEarOpen(true);
       setStageReady(true);
+      signalStageArmed();
       return;
     }
 
@@ -572,57 +609,44 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
     setLeftEarOpen(false);
     setFolded(true);
     setIntroPlaying(true);
+    setEarOpen(true);
+    setFoldSettled(true);
     setStageReady(true);
+  }, []);
 
-    if (!md) {
-      // Mobile: start on the grain back with ear already peeled, then flip open.
-      setEarOpen(true);
-      setFoldSettled(true);
-      const frame = window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+
+    let cancelled = false;
+    const md = window.matchMedia(PROFILE_CARD_SCALE_MQ).matches;
+
+    const armFrame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (cancelled) return;
+        signalStageArmed();
+
+        void waitForBootReady().then(() => {
           if (cancelled) return;
           setFoldInstant(false);
           introTimerRef.current = window.setTimeout(() => {
             setEarOpen(false);
             introTimerRef.current = window.setTimeout(() => {
               beginUnfoldRef.current();
-              introTimerRef.current = window.setTimeout(() => {
-                setIntroPlaying(false);
-              }, FOLD_MS + 40);
+              introTimerRef.current = window.setTimeout(
+                () => {
+                  setIntroPlaying(false);
+                },
+                md ? FOLD_MS + LEAF_FADE_MS + 40 : FOLD_MS + 40,
+              );
             }, DOG_EAR_MS);
           }, INTRO_HOLD_MS);
         });
-      });
-      return () => {
-        cancelled = true;
-        window.cancelAnimationFrame(frame);
-        clearIntroTimer();
-      };
-    }
-
-    // Desktop: skip the folded-ear grow — start from "ear already peeled".
-    setEarOpen(true);
-    setFoldSettled(true);
-
-    const frame = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        if (cancelled) return;
-        setFoldInstant(false);
-        introTimerRef.current = window.setTimeout(() => {
-          setEarOpen(false);
-          introTimerRef.current = window.setTimeout(() => {
-            beginUnfoldRef.current();
-            introTimerRef.current = window.setTimeout(() => {
-              setIntroPlaying(false);
-            }, FOLD_MS + LEAF_FADE_MS + 40);
-          }, DOG_EAR_MS);
-        }, INTRO_HOLD_MS);
       });
     });
 
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(armFrame);
       clearIntroTimer();
     };
   }, []);
@@ -716,16 +740,18 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
           className="pointer-events-none absolute bottom-76 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56"
           aria-hidden="true"
         >
-          <FallingText
-            words={fallingLabels}
-            highlightClass="highlighted"
-            trigger="auto"
-            gravity={0.56}
-            chaosFactor={1.5}
-            fontSize="clamp(0.75rem,2.2vw,1.9rem)"
-            mouseConstraintStiffness={0.9}
-            interactive={false}
-          />
+          <Suspense fallback={null}>
+            <FallingText
+              words={fallingLabels}
+              highlightClass="highlighted"
+              trigger="auto"
+              gravity={0.56}
+              chaosFactor={1.5}
+              fontSize="clamp(0.75rem,2.2vw,1.9rem)"
+              mouseConstraintStiffness={0.9}
+              interactive={false}
+            />
+          </Suspense>
         </div>
       ) : null}
 
@@ -769,6 +795,7 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                   src={item.art}
                   alt=""
                   className="h-full w-full object-contain"
+                  {...(index === activeIndex ? { 'data-boot-critical': '' } : {})}
                 />
                 {/*
                   Match `text.svg`: script topic sits under the caption block
@@ -787,11 +814,13 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                       height: '200%',
                       opacity: 1,
                     }}
+                    {...(index === activeIndex ? { 'data-boot-critical': '' } : {})}
                   />
                   <img
                     src={item.captionArt}
                     alt={item.captions.join(', ')}
                     className="relative z-10 block h-auto w-full"
+                    {...(index === activeIndex ? { 'data-boot-critical': '' } : {})}
                   />
                 </div>
               </div>
@@ -871,7 +900,11 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                 aria-hidden="true"
                 className="pointer-events-none absolute z-20 max-w-none select-none transition-opacity duration-700 ease-in-out"
                 style={{
-                  left: '100%',
+                  // Desktop keeps the original right-edge anchor. Mobile biases
+                  // `left` itself — translateX(-50%) on a ~250px-wide script
+                  // made a 10px nudge invisible, and overflow-hidden on the
+                  // panel clips anything outside the yellow strip anyway.
+                  left: isMdUp ? '100%' : 'calc(100% - 14px)',
                   top: '50%',
                   height: '16%',
                   width: 'auto',
@@ -915,8 +948,8 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
 
   return (
     /*
-      Scale shell: desktop shrinks to 0.9; mobile stays 1. Outer height tracks
-      the scaled box (+ tilt pad on desktop) so following sections clear the stack.
+      Scale shell (identity for now). Outer height still tracks measured size
+      (+ tilt pad on desktop) so following sections clear the stack.
     */
     <div
       className="relative w-full overflow-visible"
@@ -970,6 +1003,10 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                   src={`${baseUrl}vectors/home-underlay-lineart.png`}
                   alt=""
                   draggable={false}
+                  width={758}
+                  height={815}
+                  decoding="async"
+                  data-boot-critical=""
                   className="pointer-events-none absolute top-[8%] left-[3%] w-[56%] max-w-none select-none object-contain opacity-80 md:top-[6%] md:w-[50%] lg:w-[46%]"
                 />
               </div>
@@ -1051,6 +1088,10 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                         src={`${baseUrl}vectors/home-underlay-lineart.png`}
                         alt=""
                         draggable={false}
+                        width={758}
+                        height={815}
+                        loading="lazy"
+                        decoding="async"
                         className="h-full w-full max-w-none select-none object-contain object-top opacity-80"
                       />
                     </div>

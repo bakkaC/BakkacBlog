@@ -12,10 +12,21 @@ interface Props {
   publishedTime?: Date | string;
   tags?: string[];
   noindex?: boolean;
+  /** High-priority image URLs to preload (homepage LCP, etc.). */
+  preloadImages?: string[];
 }
 
-const { title, description, canonical, image, ogType, publishedTime, tags, noindex } =
-  Astro.props;
+const {
+  title,
+  description,
+  canonical,
+  image,
+  ogType,
+  publishedTime,
+  tags,
+  noindex,
+  preloadImages = [],
+} = Astro.props;
 
 const normalizedTitle = typeof title === 'string' && title.trim().length ? title.trim() : undefined;
 const normalizedDescription =
@@ -113,6 +124,72 @@ const navLinks = navCandidates.map((link) => {
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
+      {/*
+        Critical first paint: grey sheet + spinner must not wait on the main
+        stylesheet. The build rewrites the Tailwind `<link rel="stylesheet">`
+        to `media="print" onload="this.media='all'"` so the browser can paint
+        this inline CSS immediately instead of holding a white viewport for
+        ~90KB of CSS. High-priority image preloads used to starve even that
+        path and leave cold visits with no loader animation.
+      */}
+      <meta name="theme-color" content="#ececee" />
+      <style is:inline>
+        html,
+        body {
+          background: #ececee;
+        }
+        .boot-veil {
+          position: fixed;
+          inset: 0;
+          z-index: 60;
+          display: grid;
+          place-items: center;
+          pointer-events: none;
+          contain: strict;
+          background: #ececee;
+          opacity: 1;
+          transition: opacity 320ms ease-out;
+        }
+        .boot-veil[data-boot-veil-state='done'] {
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 320ms ease-out, visibility 0s 320ms;
+        }
+        .boot-veil__grain {
+          position: absolute;
+          inset: 0;
+          background-image: radial-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px);
+          background-size: 3px 3px;
+          opacity: 0.7;
+        }
+        .boot-veil__spinner {
+          position: relative;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: rgb(0 0 0 / 0.55);
+          animation: boot-veil-pulse 1.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes boot-veil-pulse {
+          0%,
+          100% {
+            transform: scale(0.72);
+            opacity: 0.5;
+          }
+          50% {
+            transform: scale(1.18);
+            opacity: 1;
+          }
+        }
+        .no-js .boot-veil {
+          display: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .boot-veil__spinner {
+            animation: none;
+          }
+        }
+      </style>
       <title>{pageTitle}</title>
       <meta name="description" content={pageDescription} />
       <meta name="author" content={authorName} />
@@ -178,29 +255,45 @@ const navLinks = navCandidates.map((link) => {
         href={withSiteBase('/fonts/outfit-latin.woff2')}
         crossorigin
       />
+      {/*
+        Optional image preloads must stay low-priority. `fetchpriority=high`
+        on ~1MB of homepage art starved CSS/JS and blocked the loader itself.
+        Prefer discovering `img[data-boot-critical]` under the veil instead.
+      */}
+      {preloadImages.map((href) => (
+        <link rel="preload" as="image" href={href} fetchpriority="low" />
+      ))}
       <link rel="icon" type="image/png" href={withSiteBase('/kumiko-favicon.png')} />
       {navLinks.map((link) => (
         <link rel="prefetch" href={link.href} />
       ))}
 
       {/*
-        Warm the shader bundle the collection pages share with home. Prefetching
-        the page HTML alone leaves the WebGL paper texture to be discovered after
-        navigation, which is the slowest part of those pages.
-
-        The URL is a placeholder resolved at bundle time, because the chunk name
-        is content-hashed and unknown while rendering.
+        Warm the shader bundle after fonts/LCP images. Prefetch (not
+        modulepreload) so it does not compete with the homepage hero on the
+        critical path; collection pages still discover it before navigation
+        settles. Placeholder is rewritten at build time only — skip in DEV or
+        the browser 404s `/__PAPER_TEXTURE_CHUNK__` and can poison Vite deps.
       */}
-      <link rel="modulepreload" href="/__PAPER_TEXTURE_CHUNK__" />
+      {import.meta.env.PROD ? (
+        <link rel="prefetch" as="script" href="/__PAPER_TEXTURE_CHUNK__" />
+      ) : null}
       {/*
-        The loader veil must be in the markup before the browser paints its
-        first frame; it is described in full in `src/styles/global.css`.
-
-        The inline script strips the `no-js` class as early as possible so the
-        veil is only shown when the boot script can also dismiss it.
+        Show the veil immediately, and arm a hard ceiling before the module
+        boot script even downloads — otherwise a stalled bundle leaves the
+        visitor on an endless grey load with no way out.
       */}
       <script is:inline>
         document.documentElement.classList.remove('no-js');
+        window.setTimeout(function () {
+          var veil = document.querySelector('.boot-veil');
+          if (!veil || veil.getAttribute('data-boot-veil-state') === 'done') return;
+          veil.setAttribute('data-boot-veil-state', 'done');
+          document.dispatchEvent(new CustomEvent('bakkac:boot-ready'));
+          window.setTimeout(function () {
+            veil.remove();
+          }, 360);
+        }, 4000);
       </script>
       <script>
         import { dismissBootVeil } from '../lib/boot-veil';
