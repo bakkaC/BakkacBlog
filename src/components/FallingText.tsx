@@ -125,7 +125,8 @@ const FallingText: React.FC<FallingTextProps> = ({
       isStatic: true,
       render: { fillStyle: 'transparent' }
     };
-    const floor = Bodies.rectangle(width / 2, height + 25, width, 50, boundaryOptions);
+    const floorInset = 16;
+    const floor = Bodies.rectangle(width / 2, height - floorInset + 25, width, 50, boundaryOptions);
     const leftWall = Bodies.rectangle(-25, height / 2, 50, height, boundaryOptions);
     const rightWall = Bodies.rectangle(width + 25, height / 2, 50, height, boundaryOptions);
     const ceiling = Bodies.rectangle(width / 2, -25, width, 50, boundaryOptions);
@@ -217,8 +218,8 @@ const FallingText: React.FC<FallingTextProps> = ({
 
       if (body.bounds.min.y < 0) {
         correction.y = -body.bounds.min.y;
-      } else if (body.bounds.max.y > height) {
-        correction.y = height - body.bounds.max.y;
+      } else if (body.bounds.max.y > height - floorInset) {
+        correction.y = height - floorInset - body.bounds.max.y;
       }
 
       if (correction.x === 0 && correction.y === 0) return false;
@@ -447,7 +448,8 @@ const FallingText: React.FC<FallingTextProps> = ({
       onMouseEnter={trigger === 'hover' ? handleTrigger : undefined}
       style={{
         position: 'relative',
-        overflow: 'hidden'
+        // Visible so settled / rotated glyphs are not sliced by the box edge.
+        overflow: 'visible',
       }}
     >
       <div

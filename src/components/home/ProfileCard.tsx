@@ -737,7 +737,13 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
           clears once foldSettled — so clicking fold does not pop the words away.
         */
         <div
-          className="pointer-events-none absolute bottom-76 -left-4 -right-4 z-20 h-56 md:bottom-0 md:left-8 md:right-8 md:h-48 lg:bottom-12 lg:left-16 lg:right-16 lg:h-56"
+          /*
+            The date-label zinc wash sits ~bottom-10/12 above the sheet edge.
+            `md:bottom-0` put the physics floor under that band so words fell
+            past the gray onto the white rim and clipped. Keep original height;
+            md uses bottom-8, lg uses bottom-14.
+          */
+          className="pointer-events-none absolute bottom-76 -left-4 -right-4 z-20 h-56 md:bottom-8 md:left-8 md:right-8 md:h-48 lg:bottom-14 lg:left-16 lg:right-16 lg:h-56"
           aria-hidden="true"
         >
           <Suspense fallback={null}>
