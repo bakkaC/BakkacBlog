@@ -900,16 +900,17 @@ export function ProfileCard({ baseUrl, accordionLatest, onFoldChange }: ProfileC
                 aria-hidden="true"
                 className="pointer-events-none absolute z-20 max-w-none select-none transition-opacity duration-700 ease-in-out"
                 style={{
-                  // Desktop keeps the original right-edge anchor. Mobile biases
-                  // `left` itself — translateX(-50%) on a ~250px-wide script
-                  // made a 10px nudge invisible, and overflow-hidden on the
-                  // panel clips anything outside the yellow strip anyway.
-                  left: isMdUp ? '100%' : 'calc(100% - 14px)',
+                  // Desktop: right-edge + origin-top keeps the pre-rotate pose.
+                  // Mobile: center-rotate like the upright title, then 8px left
+                  // so the topic script sits with the collapsed strip.
+                  left: isMdUp ? '100%' : 'calc(50% - 8px)',
                   top: '50%',
                   height: '16%',
                   width: 'auto',
-                  transform: 'translateX(-50%) rotate(90deg)',
-                  transformOrigin: 'center top',
+                  transform: isMdUp
+                    ? 'translateX(-50%) rotate(90deg)'
+                    : 'translate(-50%, -50%) rotate(90deg)',
+                  transformOrigin: isMdUp ? 'center top' : 'center',
                   filter: 'brightness(0.8) saturate(1.15)',
                   opacity: index === activeIndex ? 0 : 1,
                 }}
